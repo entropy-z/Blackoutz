@@ -1,0 +1,348 @@
+#include <Common.h>
+#include <Package.h>
+#include <Transport.h>
+
+VOID Int64ToBuffer( PUCHAR Buffer, UINT64 Value )
+{
+    Buffer[ 7 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 6 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 5 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 4 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 3 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 2 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 1 ] = Value & 0xFF;
+    Value >>= 8;
+
+    Buffer[ 0 ] = Value & 0xFF;
+}
+
+VOID Int32ToBuffer( PUCHAR Buffer, UINT32 Size ) {
+    ( Buffer ) [ 0 ] = ( Size >> 24 ) & 0xFF;
+    ( Buffer ) [ 1 ] = ( Size >> 16 ) & 0xFF;
+    ( Buffer ) [ 2 ] = ( Size >> 8  ) & 0xFF;
+    ( Buffer ) [ 3 ] = ( Size       ) & 0xFF;
+}
+
+VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt ) {
+    BLACKOUT_INSTANCE
+
+    Package->Buffer = Instance()->Win32.LocalReAlloc( Package->Buffer, Package->Length + sizeof( UINT32 ), LMEM_MOVEABLE );
+
+    Int32ToBuffer( Package->Buffer + Package->Length, dataInt );
+
+    Package->Size   =   Package->Length;
+    Package->Length +=  sizeof( UINT32 );
+}
+
+VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
+{
+    BLACKOUT_INSTANCE
+    Package->Buffer = Instance()->Win32.LocalReAlloc(
+            Package->Buffer,
+            Package->Length + sizeof( UINT64 ),
+            LMEM_MOVEABLE
+    );
+
+    Int64ToBuffer( Package->Buffer + Package->Length, dataInt );
+
+    Package->Size   =  Package->Length;
+    Package->Length += sizeof( UINT64 );
+}
+
+VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
+{
+    BLACKOUT_INSTANCE
+    Package->Buffer = Instance()->Win32.LocalReAlloc(
+            Package->Buffer,
+            Package->Length + Size,
+            LMEM_MOVEABLE | LMEM_ZEROINIT
+    );
+
+    MemCopy( Package->Buffer + ( Package->Length ), Data, Size );
+
+    Package->Size   =  Package->Length;
+    Package->Length += Size;
+}
+
+
+VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size ) {
+    BLACKOUT_INSTANCE
+    PackageAddInt32( Package, Size );
+
+    Package->Buffer = Instance()->Win32.LocalReAlloc( Package->Buffer,Package->Length + Size, LMEM_MOVEABLE | LMEM_ZEROINIT );
+
+    Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
+
+    MemCopy( Package->Buffer + Package->Length, Data, Size );
+
+    Package->Size   =   Package->Length;
+    Package->Length +=  Size;
+}
+
+// For callback to server
+PPACKAGE PackageCreate( UINT32 CommandID )
+{
+    BLACKOUT_INSTANCE
+    PPACKAGE Package = NULL;
+
+    Package            = Instance()->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer    = Instance()->Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
+    Package->Length    = 0;
+    Package->CommandID = CommandID;
+    Package->Encrypt   = FALSE;
+
+    PackageAddInt32( Package, 0 );
+    PackageAddInt32( Package, 0x00 );
+    PackageAddInt32( Package, Instance()->Config.Session.AgentId );
+    PackageAddInt32( Package, CommandID );
+
+    return Package;
+}
+
+// For serialize raw data
+PPACKAGE PackageNew(  )
+{
+    BLACKOUT_INSTANCE
+    PPACKAGE Package = NULL;
+
+    Package          = Instance()->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer  = Instance()->Win32.LocalAlloc( LPTR, 0 );
+    Package->Length  = 0;
+    Package->Encrypt = TRUE;
+
+    PackageAddInt32( Package, 0 );
+    PackageAddInt32( Package, 0x00 );
+
+    return Package;
+}
+
+VOID PackageDestroy( PPACKAGE Package )
+{
+    BLACKOUT_INSTANCE
+    if ( ! Package ) {
+        return;
+    }
+    if ( ! Package->Buffer ) {
+        return;
+    }
+    MemSet( Package->Buffer, 0, Package->Length );
+    Instance()->Win32.LocalFree( Package->Buffer );
+    Package->Buffer = NULL;
+
+    MemSet( Package, 0, sizeof( PACKAGE ) );
+    Instance()->Win32.LocalFree( Package );
+    Package = NULL;
+}
+
+BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
+{
+    BOOL Success     = FALSE;
+
+    if ( Package )
+    {
+        // writes package length to buffer
+        Int32ToBuffer( Package->Buffer, Package->Length - sizeof( UINT32 ) );
+
+        //if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
+        //    Success = TRUE;
+        //}
+
+        PackageDestroy( Package );
+    }
+    else
+        Success = FALSE;
+
+    return Success;
+}
+
+VOID PackageAddBool(
+    _Inout_ PPACKAGE Package,
+    _In_    BOOLEAN  Data
+) {
+    BLACKOUT_INSTANCE
+    
+    if ( ! Package ) {
+        return;
+    }
+
+    Package->Buffer = Instance()->Win32.LocalReAlloc(
+            Package->Buffer,
+            Package->Length + sizeof( UINT32 ),
+            LMEM_MOVEABLE
+    );
+
+    Int32ToBuffer( Package->Buffer + Package->Length, Data ? 1 : 0 );
+
+    Package->Length += sizeof( UINT32 );
+}
+
+VOID PackageAddString( PPACKAGE package, PCHAR data )
+{
+    PackageAddBytes( package, (PBYTE) data, StringLengthA( data ) );
+}
+
+VOID PackageAddWString( PPACKAGE package, PWCHAR data )
+{
+    PackageAddBytes( package, (PBYTE) data, StringLengthW( data ) * 2 );
+}
+
+void ParserNew( PPARSER parser, PVOID Buffer, UINT32 size ) {
+    BLACKOUT_INSTANCE
+
+    if ( parser == NULL )
+        return;
+
+    parser->Original = Instance()->Win32.LocalAlloc( LPTR, size );
+    MemCopy( parser->Original, Buffer, size );
+    parser->Buffer   = parser->Original;
+    parser->Length   = size;
+    parser->Size     = size;
+}
+
+int ParserGetInt32( PPARSER parser ) {
+    INT32 intBytes = 0;
+
+    if ( parser->Length < 4 )
+        return 0;
+
+    MemCopy( &intBytes, parser->Buffer, 4 );
+
+    parser->Buffer += 4;
+    parser->Length -= 4;
+
+    if ( ! parser->Endian )
+        return ( INT ) intBytes;
+    else
+        return ( INT ) __builtin_bswap32( intBytes );
+}
+
+PCHAR ParserGetBytes( PPARSER parser, PUINT32 size ) {
+    UINT32  Length  = 0;
+    PCHAR   outdata = NULL;
+
+    if ( parser->Length < 4 )
+        return NULL;
+
+    MemCopy( &Length, parser->Buffer, 4 );
+    parser->Buffer += 4;
+
+    if ( parser->Endian )
+        Length = __builtin_bswap32( Length );
+
+    outdata = parser->Buffer;
+    if ( outdata == NULL )
+        return NULL;
+
+    parser->Length -= 4;
+    parser->Length -= Length;
+    parser->Buffer += Length;
+
+    if ( size != NULL )
+        *size = Length;
+
+    return outdata;
+}
+
+void ParserDestroy( PPARSER Parser ) {
+    BLACKOUT_INSTANCE
+
+    if ( Parser->Original ) {
+        MemSet( Parser->Original, 0, Parser->Size );
+        Instance()->Win32.LocalFree( Parser->Original );
+        Parser->Original = NULL;
+    }
+}
+
+PCHAR  ParserGetString( PPARSER parser, PUINT32 size )
+{
+    return ( PCHAR ) ParserGetBytes( parser, size );
+}
+
+PWCHAR  ParserGetWString( PPARSER parser, PUINT32 size )
+{
+    return ( PWCHAR ) ParserGetBytes( parser, size );
+}
+
+INT16 ParserGetInt16( PPARSER parser )
+{
+    INT16 intBytes = 0;
+
+    if ( parser->Length < 2 )
+        return 0;
+
+    MemCopy( &intBytes, parser->Buffer, 2 );
+
+    parser->Buffer += 2;
+    parser->Length -= 2;
+
+    return intBytes;
+}
+
+INT64 ParserGetInt64( PPARSER parser )
+{
+    INT64 intBytes = 0;
+
+    if ( ! parser )
+        return 0;
+
+    if ( parser->Length < 8 )
+        return 0;
+
+    MemCopy( &intBytes, parser->Buffer, 8 );
+
+    parser->Buffer += 8;
+    parser->Length -= 8;
+
+    if ( ! parser->Endian )
+        return ( INT64 ) intBytes;
+    else
+        return ( INT64 ) __builtin_bswap64( intBytes );
+}
+
+BOOL ParserGetBool( PPARSER parser )
+{
+    INT32 intBytes = 0;
+
+    if ( ! parser )
+        return 0;
+
+    if ( parser->Length < 4 )
+        return 0;
+
+    MemCopy( &intBytes, parser->Buffer, 4 );
+
+    parser->Buffer += 4;
+    parser->Length -= 4;
+
+    if ( ! parser->Endian )
+        return intBytes != 0;
+    else
+        return __builtin_bswap32( intBytes ) != 0;
+}
+
+BYTE ParserGetByte( PPARSER parser )
+{
+    BYTE intBytes = 0;
+
+    if ( parser->Length < 1 )
+        return 0;
+
+    MemCopy( &intBytes, parser->Buffer, 1 );
+
+    parser->Buffer += 1;
+    parser->Length -= 1;
+
+    return intBytes;
+}

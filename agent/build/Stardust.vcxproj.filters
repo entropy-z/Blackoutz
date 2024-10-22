@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\obliv\Proton Drive\oblivionccyber\Other computers\DESKTOP-L1LOGA9\malw\Projects\Blackout-master\unknown\src\PreMain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\obliv\Proton Drive\oblivionccyber\Other computers\DESKTOP-L1LOGA9\malw\Projects\Blackout-master\unknown\src\Main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\obliv\Proton Drive\oblivionccyber\Other computers\DESKTOP-L1LOGA9\malw\Projects\Blackout-master\unknown\src\Ldr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\obliv\Proton Drive\oblivionccyber\Other computers\DESKTOP-L1LOGA9\malw\Projects\Blackout-master\unknown\src\Utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\obliv\Proton Drive\oblivionccyber\Other computers\DESKTOP-L1LOGA9\malw\Projects\Blackout-master\unknown\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{8E647E5E-C04B-3EBC-90EC-098B0826B8EC}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

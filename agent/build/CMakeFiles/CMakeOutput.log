@@ -1,0 +1,104 @@
+The system is: Linux - 5.15.153.1-microsoft-standard-WSL2 - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/x86_64-w64-mingw32-gcc 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.exe"
+
+The C compiler identification is GNU, found in "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/3.22.1/CompilerIdC/a.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /usr/bin/x86_64-w64-mingw32-g++ 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.exe"
+
+The CXX compiler identification is GNU, found in "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/3.22.1/CompilerIdCXX/a.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_48d37/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_48d37.dir/build.make CMakeFiles/cmTC_48d37.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_48d37.dir/testCCompiler.c.o
+/usr/bin/x86_64-w64-mingw32-gcc    -o CMakeFiles/cmTC_48d37.dir/testCCompiler.c.o -c "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp/testCCompiler.c"
+Linking C executable cmTC_48d37
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_48d37.dir/link.txt --verbose=1
+/usr/bin/x86_64-w64-mingw32-gcc CMakeFiles/cmTC_48d37.dir/testCCompiler.c.o -o cmTC_48d37 
+gmake[1]: Leaving directory '/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp'
+
+
+
+The system is: Linux - 5.15.153.1-microsoft-standard-WSL2 - x86_64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/x86_64-w64-mingw32-gcc 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.exe"
+
+The C compiler identification is GNU, found in "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/3.22.1/CompilerIdC/a.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /usr/bin/x86_64-w64-mingw32-g++ 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.exe"
+
+The CXX compiler identification is GNU, found in "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/3.22.1/CompilerIdCXX/a.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: /mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_d139f/fast && gmake: Warning: File 'Makefile' has modification time 0.2 s in the future
+/usr/bin/gmake  -f CMakeFiles/cmTC_d139f.dir/build.make CMakeFiles/cmTC_d139f.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp'
+gmake[1]: Warning: File 'CMakeFiles/cmTC_d139f.dir/flags.make' has modification time 0.12 s in the future
+Building C object CMakeFiles/cmTC_d139f.dir/testCCompiler.c.o
+/usr/bin/x86_64-w64-mingw32-gcc    -o CMakeFiles/cmTC_d139f.dir/testCCompiler.c.o -c "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp/testCCompiler.c"
+Linking C executable cmTC_d139f
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d139f.dir/link.txt --verbose=1
+/usr/bin/x86_64-w64-mingw32-gcc CMakeFiles/cmTC_d139f.dir/testCCompiler.c.o -o cmTC_d139f 
+gmake[1]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[1]: Leaving directory '/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp'
+gmake: warning:  Clock skew detected.  Your build may be incomplete.
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: /mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_6fa42/fast && gmake: Warning: File 'Makefile' has modification time 0.082 s in the future
+/usr/bin/gmake  -f CMakeFiles/cmTC_6fa42.dir/build.make CMakeFiles/cmTC_6fa42.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp'
+gmake[1]: Warning: File 'CMakeFiles/cmTC_6fa42.dir/flags.make' has modification time 0.021 s in the future
+Building CXX object CMakeFiles/cmTC_6fa42.dir/testCXXCompiler.cxx.o
+/usr/bin/x86_64-w64-mingw32-g++    -o CMakeFiles/cmTC_6fa42.dir/testCXXCompiler.cxx.o -c "/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp/testCXXCompiler.cxx"
+Linking CXX executable cmTC_6fa42
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_6fa42.dir/link.txt --verbose=1
+/usr/bin/x86_64-w64-mingw32-g++ CMakeFiles/cmTC_6fa42.dir/testCXXCompiler.cxx.o -o cmTC_6fa42 
+gmake[1]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[1]: Leaving directory '/mnt/c/Users/obliv/Proton Drive/oblivionccyber/Other computers/DESKTOP-L1LOGA9/malw/Projects/Blackout-master/unknown/build/CMakeFiles/CMakeTmp'
+gmake: warning:  Clock skew detected.  Your build may be incomplete.
+
+
+

