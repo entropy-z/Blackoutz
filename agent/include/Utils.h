@@ -12,6 +12,20 @@ ULONG HashString(
 
 /*!
  * @brief
+ * Get value of the specified environment variable
+ * 
+ * @param EnvVar
+ * Target environment variable to get value
+ * 
+ * @return
+ * Return target value
+ */
+PWSTR GetEnvVar( 
+    _In_ PWSTR EnvVar 
+);
+
+/*!
+ * @brief
  * Allocate memory in the heap
  * 
  * @param Size
@@ -122,10 +136,6 @@ VOID GetProcessInfo(
  * No return value
  */
 VOID GetComputerInfo(
-	_Out_ PSTR  *Computername,
-	_Out_ PSTR  *Domainname,
-	_Out_ PSTR  *NetBios,
-	_Out_ PSTR  *Username,
 	_Out_ WORD  *ProcessArch,
 	_Out_ DWORD *ProcessType,
 	_Out_ DWORD *ProductType,

@@ -13,7 +13,7 @@ DEFAULT REL
 ;;
 ;; Import
 ;;
-EXTERN PreMain
+EXTERN Entry
 
 ;;
 ;; Export

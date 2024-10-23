@@ -42,6 +42,7 @@ all: x64
 ## executable and extract shellcode
 ##
 x64: clean asm-x64 $(BLACK-OBJ)
+	#@ rm -rf bin/obj/*.o
 	@ echo "[+] compile x64 executable"
 	@ $(CC_X64) bin/obj/*.x64.o -o $(EXE-X64) $(CFLAGS)
 	@ python3 scripts/build.py -f $(EXE-X64) -o $(BIN-X64)

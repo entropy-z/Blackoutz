@@ -7,6 +7,11 @@ FUNC VOID BlackoutMain(
     BLACKOUT_INSTANCE
         
     BlackoutInit();
+
+    while( 1 ) {
+        FoliageObf( 3 * 1000 );
+    }
+
     return;
     /*
     do {

