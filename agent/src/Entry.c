@@ -33,6 +33,9 @@ EXTERN_C FUNC VOID Entry(
     MmAddr = Blackout.Base.Buffer + InstanceOffset();
     MmSize = sizeof( PVOID );
 
+    Blackout.Base.RxBase = Blackout.Base.Buffer;
+    Blackout.Base.RxSize = U_PTR( MmAddr ) - U_PTR( Blackout.Base.RxBase );
+
     //
     // resolve ntdll!RtlAllocateHeap and ntdll!NtProtectVirtualMemory for
     // updating/patching the Instance in the current memory

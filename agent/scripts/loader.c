@@ -48,7 +48,7 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    printf( "[*] Address => %p\n", ShellcodeMemory );
+    printf( "[*] Address => %p [%d bytes]\n", ShellcodeMemory, ShellcodeSize );
 
     memcpy( ShellcodeMemory, ShellcodeBytes, ShellcodeSize );
 

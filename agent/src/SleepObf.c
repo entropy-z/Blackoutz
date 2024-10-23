@@ -72,8 +72,8 @@ FUNC VOID FoliageObf(
      * VirtualProtect( ImageBase, ImageSize, PAGE_READWRITE, &OldProt ); 
      */
     RopProtRw.Rip = Instance()->Win32.VirtualProtect;
-    RopProtRw.Rcx = Instance()->Base.Buffer;
-    RopProtRw.Rdx = Instance()->Base.Length;
+    RopProtRw.Rcx = Instance()->Base.RxBase;
+    RopProtRw.Rdx = Instance()->Base.RxSize;
     RopProtRw.R8  = PAGE_READWRITE;
     RopProtRw.R9  = &OldProt;
 
@@ -107,8 +107,8 @@ FUNC VOID FoliageObf(
      * VirtualProtect( ImageBase, ImageSize, PAGE_EXECUTE_READ, &oldProt );
      */
     RopProtRx.Rip = Instance()->Win32.VirtualProtect;
-    RopProtRx.Rcx = Instance()->Base.Buffer;
-    RopProtRx.Rdx = Instance()->Base.Length;
+    RopProtRx.Rcx = Instance()->Base.RxBase;
+    RopProtRx.Rdx = Instance()->Base.RxSize;
     RopProtRx.R8  = PAGE_EXECUTE_READ;
     RopProtRx.R9  = &OldProt;
 

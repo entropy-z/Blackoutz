@@ -54,7 +54,7 @@ FUNC ULONG HashString(
 
 /*============================[ Memory ]============================*/
 
-PVOID MemCopy( _Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE_T Length)
+FUNC PVOID MemCopy( _Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE_T Length)
 {
 	PBYTE D = (PBYTE)Destination;
 	PBYTE S = (PBYTE)Source;
@@ -65,7 +65,7 @@ PVOID MemCopy( _Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE_T L
 	return Destination;
 }
 
-void MemZero( _Inout_ PVOID Destination, _In_ SIZE_T Size)
+FUNC void MemZero( _Inout_ PVOID Destination, _In_ SIZE_T Size)
 {
 	PULONG Dest = (PULONG)Destination;
 	SIZE_T Count = Size / sizeof(ULONG);
@@ -80,7 +80,7 @@ void MemZero( _Inout_ PVOID Destination, _In_ SIZE_T Size)
 	return;
 }
 
-PVOID MemSet( void* Destination, int Value, size_t Size )
+FUNC PVOID MemSet( void* Destination, int Value, size_t Size )
 {
 	unsigned char* p = (unsigned char*)Destination;
 	while (Size > 0) {
@@ -93,7 +93,7 @@ PVOID MemSet( void* Destination, int Value, size_t Size )
 
 /*============================[ Strings ]============================*/
 
-SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _In_ SIZE_T MaximumAllowed)
+FUNC SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _In_ SIZE_T MaximumAllowed)
 {
 	INT Length = (INT)MaximumAllowed;
 
@@ -109,7 +109,7 @@ SIZE_T WCharStringToCharString(_Inout_ PCHAR Destination, _In_ PWCHAR Source, _I
 	return MaximumAllowed - Length;
 }
 
-SIZE_T CharStringToWCharString(_Inout_ PWCHAR Destination, _In_ PCHAR Source, SIZE_T _In_ MaximumAllowed)
+FUNC SIZE_T CharStringToWCharString(_Inout_ PWCHAR Destination, _In_ PCHAR Source, SIZE_T _In_ MaximumAllowed)
 {
 	INT Length = (INT)MaximumAllowed;
 
@@ -122,7 +122,7 @@ SIZE_T CharStringToWCharString(_Inout_ PWCHAR Destination, _In_ PCHAR Source, SI
 	return MaximumAllowed - Length;
 }
 
-SIZE_T StringLengthA(_In_ LPCSTR String)
+FUNC SIZE_T StringLengthA(_In_ LPCSTR String)
 {
 	LPCSTR String2;
 
@@ -131,7 +131,7 @@ SIZE_T StringLengthA(_In_ LPCSTR String)
 	return (String2 - String);
 }
 
-SIZE_T StringLengthW(_In_ LPCWSTR String)
+FUNC SIZE_T StringLengthW(_In_ LPCWSTR String)
 {
 	LPCWSTR String2;
 
@@ -140,7 +140,7 @@ SIZE_T StringLengthW(_In_ LPCWSTR String)
 	return (String2 - String);
 }
 
-INT StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2)
+FUNC INT StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2)
 {
 	for (; *String1 == *String2; String1++, String2++)
 	{
@@ -151,7 +151,7 @@ INT StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2)
 	return ((*(LPCSTR)String1 < *(LPCSTR)String2) ? -1 : +1);
 }
 
-INT StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2)
+FUNC INT StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2)
 {
 	for (; *String1 == *String2; String1++, String2++)
 	{
@@ -162,7 +162,7 @@ INT StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2)
 	return ((*(LPCWSTR)String1 < *(LPCWSTR)String2) ? -1 : +1);
 }
 
-void toLowerCaseChar(char* str) 
+FUNC void toLowerCaseChar(char* str) 
 {
 	while (*str) {
 		if (*str >= 'A' && *str <= 'Z') {
@@ -172,7 +172,7 @@ void toLowerCaseChar(char* str)
 	}
 }
 
-WCHAR toLowerCaseWchar(WCHAR ch)
+FUNC WCHAR toLowerCaseWchar(WCHAR ch)
 {
 	if (ch >= L'A' && ch <= L'Z') {
 		return ch + (L'a' - L'A');
@@ -180,7 +180,7 @@ WCHAR toLowerCaseWchar(WCHAR ch)
 	return ch;
 }
 
-PCHAR StringCopyA( _Inout_ PCHAR String1, _In_ LPCSTR String2 )
+FUNC PCHAR StringCopyA( _Inout_ PCHAR String1, _In_ LPCSTR String2 )
 {
 	PCHAR p = String1;
 
@@ -189,7 +189,7 @@ PCHAR StringCopyA( _Inout_ PCHAR String1, _In_ LPCSTR String2 )
 	return String1;
 }
 
-PWCHAR StringCopyW( _Inout_ PWCHAR String1, _In_ LPCWSTR String2 )
+FUNC PWCHAR StringCopyW( _Inout_ PWCHAR String1, _In_ LPCWSTR String2 )
 {
 	PWCHAR p = String1;
 
@@ -198,21 +198,21 @@ PWCHAR StringCopyW( _Inout_ PWCHAR String1, _In_ LPCWSTR String2 )
 	return String1;
 }
 
-WCHAR StringConcatW(_Inout_ PWCHAR String, _In_ LPCWSTR String2)
+FUNC WCHAR StringConcatW(_Inout_ PWCHAR String, _In_ LPCWSTR String2)
 {
 	StringCopyW(&String[StringLengthW(String)], String2);
 
 	return (WCHAR)String;
 }
 
-PCHAR StringConcatA(_Inout_ PCHAR String, _In_ LPCSTR String2)
+FUNC PCHAR StringConcatA(_Inout_ PCHAR String, _In_ LPCSTR String2)
 {
 	StringCopyA(&String[StringLengthA(String)], String2);
 
 	return String;
 }
 
-BOOL   IsStringEqual ( _In_ LPCWSTR Str1, _In_ LPCWSTR Str2 )
+FUNC BOOL   IsStringEqual ( _In_ LPCWSTR Str1, _In_ LPCWSTR Str2 )
 {
 	WCHAR	lStr1	[MAX_PATH],
 			lStr2	[MAX_PATH];
@@ -244,7 +244,7 @@ BOOL   IsStringEqual ( _In_ LPCWSTR Str1, _In_ LPCWSTR Str2 )
 	return FALSE;
 }
 
-void InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer) 
+FUNC void InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer) 
 {
 	if ((UsStruct->Buffer = (PWSTR)Buffer)) {
 
@@ -259,7 +259,7 @@ void InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer)
 	else UsStruct->Length = UsStruct->MaximumLength = 0;
 }
 
-ULONG Random32() {
+FUNC ULONG Random32() {
     UINT32 Seed = 0;
 
     _rdrand32_step(&Seed);
@@ -267,7 +267,7 @@ ULONG Random32() {
     return Seed;
 }
 
-ULONG RandomNumber32( VOID )
+FUNC ULONG RandomNumber32( VOID )
 {
 	BLACKOUT_INSTANCE
     ULONG Seed = 0;

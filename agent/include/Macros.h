@@ -4,6 +4,8 @@
 typedef struct _BUFFER {
     PVOID Buffer;
     ULONG Length;
+    PVOID RxBase;
+    ULONG RxSize;
 } BUFFER, *PBUFFER;
 
 //
