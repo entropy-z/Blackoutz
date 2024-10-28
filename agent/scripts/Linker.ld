@@ -12,7 +12,7 @@ SECTIONS
         *( .rdata* );
         FILL( 0x00 )
         . = ALIGN( 0x1000 );
-        __Instance_offset = .;
+        __Instance_offset = .;https://cobalt-strike.github.io/community_kit/
         *( .global );
         *( .text$E );
         *( .text$P );

