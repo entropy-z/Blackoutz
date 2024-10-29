@@ -43,6 +43,7 @@ typedef struct _BUFFER {
 #define ST_GLOBAL   __attribute__( ( section( ".global" ) ) )
 #define ST_READONLY __attribute__( ( section( ".rdata" ) ) )
 
+
 //
 // type castinng lenght 
 //

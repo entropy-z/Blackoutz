@@ -132,14 +132,14 @@ FUNC BOOL KillProcess(
 	HANDLE hProcess = NULL; 
 	BOOL   bSuccess = FALSE;
 
-	hProcess = Instance()->Win32.OpenProcess( PROCESS_TERMINATE, FALSE, ProcessId );
+	hProcess = bkOpenProcess( PROCESS_TERMINATE, FALSE, ProcessId );
 	
 	if ( !hProcess )
 		return FALSE;
 
-	bSuccess = Instance()->Win32.TerminateProcess( hProcess, 0x01 );
+	bSuccess = bkTerminateProcess( hProcess, 0x01 );
 
-	Instance()->Win32.CloseHandle( hProcess );
+	bkCloseHandle( hProcess );
 	
 	return bSuccess;
 }

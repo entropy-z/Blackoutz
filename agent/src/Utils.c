@@ -51,7 +51,6 @@ FUNC ULONG HashString(
     return Hash;
 }
 
-
 /*============================[ Memory ]============================*/
 
 FUNC PVOID MemCopy( _Inout_ PVOID Destination, _In_ CONST PVOID Source, _In_ SIZE_T Length)

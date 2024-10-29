@@ -23,6 +23,8 @@ LPVOID LoadFileIntoMemory( LPSTR Path, PDWORD MemorySize ) {
     return ImageBuffer;
 }
 
+typedef (*ShellcodeMain)();
+
 int main( int argc, char** argv )
 {
     PVOID ShellcodeBytes = NULL;
@@ -55,5 +57,5 @@ int main( int argc, char** argv )
     puts("[+] Execute shellcode... press enter");
     getchar();
 
-    WaitForSingleObject( CreateThread( NULL, NULL, ShellcodeMemory, NULL, NULL, NULL ), INFINITE ); //((ShellcodeMain)ShellcodeMemory)();
+    ((ShellcodeMain)ShellcodeMemory)(); //WaitForSingleObject( CreateThread( NULL, NULL, ShellcodeMemory, NULL, NULL, NULL ), INFINITE ); //
 }

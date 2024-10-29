@@ -26,56 +26,6 @@ PWSTR GetEnvVar(
 
 /*!
  * @brief
- * Allocate memory in the heap
- * 
- * @param Size
- * Size of the memory allocation
- * 
- * @return 
- * return memory address allocated
- */
-PVOID bkHeapAlloc( 
-    UINT64 Size
-);
-
-/*!
- * @brief 
- * ReAllocated memory in the heap
- * 
- * @param Addr
- * Addr of the reallocate, this is return from bkHeapAlloc
- * 
- * @param Size
- * Size to the reallocation
- * 
- * @return
- * return memory reallocated
- */
-PVOID bkHeapReAlloc(
-    PVOID  Addr,
-    UINT64 Size
-);
-
-/*!
- * @brief
- * Free heap memory
- * 
- * @param Data
- * Data address to free
- * 
- * @param Size
- * Size for the zero memory
- * 
- * @return
- * Return boolean based in success
- */
-BOOL bkHeapFree(
-    PVOID  Data,
-    UINT64 Size
-);
-
-/*!
- * @brief
  * kill target process
  * 
  * @param ProcessId
