@@ -122,10 +122,10 @@ FUNC VOID BlackoutInit() {
     //Instance()->Config.Session.AgentId    = RandomNumber32();
     Instance()->Config.Session.AmsiBypass = FALSE;
     Instance()->Config.Session.EtwBypass  = FALSE;
-    Instance()->Config.Session.Heap       = Instance()->Teb->ProcessEnvironmentBlock->ProcessHeap;
+    //nstance()->Config.Session.Heap       = Instance()->Teb->ProcessEnvironmentBlock->ProcessHeap;
     Instance()->Config.Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
     Instance()->Config.Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
-    
+
     /*============================[ Machine recognition ]============================*/
 
     GetComputerInfo( 

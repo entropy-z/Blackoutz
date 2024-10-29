@@ -16,11 +16,6 @@ EXTERN_C FUNC VOID Entry(
     MmZero( &Blackout, sizeof( Blackout ) );
 
     //
-    // get the process heap handle from Peb
-    //
-    Heap = NtCurrentPeb()->ProcessHeap;
-
-    //
     // get the base address of the current implant in memory and the end.
     // subtract the implant end address with the start address you will
     // get the size of the implant in memory
@@ -43,11 +38,15 @@ EXTERN_C FUNC VOID Entry(
     // 
     if ( ( Blackout.Modules.Ntdll = LdrModuleAddr( H_MODULE_NTDLL ) ) ) {
         if ( !( Blackout.Win32.RtlAllocateHeap        = LdrFuncAddr( Blackout.Modules.Ntdll, HASH_STR( "RtlAllocateHeap"        ) ) ) ||
-             !( Blackout.Win32.NtProtectVirtualMemory = LdrFuncAddr( Blackout.Modules.Ntdll, HASH_STR( "NtProtectVirtualMemory" ) ) )
+             !( Blackout.Win32.NtProtectVirtualMemory = LdrFuncAddr( Blackout.Modules.Ntdll, HASH_STR( "NtProtectVirtualMemory" ) ) ) ||
+             !( Blackout.Win32.RtlCreateHeap          = LdrFuncAddr( Blackout.Modules.Ntdll, HASH_STR( "RtlCreateHeap" ) ) )
         ) {
             return;
         }
     }
+
+    // Create heap for agent
+    Blackout.Config.Session.Heap = Blackout.Win32.RtlCreateHeap( HEAP_GROWABLE, NULL, 0, 0, 0, NULL );
 
     //
     // change the protection of the .global section page to RW
@@ -66,7 +65,7 @@ EXTERN_C FUNC VOID Entry(
     //
     // assign heap address into the RW memory page
     //
-    if ( ! ( C_DEF( MmAddr ) = Blackout.Win32.RtlAllocateHeap( Heap, HEAP_ZERO_MEMORY, sizeof( INSTANCE ) ) ) ) {
+    if ( ! ( C_DEF( MmAddr ) = Blackout.Win32.RtlAllocateHeap( Blackout.Config.Session.Heap, HEAP_ZERO_MEMORY, sizeof( INSTANCE ) ) ) ) {
         return;
     }
 
