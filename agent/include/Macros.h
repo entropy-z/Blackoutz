@@ -43,6 +43,8 @@ typedef struct _BUFFER {
 #define ST_GLOBAL   __attribute__( ( section( ".global" ) ) )
 #define ST_READONLY __attribute__( ( section( ".rdata" ) ) )
 
+#define BK_PACKAGE          InstancePtr()->Transport.Package
+#define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)
 
 //
 // type castinng lenght 

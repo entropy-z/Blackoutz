@@ -167,6 +167,46 @@ FUNC BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
     return Success;
 }
 
+FUNC VOID PackageTransmitError(
+    UINT32   ErrNmb
+) {
+    BLACKOUT_INSTANCE
+
+    if ( BK_PACKAGE ) {
+        PackageDestroy( BK_PACKAGE );
+    }
+
+    BK_PACKAGE = PackageCreate( BLACKOUT_ERROR );
+    
+    CHAR ErrMsg[MAX_PATH] = {'\0'};
+    PSTR p = ErrMsg;
+
+    Instance()->Win32.FormatMessageA( 
+        FORMAT_MESSAGE_FROM_SYSTEM | 
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, ErrNmb,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        ErrMsg, MAX_PATH, NULL 
+    );
+
+    while (*p++)
+    {
+        if ((*p != 9 && *p < 32) || *p == 46)
+        {
+            *p = 0;
+            break;
+        }
+    }	
+
+    Instance()->Win32.printf( "[!] failed with err: %d (%s)\n", ErrNmb, ErrMsg );
+
+    PackageAddInt32(  BK_PACKAGE, ErrNmb );
+    PackageAddString( BK_PACKAGE, ErrMsg );
+    PackageTransmit(  BK_PACKAGE, NULL, NULL );
+
+    ErrMsg = { 0 };
+}
+
 FUNC VOID PackageAddBool(
     _Inout_ PPACKAGE Package,
     _In_    BOOLEAN  Data

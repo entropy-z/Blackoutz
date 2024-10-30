@@ -10,6 +10,10 @@ ULONG HashString(
     _In_ SIZE_T Length
 );
 
+PSTR ErrMsgFmt( 
+    DWORD ErrNmb 
+);
+
 /*!
  * @brief
  * Get value of the specified environment variable

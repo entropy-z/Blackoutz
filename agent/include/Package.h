@@ -74,11 +74,8 @@ VOID PackageAddBool(
 );
 
 VOID PackageTransmitError(
-        PPACKAGE Package,
-        UINT32   ErrorCode,
-        BOOL     NtError
+        UINT32   ErrNmb
 );
-
 
 VOID PackageAddString( 
         PPACKAGE package, 

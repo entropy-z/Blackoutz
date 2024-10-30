@@ -45,23 +45,27 @@ FUNC VOID GetComputerInfo(
 ) {
     BLACKOUT_INSTANCE
 
-    DWORD ReturnProductTp = 0x00;
+    DWORD ReturnProductTp = 0;
     DWORD UserTmpLen = MAX_PATH;
-    DWORD CompTmpLen = 0x00;
-    DWORD DomainLen  = 0x00;
-    DWORD NetBiosLen = 0x00;
-    DWORD Length     = 0x00;
+    DWORD CompTmpLen = 0;
+    DWORD DomainLen  = 0;
+    DWORD NetBiosLen = 0;
+    DWORD Length     = 0;
+    BOOL  bCheck     = 0;
 
     SYSTEM_INFO SysInf = { 0 };
 
     Instance()->Win32.GetNativeSystemInfo( &SysInf );
 
-    Instance()->Win32.GetProductInfo( 
+    bCheck = Instance()->Win32.GetProductInfo( 
         Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion, 
         Instance()->Teb->ProcessEnvironmentBlock->OSMinorVersion, 
         Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMajorVersion,
         Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMinorVersion, &ReturnProductTp 
     );
+
+    if( !bCheck )
+        PackageTransmitError( NtLastError() );
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, NULL, &CompTmpLen ) ) {
         Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, Instance()->System.ComputerName, &CompTmpLen );

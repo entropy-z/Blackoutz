@@ -300,16 +300,10 @@ class Blackout(AgentType):
                     self.console_message( AgentID, "Bad", "[!] Failed in create process." )
 
             elif Command == BLACKOUT_ERROR:
-                Nterror   = response_parser.parse_int() 
-                ErrorCode = response_parser.parse_int()
-                Output = str(hex(ErrorCode))
-                
-                if Nterror == 0:                
-                    print( "[+] Win32 ERROR: " + Output )
-                    self.console_message( AgentID, "Bad", f"Win32 ERROR: 0x{hex(ErrorCode)}", "" )
-                else:
-                    print( "[+] NtStatus: " + Output )
-                    self.console_message( AgentID, "Bad", f"NtStatus: 0x{hex(ErrorCode)}", "" )
+                ErrCode = response_parser.parse_int() 
+                ErrMsg  = response_parser.parse_str()
+
+                self.console_message( AgentID, "Bad", f"System ERROR: {hex(ErrCode)} ({ErrMsg})", "" )
 
             else:
                 self.console_message( AgentID, "Error", "Command not found: %4x" % Command, "" )

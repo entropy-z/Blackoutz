@@ -101,6 +101,7 @@ FUNC BOOL bkCreateProcess(
 
     Si.cb = sizeof( STARTUPINFOA );
     Si.wShowWindow = SW_HIDE;
+    
 
     bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si, &Pi );
     if ( !bCheck )
