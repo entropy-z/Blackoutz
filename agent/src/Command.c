@@ -87,11 +87,13 @@ FUNC VOID CommandRun(
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
 
-    bCheck = bkCreateProcess( ProcCmd, FALSE, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
+    bCheck = bkCreateProcess( ProcCmd, TRUE, NULL, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
     if ( !bCheck )
         return;
 
     PackageAddBool( Package, bCheck );
+    PackageAddInt32( Package, ProcessId );
+    PackageAddInt32( Package, ThreadId );
     PackageTransmit( Package, NULL, NULL );
 }
 

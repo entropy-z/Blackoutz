@@ -95,9 +95,10 @@ BOOL bkTerminateProcess(
     _In_ UINT32 ExitStatus
 );
 
-FUNC BOOL bkCreateProcess(
+BOOL bkCreateProcess(
     _In_ PSTR ProcCmd,
     _In_ BOOL InheritHandle,
+    _In_opt_  DWORD   Flags,
     _Out_opt_ HANDLE *ProcessHandle,
     _Out_opt_ DWORD  *ProcessId,
     _Out_opt_ HANDLE *ThreadHandle,

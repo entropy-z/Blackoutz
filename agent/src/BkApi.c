@@ -83,6 +83,7 @@ FUNC BOOL bkTerminateProcess(
 FUNC BOOL bkCreateProcess(
     _In_ PSTR ProcCmd,
     _In_ BOOL InheritHandle,
+    _In_opt_  DWORD   Flags,
     _Out_opt_ HANDLE *ProcessHandle,
     _Out_opt_ DWORD  *ProcessId,
     _Out_opt_ HANDLE *ThreadHandle,
@@ -101,7 +102,7 @@ FUNC BOOL bkCreateProcess(
     Si.cb = sizeof( STARTUPINFOA );
     Si.wShowWindow = SW_HIDE;
 
-    bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, NULL, NULL, NULL, &Si, &Pi );
+    bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si, &Pi );
     if ( !bCheck )
         return bCheck;
 

@@ -289,9 +289,13 @@ class Blackout(AgentType):
 
             elif Command == COMMAND_RUN:
                 bCheck = response_parser.parse_int()
+                ProcId = response_parser.parse_int()
+                ThdId  = response_parser.parse_int()
+
+                Output = f"\t- Process ID: {ProcId}\n\t- Thread ID: {ThdId}"
 
                 if ( bCheck == 1 ):
-                    self.console_message( AgentID, "Good", "[+] Process create with succefully!" )
+                    self.console_message( AgentID, "Good", f"Process create succefully:", Output )
                 else: 
                     self.console_message( AgentID, "Bad", "[!] Failed in create process." )
 
