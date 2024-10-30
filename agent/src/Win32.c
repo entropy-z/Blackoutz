@@ -64,15 +64,15 @@ FUNC VOID GetComputerInfo(
     );
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, NULL, &CompTmpLen ) ) {
-        Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, Instance()->Config.CompData.ComputerName, &CompTmpLen );
+        Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, Instance()->System.ComputerName, &CompTmpLen );
     }
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &DomainLen ) ) {
-        Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, Instance()->Config.CompData.DomainName, &DomainLen );
+        Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, Instance()->System.DomainName, &DomainLen );
     }
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &NetBiosLen ) ) {
-        Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, Instance()->Config.CompData.NetBios, &NetBiosLen );
+        Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, Instance()->System.NetBios, &NetBiosLen );
     }
 
     ULONG AdapterInfoSize = 0;
@@ -85,7 +85,7 @@ FUNC VOID GetComputerInfo(
         }
     }
 
-    Instance()->Win32.GetUserNameA( Instance()->Config.CompData.UserName, &UserTmpLen );
+    Instance()->Win32.GetUserNameA( Instance()->System.UserName, &UserTmpLen );
     
     *ProcessArch  = SysInf.wProcessorArchitecture;
     *ProcessType  = SysInf.dwProcessorType;

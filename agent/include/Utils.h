@@ -143,6 +143,14 @@ VOID FoliageObf(
     _In_ DWORD SleepTime
 );
 
+BOOL HeapObf( 
+    void
+);
+
+BOOL HeapDeobf( 
+    void
+);
+
 /*!
  * @brief
  * check if CFG is enabled

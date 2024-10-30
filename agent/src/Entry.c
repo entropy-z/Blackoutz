@@ -46,7 +46,7 @@ EXTERN_C FUNC VOID Entry(
     }
 
     // Create heap for agent
-    Blackout.Config.Session.Heap = Blackout.Win32.RtlCreateHeap( HEAP_GROWABLE, NULL, 0, 0, 0, NULL );
+    Blackout.Session.Heap = Blackout.Win32.RtlCreateHeap( HEAP_GROWABLE, NULL, 0, 0, 0, NULL );
 
     //
     // change the protection of the .global section page to RW
@@ -65,7 +65,7 @@ EXTERN_C FUNC VOID Entry(
     //
     // assign heap address into the RW memory page
     //
-    if ( ! ( C_DEF( MmAddr ) = Blackout.Win32.RtlAllocateHeap( Blackout.Config.Session.Heap, HEAP_ZERO_MEMORY, sizeof( INSTANCE ) ) ) ) {
+    if ( ! ( C_DEF( MmAddr ) = Blackout.Win32.RtlAllocateHeap( Blackout.Session.Heap, HEAP_ZERO_MEMORY, sizeof( INSTANCE ) ) ) ) {
         return;
     }
 

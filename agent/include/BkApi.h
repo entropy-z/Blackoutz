@@ -90,9 +90,39 @@ HANDLE bkOpenProcess(
  * @return
  * returns boolean value based in process terminated operation
  */
-FUNC BOOL bkTerminateProcess( 
+BOOL bkTerminateProcess( 
     _In_ HANDLE hProcess,
     _In_ UINT32 ExitStatus
+);
+
+FUNC BOOL bkCreateProcess(
+    _In_ PSTR ProcCmd,
+    _In_ BOOL InheritHandle,
+    _Out_opt_ HANDLE *ProcessHandle,
+    _Out_opt_ DWORD  *ProcessId,
+    _Out_opt_ HANDLE *ThreadHandle,
+    _Out_opt_ DWORD  *ThreadId
+);
+
+/*=================================[ Memory bkAPIs ]=================================*/
+
+/*!
+ * @brief
+ * alloc private memory 
+ * 
+ * @param hProcess
+ * handle of the target process for memory allocation, optional parameter 
+ * that must be passed for remote allocation, if it is in the current process pass NULL
+ * 
+ * @param BaseAddr
+ * 
+ */
+DWORD bkMemAlloc(
+    _In_opt_    HANDLE  hProcess,
+    _Inout_opt_ PVOID  *BaseAddr,
+    _In_        UINT64 *RegionSize,
+    _In_        DWORD   AllocationType,
+    _In_        DWORD   Protection
 );
 
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
@@ -107,6 +137,6 @@ FUNC BOOL bkTerminateProcess(
  * @return 
  * returns boolean value based in close handle operation
  */
-FUNC BOOL bkCloseHandle(
+BOOL bkCloseHandle(
     _In_ HANDLE hObject
 );

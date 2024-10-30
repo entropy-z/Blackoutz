@@ -8,7 +8,7 @@ FUNC PVOID bkHeapAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Instance()->Config.Session.Heap, HEAP_ZERO_MEMORY, Size );
+    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Instance()->Session.Heap, HEAP_ZERO_MEMORY, Size );
 
     return VmHeap;
 }
@@ -19,7 +19,7 @@ FUNC PVOID bkHeapReAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Instance()->Config.Session.Heap, HEAP_ZERO_MEMORY, Addr, Size );
+    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Instance()->Session.Heap, HEAP_ZERO_MEMORY, Addr, Size );
 
     return VmHeap;
 }
@@ -31,7 +31,7 @@ FUNC BOOL bkHeapFree(
     BLACKOUT_INSTANCE
 
     MmZero( Data, Size );
-    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Instance()->Config.Session.Heap, NULL, Data );
+    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Instance()->Session.Heap, NULL, Data );
     Data = NULL;
 
     return bSuc;
@@ -78,6 +78,39 @@ FUNC BOOL bkTerminateProcess(
     bCheck = Instance()->Win32.NtTerminateProcess( hProcess, ExitStatus );
 #endif
     return bCheck;
+}
+
+FUNC BOOL bkCreateProcess(
+    _In_ PSTR ProcCmd,
+    _In_ BOOL InheritHandle,
+    _Out_opt_ HANDLE *ProcessHandle,
+    _Out_opt_ DWORD  *ProcessId,
+    _Out_opt_ HANDLE *ThreadHandle,
+    _Out_opt_ DWORD  *ThreadId
+) {
+    BLACKOUT_INSTANCE
+
+    BOOL bCheck = FALSE;
+
+    PROCESS_INFORMATION Pi = { 0 };
+    STARTUPINFOA        Si = { 0 };
+
+    MmZero( &Pi, sizeof( PROCESS_INFORMATION ) );
+    MmZero( &Si, sizeof( STARTUPINFOA ) );
+
+    Si.cb = sizeof( STARTUPINFOA );
+    Si.wShowWindow = SW_HIDE;
+
+    bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, NULL, NULL, NULL, &Si, &Pi );
+    if ( !bCheck )
+        return bCheck;
+
+    *ProcessId     = Pi.dwProcessId;
+    *ProcessHandle = Pi.hProcess;
+    *ThreadId      = Pi.dwThreadId;
+    *ThreadHandle  = Pi.hThread;
+
+    return bCheck;    
 }
 
 /*=================================[ Memory bkAPIs ]=================================*/
@@ -130,4 +163,25 @@ FUNC BOOL bkCloseHandle(
 #endif
 
     return bCheck;
+}
+
+FUNC DWORD bkReadFile( 
+    void
+) {
+    BLACKOUT_INSTANCE
+
+    //Instance()->Win32.ReadFile( hFile,  )
+
+} 
+
+FUNC DWORD bkCreatePipe(
+    _Out_ PHANDLE hStdPipeRead,
+    _Out_ PHANDLE hStdPipeWrite
+) {
+    BLACKOUT_INSTANCE
+
+    SECURITY_ATTRIBUTES SecurityAttr = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
+    Instance()->Win32.CreatePipe( &hStdPipeRead, &hStdPipeWrite, &SecurityAttr, 0 );
+
+    return NtLastError();
 }

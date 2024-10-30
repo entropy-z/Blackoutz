@@ -12,14 +12,7 @@ Blackoutz is a versatile, custom-built agent for the Havoc Command and Control (
 - get informations from machine ( ipaddress, os arch, os version,  ) 
 - get informations from process ( full path, module name, processid, cmdline )
 - sc manager - lateral moviment module
-
-## todo
 - Test creation own heap instead processheap using RtlCreateHeap
-- heap obuscation
-- stack spoofing passive
-- stack spoofing active
-- bkapi ( process features )
-- bkapi ( memory management )
-- bkapi ( thread features )
 - implement transport http/s and teamserver communication
 
+## todo

