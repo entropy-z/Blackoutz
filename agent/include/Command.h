@@ -64,3 +64,7 @@ VOID CommandExitProcess(
 VOID CommandExitThread(
     PPARSER Parser
 );
+
+VOID CommandMemory( 
+    _In_ PPARSER Parser    
+);

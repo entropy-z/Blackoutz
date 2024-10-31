@@ -8,6 +8,9 @@ FUNC VOID BlackoutMain(
     
     BlackoutInit();
     
+    CommandMemory( 0 );
+
+    return;
     do {
         if ( !Instance()->Session.Connected ) {
             if ( TransportInit() )

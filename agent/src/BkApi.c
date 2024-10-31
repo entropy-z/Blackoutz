@@ -47,9 +47,10 @@ FUNC HANDLE bkOpenProcess(
     BLACKOUT_INSTANCE
 
     HANDLE hProcess = NULL;
-#ifdef _WINAPI
+#ifdef BK_WINAPI
     hProcess = Instance()->Win32.OpenProcess( DesiredAccess, InheritHandle, ProcessId );
-#elif _NTAPI
+#elif BK_NTAPI
+/*
     NTSTATUS  Status = 0;
     CLIENT_ID ClientId = { 0 };
     OBJECT_ATTRIBUTES ProcAttr = RTL_CONSTANT_OBJECT_ATTRIBUTES( NULL, 0 );
@@ -61,6 +62,7 @@ FUNC HANDLE bkOpenProcess(
     Status = Instance()->Win32.NtOpenProcess( &hProcess, DesiredAccess, &ProcAttr, &ClientId );
     if ( Status != STATUS_SUCCESS )
         return INVALID_HANDLE_VALUE;
+*/
 #endif
     return hProcess;
 }
@@ -72,9 +74,9 @@ FUNC BOOL bkTerminateProcess(
     BLACKOUT_INSTANCE
 
     BOOL bCheck = FALSE;
-#ifdef _WINAPI
+#ifdef BK_WINAPI
     bCheck = Instance()->Win32.TerminateProcess( hProcess, ExitStatus );
-#elif _NTAPI
+#elif BK_NTAPI
     bCheck = Instance()->Win32.NtTerminateProcess( hProcess, ExitStatus );
 #endif
     return bCheck;
@@ -119,7 +121,7 @@ FUNC BOOL bkCreateProcess(
 FUNC DWORD bkMemAlloc(
     _In_opt_    HANDLE  hProcess,
     _Inout_opt_ PVOID  *BaseAddr,
-    _In_        UINT64 *RegionSize,
+    _In_        UINT64  RegionSize,
     _In_        DWORD   AllocationType,
     _In_        DWORD   Protection
 ) {
@@ -127,20 +129,50 @@ FUNC DWORD bkMemAlloc(
 
     DWORD Err = 0;
 
-#ifdef _WINAPI
+#ifdef BK_WINAPI
     if ( hProcess ) {
-       *BaseAddr = Instance()->Win32.VirtualAllocEx( hProcess, *BaseAddr, *RegionSize, AllocationType, Protection );
+       *BaseAddr = Instance()->Win32.VirtualAllocEx( hProcess, *BaseAddr, RegionSize, AllocationType, Protection );
     } else {
-        *BaseAddr = Instance()->Win32.VirtualAlloc( *BaseAddr, *RegionSize, AllocationType, Protection );
+        *BaseAddr = Instance()->Win32.VirtualAlloc( NULL, RegionSize, AllocationType, Protection );
     }
 
     Err = NtGetLastError();
-#elif _NTAPI
+#elif BK_NTAPI
     NTSTATUS Status = 0;
 
-    Status = Instance()->Win32.NtAllocateVirtualMemory( hProcess, &BaseAddr, 0, &RegionSize, AllocationType, Protection );
+    PVOID  MemAllocated = NULL;
+    Status = Instance()->Win32.NtAllocateVirtualMemory( hProcess, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
+
+    *BaseAddr = MemAllocated;
 
     Err = Status;
+#endif
+
+    return Err;
+}
+
+FUNC DWORD bkMemWrite(
+    _In_ HANDLE ProcessHandle,
+    _In_ PBYTE  MemBaseAddr,
+    _In_ PBYTE  Buffer,
+    _In_ DWORD  BufferSize
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD  Err = 0;
+    UINT64 BytesWritten = 0;
+
+#ifdef BK_WINAPI
+    if ( ProcessHandle ) {
+        Instance()->Win32.WriteProcessMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
+    }
+    else {
+        MmCopy( MemBaseAddr, Buffer, BufferSize );
+    }
+
+    Err = NtLastError();
+#elif BK_NTAPI
+    Err = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, &Buffer, BufferSize, &BytesWritten );
 #endif
 
     return Err;
@@ -157,9 +189,9 @@ FUNC BOOL bkCloseHandle(
     BLACKOUT_INSTANCE
 
     BOOL bCheck = FALSE;
-#ifdef _WINAPI
+#ifdef BK_WINAPI
     Instance()->Win32.CloseHandle( hObject );
-#elif _NTAPI
+#elif BK_NTAPI
     Instance()->Win32.NtClose( hObject );
 #endif
 

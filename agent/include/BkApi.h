@@ -121,7 +121,7 @@ BOOL bkCreateProcess(
 DWORD bkMemAlloc(
     _In_opt_    HANDLE  hProcess,
     _Inout_opt_ PVOID  *BaseAddr,
-    _In_        UINT64 *RegionSize,
+    _In_        UINT64  RegionSize,
     _In_        DWORD   AllocationType,
     _In_        DWORD   Protection
 );

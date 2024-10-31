@@ -13,7 +13,7 @@ CC_X64	:= x86_64-w64-mingw32-g++
 ##
 ## Compiler flags
 ##
-CFLAGS  := -Os -fno-asynchronous-unwind-tables -nostdlib
+CFLAGS  := -Os -fno-asynchronous-unwind-tables -nostdlib -D BK_NTAPI
 CFLAGS  += -fno-ident -fpack-struct=8 -falign-functions=1
 CFLAGS  += -s -ffunction-sections -falign-jumps=1 -w -m64
 CFLAGS  += -falign-labels=1 -fPIC -Wl,-Tscripts/Linker.ld
