@@ -133,6 +133,13 @@ DWORD bkMemWrite(
     _In_ DWORD  BufferSize
 );
 
+DWORD bkMemProtect(
+    _In_ HANDLE ProcessHandle,
+    _In_ PVOID  BaseAddr,
+    _In_ UINT64 RegionSize,
+    _In_ DWORD  NewProtection
+);
+
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
 
 /*!

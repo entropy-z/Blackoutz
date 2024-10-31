@@ -119,7 +119,7 @@ FUNC BOOL bkCreateProcess(
 /*=================================[ Memory bkAPIs ]=================================*/
 
 FUNC DWORD bkMemAlloc(
-    _In_opt_    HANDLE  hProcess,
+    _In_opt_    HANDLE  ProcessHandle,
     _Inout_opt_ PVOID  *BaseAddr,
     _In_        UINT64  RegionSize,
     _In_        DWORD   AllocationType,
@@ -131,7 +131,7 @@ FUNC DWORD bkMemAlloc(
 
 #ifdef BK_WINAPI
     if ( hProcess ) {
-       *BaseAddr = Instance()->Win32.VirtualAllocEx( hProcess, *BaseAddr, RegionSize, AllocationType, Protection );
+       *BaseAddr = Instance()->Win32.VirtualAllocEx( ProcessHandle, *BaseAddr, RegionSize, AllocationType, Protection );
     } else {
         *BaseAddr = Instance()->Win32.VirtualAlloc( NULL, RegionSize, AllocationType, Protection );
     }
@@ -141,7 +141,9 @@ FUNC DWORD bkMemAlloc(
     NTSTATUS Status = 0;
 
     PVOID  MemAllocated = NULL;
-    Status = Instance()->Win32.NtAllocateVirtualMemory( hProcess, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
+    if ( !ProcessHandle )    
+        ProcessHandle = NtCurrentProcess();
+    Status = Instance()->Win32.NtAllocateVirtualMemory( ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
 
     *BaseAddr = MemAllocated;
 
@@ -172,12 +174,14 @@ FUNC DWORD bkMemWrite(
 
     Err = NtLastError();
 #elif BK_NTAPI
+    if ( !ProcessHandle )    
+        ProcessHandle = NtCurrentProcess();
     Err = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, &Buffer, BufferSize, &BytesWritten );
 #endif
     return Err;
 }
 
-FUNC VOID bkMemProtect(
+FUNC DWORD bkMemProtect(
     _In_ HANDLE ProcessHandle,
     _In_ PVOID  BaseAddr,
     _In_ UINT64 RegionSize,
@@ -189,20 +193,24 @@ FUNC VOID bkMemProtect(
     DWORD OldProtection = NULL;
 #ifdef BK_WINAPI
     if ( ProcessHandle ) {
-        Instance()->Win32.VirtualProtect( BaseAddr, RegionSize, NewProtection, &OldProtection );
-    } else {
         Instance()->Win32.VirtualProtectEx( ProcessHandle, BaseAddr, RegionSize, NewProtection, &OldProtection );
+    } else {
+        Instance()->Win32.VirtualProtect( BaseAddr, RegionSize, NewProtection, &OldProtection );
     }
 
     Err = NtLastError();
 #elif BK_NTAPI
-    PVOID MemAddr = NULL;
-    
-    Err = Instance()->Win32.NtProtectVirtualMemory( ProcessHandle, &MemAddr, &RegionSize, NewProtection, &OldProtection );
+    if ( !ProcessHandle )    
+        ProcessHandle = NtCurrentProcess();
+    Err = Instance()->Win32.NtProtectVirtualMemory( ProcessHandle, &BaseAddr, &RegionSize, NewProtection, &OldProtection );
 #endif
 
     return Err;
 }
+
+FUNC DWORD bkMemQuery(
+    void
+);
 
 /*=================================[ Thread bkAPIs ]=================================*/
 

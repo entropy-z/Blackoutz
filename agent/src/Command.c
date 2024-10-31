@@ -87,9 +87,11 @@ FUNC VOID CommandMemory(
     DWORD AddrSize = 0x2000;
     DWORD ErrCode  = 0;
 
-    ErrCode = bkMemAlloc( NtCurrentProcess(), &BaseAddr, AddrSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE );
+    ErrCode = bkMemAlloc( NULL, &BaseAddr, AddrSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE );
 
-    ErrCode = bkMemWrite( NtCurrentProcess(), BaseAddr, Instance()->Base.Buffer, 0x1000 );
+    ErrCode = bkMemWrite( NULL, BaseAddr, Instance()->Base.Buffer, 0x1000 );
+
+    ErrCode = bkMemProtect( NULL, BaseAddr, AddrSize, PAGE_READWRITE );
 
     BK_PRINT( "[I] Base Addr @ 0x%p\n", BaseAddr );
     BK_PRINT( "[!] Error code: %d\n", ErrCode );
