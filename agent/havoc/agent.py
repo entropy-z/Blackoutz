@@ -31,7 +31,11 @@ class Packer:
 
         self.buffer += pack( "<i", data )
         self.length += 4
+        return
 
+    def add_int64(self, data) -> None:
+        self.buffer += pack("<q", data)
+        self.length += 8
         return
 
     def add_data( self, data: str ) -> None:
@@ -66,6 +70,12 @@ class Parser:
 
         val = struct.unpack( ">i", self.buffer[ :4 ] )
         self.buffer = self.buffer[ 4: ]
+
+        return val[ 0 ]
+    
+    def parser_int64( self ) -> int:
+        val = struct.unpack( ">q", self.buffer[ :8 ] )
+        self.buffer = self.buffer[ 8: ]
 
         return val[ 0 ]
 

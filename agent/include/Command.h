@@ -23,6 +23,8 @@
 #define COMMAND_PROCLIST         0x170
 #define COMMAND_EXPLORER         0x180
 
+#define COMMAND_MEMORY           0x300
+
 #define COMMAND_OUTPUT           0x200
 
 typedef enum _EXPLR {
@@ -31,6 +33,13 @@ typedef enum _EXPLR {
     PWD = 0x183,
     CAT = 0x184
 } EXPLR;
+
+typedef enum _MEM {
+    ALLOC   = 0x301,
+    WRITE   = 0x302,
+    PROTECT = 0x303,
+    QUERY   = 0x304
+} MEM;
 
 typedef struct
 {
