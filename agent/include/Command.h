@@ -52,3 +52,15 @@ VOID CommandRun(
 VOID CommandExplorer(
     _In_ PPARSER Parser
 );
+
+VOID CommandSleep(
+    PPARSER Parser
+);
+
+VOID CommandExitProcess(
+    PPARSER Parser
+);
+
+VOID CommandExitThread(
+    PPARSER Parser
+);
