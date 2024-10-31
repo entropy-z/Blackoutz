@@ -48,3 +48,7 @@ VOID CommandCheckin(
 VOID CommandRun(
     _In_ PPARSER Parser
 );
+
+VOID CommandExplorer(
+    _In_ PPARSER Parser
+);

