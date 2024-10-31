@@ -25,6 +25,13 @@
 
 #define COMMAND_OUTPUT           0x200
 
+typedef enum _EXPLR {
+    LS  = 0x181,
+    CD  = 0x182,
+    PWD = 0x183,
+    CAT = 0x184
+} EXPLR;
+
 typedef struct
 {
     INT ID;

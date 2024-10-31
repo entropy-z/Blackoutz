@@ -90,6 +90,8 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *GetProductInfo)(DWORD dwOSMajorVersion, DWORD dwOSMinorVersion, DWORD dwSpMajorVersion, DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
         void    (WINAPI *GetNativeSystemInfo)(LPSYSTEM_INFO lpSystemInfo);
         BOOL    (WINAPI *HeapWalk)(HANDLE hHeap, LPPROCESS_HEAP_ENTRY lpEntry);
+        DWORD   (WINAPI *GetCurrentDirectoryA)(DWORD nBufferLength, LPSTR lpBuffer);
+        BOOL    (WINAPI *SetCurrentDirectoryA)(LPCSTR lpPathName);
 
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
         void     (NTAPI *RtlExitUserThread)(NTSTATUS ExitStatus);

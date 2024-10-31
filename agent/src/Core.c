@@ -59,7 +59,8 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.CreateFileW               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateFileW" ) );
     Instance()->Win32.ReadFile                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ReadFile" ) );
     Instance()->Win32.FormatMessageA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "FormatMessageA" ) );
-
+    Instance()->Win32.GetCurrentDirectoryA      = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetCurrentDirectoryA" ) );
+    Instance()->Win32.SetCurrentDirectoryA      = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetCurrentDirectoryA" ) );
     Instance()->Win32.CreateThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateThread" ) );
     Instance()->Win32.CreateRemoteThread        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CreateRemoteThread" ) );
     Instance()->Win32.QueueUserAPC              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "QueueUserAPC" ) ); 
@@ -182,8 +183,4 @@ FUNC VOID BlackoutInit() {
         CfgAddressAdd( Instance()->Modules.Kernel32,  Instance()->Win32.VirtualProtect );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlExitUserThread );
     }
-
-    /*============================[ Commands Config ]============================*/
-
-
 }

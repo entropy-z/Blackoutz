@@ -294,16 +294,14 @@ class Blackout(AgentType):
 
                 Output = f"\t- Process ID: {ProcId}\n\t- Thread ID: {ThdId}"
 
-                if ( bCheck == 1 ):
-                    self.console_message( AgentID, "Good", f"Process create succefully:", Output )
-                else: 
-                    self.console_message( AgentID, "Bad", "[!] Failed in create process." )
+                self.console_message( AgentID, "Good", f"Process create succefully:", Output )
 
+    
             elif Command == BLACKOUT_ERROR:
                 ErrCode = response_parser.parse_int() 
                 ErrMsg  = response_parser.parse_str()
 
-                self.console_message( AgentID, "Bad", f"System ERROR: {hex(ErrCode)} ({ErrMsg})", "" )
+                self.console_message(AgentID, "Error", f"Windows Error: {hex(ErrCode)} ({ErrMsg})", "")   
 
             else:
                 self.console_message( AgentID, "Error", "Command not found: %4x" % Command, "" )
