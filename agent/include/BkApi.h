@@ -71,10 +71,11 @@ BOOL bkHeapFree(
  * @return
  * target process handle 
  */
-HANDLE bkOpenProcess(
+FUNC DWORD bkOpenProcess(
     _In_ DWORD DesiredAccess,
     _In_ BOOL  InheritHandle,
-    _In_ DWORD ProcessId
+    _In_ DWORD ProcessId,
+    _Out_ PHANDLE ProcessHandle
 );
 
 /*!
@@ -105,6 +106,18 @@ BOOL bkCreateProcess(
     _Out_opt_ DWORD  *ThreadId
 );
 
+/*=================================[ Thread bkAPIs ]=================================*/
+
+DWORD bkCreateThread( 
+    _In_     HANDLE  ProcessHandle,
+    _In_     PVOID   BaseAddr,
+    _In_opt_ PVOID   Parameter,
+    _In_     DWORD   Flags,
+    _In_     DWORD   StackSize,
+    _In_opt_ PDWORD  ThreadId,
+    _In_opt_ PHANDLE ThreadHandle
+);
+
 /*=================================[ Memory bkAPIs ]=================================*/
 
 /*!
@@ -119,7 +132,7 @@ BOOL bkCreateProcess(
  * 
  */
 DWORD bkMemAlloc(
-    _In_opt_    HANDLE  hProcess,
+    _In_opt_    HANDLE  ProcessHandle,
     _Inout_opt_ PVOID  *BaseAddr,
     _In_        UINT64  RegionSize,
     _In_        DWORD   AllocationType,

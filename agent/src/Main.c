@@ -7,7 +7,7 @@ FUNC VOID BlackoutMain(
     BLACKOUT_INSTANCE
     
     BlackoutInit();
-    
+
     do {
         if ( !Instance()->Session.Connected ) {
             if ( TransportInit() )

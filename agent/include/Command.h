@@ -16,7 +16,7 @@
 #define COMMAND_ARGUE            0x123
 #define COMMAND_UPLOAD           0x130
 #define COMMAND_DOWNLOAD         0x140
-#define COMMAND_SHELLINJECT      0x150
+#define COMMAND_CLASSIC          0x151
 
 #define COMMAND_EXITP            0x160
 #define COMMAND_EXITT            0x161
@@ -76,4 +76,8 @@ VOID CommandExitThread(
 
 VOID CommandMemory( 
     _In_ PPARSER Parser    
+);
+
+VOID CommandClassicInjection(
+    PPARSER Parser
 );

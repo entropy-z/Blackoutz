@@ -93,6 +93,7 @@ typedef struct _INSTANCE {
         DWORD   (WINAPI *GetCurrentDirectoryA)(DWORD nBufferLength, LPSTR lpBuffer);
         BOOL    (WINAPI *SetCurrentDirectoryA)(LPCSTR lpPathName);
         BOOL    (WINAPI *DuplicateHandle)(HANDLE hSourceProcessHandle, HANDLE hSourceHandle, HANDLE hTargetProcessHandle, LPHANDLE lpTargetHandle, DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwOptions);
+        DWORD   (WINAPI *GetThreadId)(HANDLE Thread);
 
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
         void     (NTAPI *RtlExitUserThread)(NTSTATUS ExitStatus);

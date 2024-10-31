@@ -39,32 +39,33 @@ FUNC BOOL bkHeapFree(
 
 /*=================================[ Process bkAPIs ]=================================*/
 
-FUNC HANDLE bkOpenProcess(
+FUNC DWORD bkOpenProcess(
     _In_ DWORD DesiredAccess,
     _In_ BOOL  InheritHandle,
-    _In_ DWORD ProcessId
+    _In_ DWORD ProcessId,
+    _Out_ HANDLE *ProcessHandle
 ) {
     BLACKOUT_INSTANCE
 
-    HANDLE hProcess = NULL;
+    DWORD Err = 0;
+
 #ifdef BK_WINAPI
-    hProcess = Instance()->Win32.OpenProcess( DesiredAccess, InheritHandle, ProcessId );
+    *ProcessHandle = Instance()->Win32.OpenProcess( DesiredAccess, InheritHandle, ProcessId );
+    Err = NtLastError();
 #elif BK_NTAPI
-/*
-    NTSTATUS  Status = 0;
-    CLIENT_ID ClientId = { 0 };
+    CLIENT_ID ClientId    = { 0 };
+    HANDLE    hProcessTmp = NULL;
     OBJECT_ATTRIBUTES ProcAttr = RTL_CONSTANT_OBJECT_ATTRIBUTES( NULL, 0 );
 
-    MmZero( ClientId, sizeof( CLIENT_ID ) );
+    MmZero( &ClientId, sizeof( CLIENT_ID ) );
     
     ClientId.UniqueProcess = ProcessId;
-    
-    Status = Instance()->Win32.NtOpenProcess( &hProcess, DesiredAccess, &ProcAttr, &ClientId );
-    if ( Status != STATUS_SUCCESS )
-        return INVALID_HANDLE_VALUE;
-*/
+
+    Err = Instance()->Win32.NtOpenProcess( &hProcessTmp, DesiredAccess, &ProcAttr, &ClientId );
+    *ProcessHandle = hProcessTmp; 
+    BK_PRINT( "[I] Process Handle: %X\n", ProcessHandle );
 #endif
-    return hProcess;
+    return Err;
 }
 
 FUNC BOOL bkTerminateProcess( 
@@ -130,24 +131,23 @@ FUNC DWORD bkMemAlloc(
     DWORD Err = 0;
 
 #ifdef BK_WINAPI
-    if ( hProcess ) {
-       *BaseAddr = Instance()->Win32.VirtualAllocEx( ProcessHandle, *BaseAddr, RegionSize, AllocationType, Protection );
+    if ( ProcessHandle ) {
+        *BaseAddr = Instance()->Win32.VirtualAllocEx( ProcessHandle, *BaseAddr, RegionSize, AllocationType, Protection );
+
     } else {
         *BaseAddr = Instance()->Win32.VirtualAlloc( NULL, RegionSize, AllocationType, Protection );
     }
 
-    Err = NtGetLastError();
+    Err = NtLastError();
 #elif BK_NTAPI
-    NTSTATUS Status = 0;
+    PVOID  MemAllocated    = NULL;
 
-    PVOID  MemAllocated = NULL;
     if ( !ProcessHandle )    
         ProcessHandle = NtCurrentProcess();
-    Status = Instance()->Win32.NtAllocateVirtualMemory( ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
 
-    *BaseAddr = MemAllocated;
+    Err = Instance()->Win32.NtAllocateVirtualMemory( ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
 
-    Err = Status;
+    *BaseAddr   = MemAllocated;
 #endif
 
     return Err;
@@ -176,7 +176,8 @@ FUNC DWORD bkMemWrite(
 #elif BK_NTAPI
     if ( !ProcessHandle )    
         ProcessHandle = NtCurrentProcess();
-    Err = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, &Buffer, BufferSize, &BytesWritten );
+
+    Err = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
 #endif
     return Err;
 }
@@ -214,6 +215,38 @@ FUNC DWORD bkMemQuery(
 
 /*=================================[ Thread bkAPIs ]=================================*/
 
+FUNC DWORD bkCreateThread( 
+    _In_     HANDLE  ProcessHandle,
+    _In_     PVOID   BaseAddr,
+    _In_opt_ PVOID   Parameter,
+    _In_     DWORD   Flags,
+    _In_     DWORD   StackSize,
+    _In_opt_ PDWORD  ThreadId,
+    _In_opt_ PHANDLE ThreadHandle
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+#ifdef BK_WINAPI
+    DWORD ThreadIdTmp = 0;
+    if ( ProcessHandle ) {
+        ThreadHandle = Instance()->Win32.CreateRemoteThread( ProcessHandle, NULL, StackSize, BaseAddr, Parameter, Flags, &ThreadIdTmp );
+        *ThreadId = ThreadIdTmp;
+    } else {
+        ThreadHandle = Instance()->Win32.CreateThread( NULL, StackSize, BaseAddr, Parameter, Flags, &ThreadIdTmp );
+        *ThreadId = ThreadIdTmp;
+    }
+
+    BK_PRINT( "[I] Thread id: %d\n", ThreadIdTmp );
+
+    Err = NtLastError();
+#elif BK_NTAPI
+    Err = Instance()->Win32.NtCreateThreadEx( &ThreadHandle, THREAD_ALL_ACCESS, NULL, ProcessHandle, BaseAddr, Parameter, Flags, 0, StackSize, 0, NULL );
+    *ThreadId = Instance()->Win32.GetThreadId( ThreadHandle );
+#endif
+    
+    return Err;
+}
 
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
 

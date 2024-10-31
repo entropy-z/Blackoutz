@@ -19,6 +19,7 @@ typedef struct _BUFFER {
 #define H_MODULE_KERNEL32    0xadd31df0
 
 #define NtGetLastError() Instance()->Teb->LastErrorValue
+#define RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a) { sizeof(OBJECT_ATTRIBUTES), n, NULL, a, NULL, NULL }
 
 // pseudo handles
 #define NtCurrentProcess()              ( (HANDLE)(-1) )

@@ -193,7 +193,7 @@ FUNC VOID PackageTransmitError(
         }
     }
 
-    BK_PRINT( "[!] failed with err: %d (%s)\n", ErrNmb, ErrMsg );
+    BK_PRINT( "[!] failed with err: %x (%s)\n", ErrNmb, ErrMsg );
 
     PackageAddInt32(  BK_PACKAGE, ErrNmb );
     PackageAddString( BK_PACKAGE, ErrMsg );

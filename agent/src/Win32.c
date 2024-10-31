@@ -135,8 +135,9 @@ FUNC BOOL KillProcess(
 
 	HANDLE hProcess = NULL; 
 	BOOL   bSuccess = FALSE;
+    DWORD  Err      = 0;
 
-	hProcess = bkOpenProcess( PROCESS_TERMINATE, FALSE, ProcessId );
+	Err = bkOpenProcess( PROCESS_TERMINATE, FALSE, ProcessId, &hProcess );
 	
 	if ( !hProcess )
 		return FALSE;

