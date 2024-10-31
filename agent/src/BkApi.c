@@ -174,6 +174,32 @@ FUNC DWORD bkMemWrite(
 #elif BK_NTAPI
     Err = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, &Buffer, BufferSize, &BytesWritten );
 #endif
+    return Err;
+}
+
+FUNC VOID bkMemProtect(
+    _In_ HANDLE ProcessHandle,
+    _In_ PVOID  BaseAddr,
+    _In_ UINT64 RegionSize,
+    _In_ DWORD  NewProtection
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+    DWORD OldProtection = NULL;
+#ifdef BK_WINAPI
+    if ( ProcessHandle ) {
+        Instance()->Win32.VirtualProtect( BaseAddr, RegionSize, NewProtection, &OldProtection );
+    } else {
+        Instance()->Win32.VirtualProtectEx( ProcessHandle, BaseAddr, RegionSize, NewProtection, &OldProtection );
+    }
+
+    Err = NtLastError();
+#elif BK_NTAPI
+    PVOID MemAddr = NULL;
+    
+    Err = Instance()->Win32.NtProtectVirtualMemory( ProcessHandle, &MemAddr, &RegionSize, NewProtection, &OldProtection );
+#endif
 
     return Err;
 }

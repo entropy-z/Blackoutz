@@ -126,6 +126,13 @@ DWORD bkMemAlloc(
     _In_        DWORD   Protection
 );
 
+DWORD bkMemWrite(
+    _In_ HANDLE ProcessHandle,
+    _In_ PBYTE  MemBaseAddr,
+    _In_ PBYTE  Buffer,
+    _In_ DWORD  BufferSize
+);
+
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
 
 /*!
