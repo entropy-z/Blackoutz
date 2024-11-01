@@ -125,6 +125,14 @@ FUNC VOID GetProcessInfo(
 	*BaseName = Data->BaseDllName.Buffer;
 	*CmdLine  = Peb->ProcessParameters->CommandLine.Buffer;
 
+    PROCESS_EXTENDED_BASIC_INFORMATION Ebi = { 0 };
+
+    MmZero( &Ebi, sizeof( PROCESS_EXTENDED_BASIC_INFORMATION ) );
+
+    Instance()->Win32.NtQueryInformationProcess( NtCurrentProcess(), ProcessBasicInformation, &Ebi, sizeof( Ebi ), NULL );
+    Instance()->Session.Protected    = Ebi.IsProtectedProcess;
+    Instance()->Session.ParentProcId = HandleToULong( Ebi.BasicInfo.InheritedFromUniqueProcessId );
+
 	return;    
 }
 

