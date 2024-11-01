@@ -73,6 +73,7 @@ typedef struct _INSTANCE {
         HLOCAL  (WINAPI *LocalReAlloc)(HLOCAL hMem, SIZE_T uBytes, UINT uFlags);
         BOOL    (WINAPI *VirtualFree)(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
         SIZE_T  (WINAPI *VirtualQuery)(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
+        SIZE_T  (WINAPI *VirtualQueryEx)(HANDLE hProcess, LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
         LPVOID  (WINAPI *VirtualAlloc)(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
         LPVOID  (WINAPI *VirtualAllocEx)(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
         BOOL    (WINAPI *VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
@@ -94,6 +95,9 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *SetCurrentDirectoryA)(LPCSTR lpPathName);
         BOOL    (WINAPI *DuplicateHandle)(HANDLE hSourceProcessHandle, HANDLE hSourceHandle, HANDLE hTargetProcessHandle, LPHANDLE lpTargetHandle, DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwOptions);
         DWORD   (WINAPI *GetThreadId)(HANDLE Thread);
+        DWORD   (WINAPI *ResumeThread)(HANDLE hThread);
+        DWORD   (WINAPI *SuspendThread)(HANDLE hThread);
+        DWORD   (WINAPI* GetMappedFileNameA)( HANDLE hProcess, LPVOID lpv, LPSTR lpFilename, DWORD nSize);        
 
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
         void     (NTAPI *RtlExitUserThread)(NTSTATUS ExitStatus);
@@ -109,8 +113,11 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtProtectVirtualMemory)(HANDLE ProcessHandle, PVOID* BaseAddress, PSIZE_T NumberOfBytesToProtect, ULONG NewAccessProtection, PULONG OldAccessProtection);
         NTSTATUS (NTAPI *NtCreateThreadEx)(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, PVOID StartRoutine, PVOID Argument, ULONG CreateFlags, ULONG_PTR ZeroBits, SIZE_T StackSize, SIZE_T MaximumStackSize, PVOID AttributeList);
         NTSTATUS (NTAPI *LdrLoadDll)(PWCHAR PathToFile, ULONG Flags, PUNICODE_STRING ModuleFileName, PHANDLE ModuleHandle);
+        
         NTSTATUS (NTAPI *NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
         NTSTATUS (NTAPI *NtQueryInformationProcess)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+        NTSTATUS (NTAPI *NtQueryVirtualMemory)(HANDLE ProcessHandle, PVOID BaseAddress, MEMORY_INFORMATION_CLASS MemoryInformationClass, PVOID MemoryInformation, SIZE_T MemoryInformationLength, PSIZE_T ReturnLength);    
+
         NTSTATUS (NTAPI *NtSetInformationVirtualMemory)(HANDLE ProcessHandle, VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass, ULONG_PTR NumberOfEntries, PMEMORY_RANGE_ENTRY VirtualAddresses, PVOID VmInformation, ULONG VmInformationLength);
         NTSTATUS (NTAPI *NtOpenProcess)(PHANDLE ProcessHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PCLIENT_ID ClientId);
         NTSTATUS (NTAPI *NtWaitForSingleObject)(HANDLE Handle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
@@ -127,6 +134,9 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtCreateFile)(PHANDLE FileHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, PLARGE_INTEGER AllocationSize, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PVOID EaBuffer, ULONG EaLength);
         NTSTATUS (NTAPI *NtCreateNamedPipeFile)(PHANDLE FileHandle, ULONG DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, ULONG NamedPipeType, ULONG ReadMode, ULONG CompletionMode, ULONG MaximumInstances, ULONG InboundQuota, ULONG OutboundQuota, PLARGE_INTEGER DefaultTimeout);
         NTSTATUS (NTAPI *NtWriteVirtualMemory)(HANDLE ProcessHandle, PVOID BaseAddress, const void *Buffer, SIZE_T BufferSize, PSIZE_T NumberOfBytesWritten);
+        NTSTATUS (NTAPI *NtSuspendProcess)(HANDLE ProcessHandle);
+        NTSTATUS (NTAPI *NtResumeThread)(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
+        NTSTATUS (NTAPI *NtSuspendThread)(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
 
         BOOL      (WINAPI *GetUserNameA)(LPSTR lpBuffer, LPDWORD pcbBuffer);
         NTSTATUS  (NTAPI *SystemFunction032)(struct USTRING* Img, struct USTRING* Key);

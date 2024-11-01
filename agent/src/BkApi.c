@@ -39,7 +39,7 @@ FUNC BOOL bkHeapFree(
 
 /*=================================[ Process bkAPIs ]=================================*/
 
-FUNC DWORD bkOpenProcess(
+FUNC DWORD bkProcessOpen(
     _In_ DWORD DesiredAccess,
     _In_ BOOL  InheritHandle,
     _In_ DWORD ProcessId,
@@ -67,7 +67,7 @@ FUNC DWORD bkOpenProcess(
     return Err;
 }
 
-FUNC DWORD bkTerminateProcess( 
+FUNC DWORD bkProcessTerminate( 
     _In_ HANDLE hProcess,
     _In_ UINT32 ExitStatus
 ) {
@@ -81,7 +81,7 @@ FUNC DWORD bkTerminateProcess(
     return NtLastError();
 }
 
-FUNC DWORD bkCreateProcess(
+FUNC DWORD bkProcessCreate(
     _In_ PSTR ProcCmd,
     _In_ BOOL InheritHandle,
     _In_opt_  DWORD   Flags,
@@ -208,12 +208,55 @@ FUNC DWORD bkMemProtect(
 }
 
 FUNC DWORD bkMemQuery(
-    void
-);
+    _In_opt_ HANDLE  ProcessHandle,
+    _In_     PVOID   BaseAddress,
+    _Out_    PVOID  *AllocationBase,
+    _Out_    DWORD  *AllocationProtect,
+    _Out_    PVOID  *BaseAddressRt,
+    _Out_    DWORD  *Protect,
+    _Out_    DWORD  *RegionSize,
+    _Out_    DWORD  *State,
+    _Out_    DWORD  *Type
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+
+    MEMORY_BASIC_INFORMATION Mbi = { 0 };
+    MmZero( &Mbi, sizeof( MEMORY_BASIC_INFORMATION ) );
+#ifdef BK_WINAPI
+    if ( ProcessHandle ) {
+        Instance()->Win32.VirtualQueryEx( ProcessHandle, BaseAddress, &Mbi, sizeof( MEMORY_BASIC_INFORMATION ) );
+    } else {
+        Instance()->Win32.VirtualQuery( BaseAddress, &Mbi, sizeof( MEMORY_BASIC_INFORMATION ) );
+    }
+
+    Err = NtLastError();
+#elif BK_NTAPI
+    if ( !ProcessHandle )
+        ProcessHandle = NtCurrentProcess();
+
+    Err = Instance()->Win32.NtQueryVirtualMemory(
+        ProcessHandle, BaseAddress,
+        MemoryBasicInformation, &Mbi,
+        sizeof(MEMORY_BASIC_INFORMATION), NULL
+    );
+#endif
+
+    *AllocationBase    = Mbi.AllocationBase;
+    *AllocationProtect = Mbi.AllocationProtect;
+    *BaseAddressRt     = Mbi.BaseAddress;
+    *Protect           = Mbi.Protect;
+    *RegionSize        = Mbi.RegionSize;
+    *State             = Mbi.State;
+    *Type              = Mbi.Type;
+
+    return Err;
+}
 
 /*=================================[ Thread bkAPIs ]=================================*/
 
-FUNC DWORD bkCreateThread( 
+FUNC DWORD bkThreadCreate( 
     _In_     HANDLE  ProcessHandle,
     _In_     PVOID   BaseAddr,
     _In_opt_ PVOID   Parameter,
@@ -235,8 +278,6 @@ FUNC DWORD bkCreateThread(
         *ThreadId = ThreadIdTmp;
     }
 
-    BK_PRINT( "[I] Thread id: %d\n", ThreadIdTmp );
-
     Err = NtLastError();
 #elif BK_NTAPI
     Err = Instance()->Win32.NtCreateThreadEx( &ThreadHandle, THREAD_ALL_ACCESS, NULL, ProcessHandle, BaseAddr, Parameter, Flags, 0, StackSize, 0, NULL );
@@ -246,9 +287,39 @@ FUNC DWORD bkCreateThread(
     return Err;
 }
 
+FUNC DWORD bkThreadSuspend(
+    _In_ HANDLE ThreadHandle
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+#ifdef BK_WINAPI
+    Instance()->Win32.SuspendThread( ThreadHandle );
+    Err = NtLastError();
+#elif  BK_NTAPI
+    Err = Instance()->Win32.NtSuspendThread( ThreadHandle, NULL );
+#endif
+    return Err;
+}
+
+FUNC DWORD bkThreadResume(
+    _In_ HANDLE ThreadHandle
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+#ifdef BK_WINAPI
+    Instance()->Win32.ResumeThread( ThreadHandle );
+    Err = NtLastError();
+#elif BK_NTAPI
+    Err = Instance()->Win32.NtResumeThread( ThreadHandle, NULL );
+#endif
+    return Err;
+}
+
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
 
-FUNC BOOL bkCloseHandle(
+FUNC BOOL bkHandleClose(
     _In_ HANDLE hObject
 ) {
     BLACKOUT_INSTANCE
@@ -263,7 +334,7 @@ FUNC BOOL bkCloseHandle(
     return bCheck;
 }
 
-FUNC DWORD bkReadFile( 
+FUNC DWORD bkFileCreate( 
     void
 ) {
     BLACKOUT_INSTANCE
@@ -272,7 +343,7 @@ FUNC DWORD bkReadFile(
 
 } 
 
-FUNC DWORD bkCreatePipe(
+FUNC DWORD bkPipeCreate(
     _Out_ PHANDLE hStdPipeRead,
     _Out_ PHANDLE hStdPipeWrite
 ) {

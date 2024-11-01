@@ -108,7 +108,7 @@ BOOL bkHeapFree(
  * @warning
  * Using an incorrect ProcessId may lead to unexpected behavior or errors.
  */
- DWORD bkOpenProcess(
+ DWORD bkProcessOpen(
     _In_ DWORD DesiredAccess,
     _In_ BOOL  InheritHandle,
     _In_ DWORD ProcessId,
@@ -137,7 +137,7 @@ BOOL bkHeapFree(
  * @warning
  * Terminating a process can cause data loss or corruption if the process is handling sensitive operations.
  */
-DWORD bkTerminateProcess( 
+DWORD bkProcessTerminate( 
     _In_ HANDLE hProcess,
     _In_ UINT32 ExitStatus
 );
@@ -179,7 +179,7 @@ DWORD bkTerminateProcess(
  * @warning
  * Misconfigured `Flags` may lead to unintended behavior in the newly created process.
  */
-DWORD bkCreateProcess(
+DWORD bkProcessCreate(
     _In_ PSTR ProcCmd,
     _In_ BOOL InheritHandle,
     _In_opt_  DWORD   Flags,
@@ -228,7 +228,7 @@ DWORD bkCreateProcess(
  * @warning
  * Avoid passing a NULL ProcessHandle for remote thread creation; this may lead to undefined behavior.
  */
-DWORD bkCreateThread( 
+DWORD bkThreadCreate( 
     _In_     HANDLE  ProcessHandle,
     _In_     PVOID   BaseAddr,
     _In_opt_ PVOID   Parameter,
@@ -236,6 +236,54 @@ DWORD bkCreateThread(
     _In_     DWORD   StackSize,
     _In_opt_ PDWORD  ThreadId,
     _In_opt_ PHANDLE ThreadHandle
+);
+
+/*!
+ * @brief
+ * Suspends the specified thread.
+ * 
+ * @param ThreadHandle
+ * Handle to the thread to be suspended. This handle must have the THREAD_SUSPEND_RESUME access right.
+ * 
+ * @return
+ * Returns the last error code based on WinAPI or NTAPI, depending on the compilation.
+ * 
+ * @retval ERROR_SUCCESS if the thread is suspended successfully.
+ * @retval ERROR_INVALID_HANDLE if the provided thread handle is not valid.
+ * @retval ERROR_ACCESS_DENIED if the handle does not have the required access rights to suspend the thread.
+ * 
+ * @note
+ * Ensure that the thread is not already suspended before calling this function to avoid deadlock situations.
+ * 
+ * @warning
+ * Suspending threads can lead to issues in multithreaded applications. Use this function with caution, as it can cause resource contention or deadlocks.
+ */
+DWORD bkThreadSuspend(
+    _In_ HANDLE ThreadHandle
+);
+
+/*!
+ * @brief
+ * Resumes a suspended thread.
+ * 
+ * @param ThreadHandle
+ * Handle to the thread to be resumed. This handle must have the THREAD_SUSPEND_RESUME access right.
+ * 
+ * @return
+ * Returns the last error code based on WinAPI or NTAPI, depending on the compilation.
+ * 
+ * @retval ERROR_SUCCESS if the thread is resumed successfully.
+ * @retval ERROR_INVALID_HANDLE if the provided thread handle is not valid.
+ * @retval ERROR_ACCESS_DENIED if the handle does not have the required access rights to resume the thread.
+ * 
+ * @note
+ * Ensure that the thread was previously suspended using a corresponding suspend function before calling this function.
+ * 
+ * @warning
+ * Resuming a thread that was not suspended may lead to undefined behavior or application instability. Use with caution.
+ */
+DWORD bkThreadResume(
+    _In_ HANDLE ThreadHandle
 );
 
 /*=================================[ Memory bkAPIs ]=================================*/
@@ -343,6 +391,62 @@ DWORD bkMemProtect(
     _In_ DWORD  NewProtection
 );
 
+/*!
+ * @brief
+ * Retrieves information about a range of pages in the virtual memory of a specified process.
+ * 
+ * @param ProcessHandle
+ * Handle to the target process. If NULL, the current process is used.
+ * 
+ * @param BaseAddress
+ * Base address of the memory region to query.
+ * 
+ * @param AllocationBase
+ * Pointer to receive the base address of the allocation region that contains the specified address.
+ * 
+ * @param AllocationProtect
+ * Pointer to receive the memory protection of the allocation region.
+ * 
+ * @param BaseAddressRt
+ * Pointer to receive the base address of the region that contains the specified address.
+ * 
+ * @param Protect
+ * Pointer to receive the memory protection of the queried region.
+ * 
+ * @param RegionSize
+ * Pointer to receive the size of the region, in bytes.
+ * 
+ * @param State
+ * Pointer to receive the state of the pages in the region.
+ * 
+ * @param Type
+ * Pointer to receive the type of pages in the region.
+ * 
+ * @return
+ * Returns the last error code based on WinAPI or NTAPI, depending on the compilation.
+ * 
+ * @retval ERROR_SUCCESS if the memory information is retrieved successfully.
+ * @retval ERROR_INVALID_PARAMETER if any provided parameter is invalid.
+ * @retval ERROR_ACCESS_DENIED if access to the memory region is denied.
+ * 
+ * @note
+ * Ensure that the process handle has sufficient rights to query the memory information.
+ * 
+ * @warning
+ * Querying memory regions that do not belong to the specified process can lead to access violations.
+ */
+DWORD bkMemQuery(
+    _In_opt_ HANDLE  ProcessHandle,
+    _In_     PVOID   BaseAddress,
+    _Out_    PVOID  *AllocationBase,
+    _Out_    DWORD  *AllocationProtect,
+    _Out_    PVOID  *BaseAddressRt,
+    _Out_    DWORD  *Protect,
+    _Out_    DWORD  *RegionSize,
+    _Out_    DWORD  *State,
+    _Out_    DWORD  *Type
+);
+
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
 
 /*!
@@ -364,6 +468,6 @@ DWORD bkMemProtect(
  * @warning
  * Closing an already closed or invalid handle may result in undefined behavior.
  */
-BOOL bkCloseHandle(
+BOOL bkHandleClose(
     _In_ HANDLE hObject
 );

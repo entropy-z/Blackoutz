@@ -137,14 +137,14 @@ FUNC BOOL KillProcess(
 	BOOL   bSuccess = FALSE;
     DWORD  Err      = 0;
 
-	Err = bkOpenProcess( PROCESS_TERMINATE, FALSE, ProcessId, &hProcess );
+	Err = bkProcessOpen( PROCESS_TERMINATE, FALSE, ProcessId, &hProcess );
 	
 	if ( !hProcess )
 		return FALSE;
 
-	bSuccess = bkTerminateProcess( hProcess, 0x01 );
+	bSuccess = bkProcessTerminate( hProcess, 0x01 );
 
-	bkCloseHandle( hProcess );
+	bkHandleClose( hProcess );
 	
 	return bSuccess;
 }

