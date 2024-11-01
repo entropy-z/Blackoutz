@@ -63,27 +63,25 @@ FUNC DWORD bkOpenProcess(
 
     Err = Instance()->Win32.NtOpenProcess( &hProcessTmp, DesiredAccess, &ProcAttr, &ClientId );
     *ProcessHandle = hProcessTmp; 
-    BK_PRINT( "[I] Process Handle: %X\n", ProcessHandle );
 #endif
     return Err;
 }
 
-FUNC BOOL bkTerminateProcess( 
+FUNC DWORD bkTerminateProcess( 
     _In_ HANDLE hProcess,
     _In_ UINT32 ExitStatus
 ) {
     BLACKOUT_INSTANCE
 
-    BOOL bCheck = FALSE;
 #ifdef BK_WINAPI
-    bCheck = Instance()->Win32.TerminateProcess( hProcess, ExitStatus );
+    Instance()->Win32.TerminateProcess( hProcess, ExitStatus );
 #elif BK_NTAPI
-    bCheck = Instance()->Win32.NtTerminateProcess( hProcess, ExitStatus );
+    Instance()->Win32.NtTerminateProcess( hProcess, ExitStatus );
 #endif
-    return bCheck;
+    return NtLastError();
 }
 
-FUNC BOOL bkCreateProcess(
+FUNC DWORD bkCreateProcess(
     _In_ PSTR ProcCmd,
     _In_ BOOL InheritHandle,
     _In_opt_  DWORD   Flags,
@@ -107,14 +105,14 @@ FUNC BOOL bkCreateProcess(
 
     bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si, &Pi );
     if ( !bCheck )
-        return bCheck;
+        return NtLastError();
 
     *ProcessId     = Pi.dwProcessId;
     *ProcessHandle = Pi.hProcess;
     *ThreadId      = Pi.dwThreadId;
     *ThreadHandle  = Pi.hThread;
 
-    return bCheck;    
+    return NtLastError();    
 }
 
 /*=================================[ Memory bkAPIs ]=================================*/
