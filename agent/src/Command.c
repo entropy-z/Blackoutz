@@ -234,10 +234,10 @@ FUNC VOID CommandCheckin(
 
     BK_PACKAGE = PackageCreate( BLACKOUT_CHECKIN );
 
-    PackageAddInt32( BK_PACKAGE, Instance()->Base.Buffer  );
+    PackageAddInt64( BK_PACKAGE, Instance()->Base.Buffer  );
     PackageAddInt32( BK_PACKAGE, Instance()->Base.Length  );
     PackageAddInt32( BK_PACKAGE, Instance()->Base.FullLen );
-    PackageAddInt32( BK_PACKAGE, Instance()->Base.RxBase  );
+    PackageAddInt64( BK_PACKAGE, Instance()->Base.RxBase  );
     PackageAddInt32( BK_PACKAGE, Instance()->Base.RxSize  );
 
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessName     );

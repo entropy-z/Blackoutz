@@ -73,7 +73,7 @@ class Parser:
 
         return val[ 0 ]
     
-    def parser_int64( self ) -> int:
+    def parse_int64( self ) -> int:
         val = struct.unpack( ">q", self.buffer[ :8 ] )
         self.buffer = self.buffer[ 8: ]
 
