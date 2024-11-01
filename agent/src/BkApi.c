@@ -287,6 +287,23 @@ FUNC DWORD bkThreadCreate(
     return Err;
 }
 
+FUNC DWORD bkThreadTerminate(
+    _In_ HANDLE ThreadHandle,
+    _In_ DWORD  ExitCode
+) {
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+#ifdef BK_WINAPI
+    Instance()->Win32.TerminateThread( ThreadHandle, ExitCode );
+    Err = NtLastError();
+#elif  BK_NTAPI
+    Err = Instance()->Win32.NtTerminateThread( ThreadHandle, ExitCode );
+#endif
+
+    return Err;
+}
+
 FUNC DWORD bkThreadSuspend(
     _In_ HANDLE ThreadHandle
 ) {
@@ -316,6 +333,7 @@ FUNC DWORD bkThreadResume(
 #endif
     return Err;
 }
+
 
 /*=================================[ Miscellaneous bkAPIs ]=================================*/
 

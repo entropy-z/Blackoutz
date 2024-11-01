@@ -240,6 +240,34 @@ DWORD bkThreadCreate(
 
 /*!
  * @brief
+ * Terminates the specified thread and sets its exit code.
+ * 
+ * @param ThreadHandle
+ * Handle to the thread to be terminated. This handle must have the THREAD_TERMINATE access right.
+ * 
+ * @param ExitCode
+ * Exit code to be set for the terminated thread. This value is returned to the thread's creator.
+ * 
+ * @return
+ * Returns the last error code based on WinAPI or NTAPI, depending on the compilation.
+ * 
+ * @retval ERROR_SUCCESS if the thread is terminated successfully.
+ * @retval ERROR_INVALID_HANDLE if the provided thread handle is not valid.
+ * @retval ERROR_ACCESS_DENIED if the handle does not have the required access rights to terminate the thread.
+ * 
+ * @note
+ * Use this function with caution, as terminating a thread can result in resource leaks or inconsistent application state.
+ * 
+ * @warning
+ * Avoid terminating threads that are performing critical operations, as this may lead to data corruption or other unintended side effects.
+ */
+DWORD bkThreadTerminate(
+    _In_ HANDLE ThreadHandle,
+    _In_ DWORD  ExitCode
+);
+
+/*!
+ * @brief
  * Suspends the specified thread.
  * 
  * @param ThreadHandle

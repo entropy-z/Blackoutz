@@ -133,7 +133,7 @@ class CommandClassic( Command ):
 
 class CommandRun( Command ):
     CommandId   = COMMAND_RUN
-    Name        = "run"
+    Name        = "process_create"
     Description = "create process with capabilities"
     Help        = ""
     NeedAdmin   = False

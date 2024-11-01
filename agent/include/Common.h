@@ -97,6 +97,7 @@ typedef struct _INSTANCE {
         DWORD   (WINAPI *GetThreadId)(HANDLE Thread);
         DWORD   (WINAPI *ResumeThread)(HANDLE hThread);
         DWORD   (WINAPI *SuspendThread)(HANDLE hThread);
+        BOOL    (WINAPI *TerminateThread)(HANDLE hThread, DWORD dwExitCode);
         DWORD   (WINAPI* GetMappedFileNameA)( HANDLE hProcess, LPVOID lpv, LPSTR lpFilename, DWORD nSize);        
 
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
@@ -135,6 +136,7 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtCreateNamedPipeFile)(PHANDLE FileHandle, ULONG DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, ULONG NamedPipeType, ULONG ReadMode, ULONG CompletionMode, ULONG MaximumInstances, ULONG InboundQuota, ULONG OutboundQuota, PLARGE_INTEGER DefaultTimeout);
         NTSTATUS (NTAPI *NtWriteVirtualMemory)(HANDLE ProcessHandle, PVOID BaseAddress, const void *Buffer, SIZE_T BufferSize, PSIZE_T NumberOfBytesWritten);
         NTSTATUS (NTAPI *NtSuspendProcess)(HANDLE ProcessHandle);
+        NTSTATUS (NTAPI *NtTerminateThread)(HANDLE ThreadHandle, NTSTATUS ExitStatus);
         NTSTATUS (NTAPI *NtResumeThread)(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
         NTSTATUS (NTAPI *NtSuspendThread)(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
 
