@@ -42,6 +42,11 @@ VOID GetTokenUserA(
     _Out_ DWORD  *UserNameBuffLen
 );
 
+BOOL TokenSteal(
+    _In_ DWORD   ProcessId,
+    _In_ HANDLE *TokenHandle
+);
+
 /*!
  * @brief
  * Get value of the specified environment variable

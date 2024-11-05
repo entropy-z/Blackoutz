@@ -1,8 +1,6 @@
 #include <utils.h>
 #include <common.h>
 
-#define PrintErr( x, z ); Instance()->Win32.printf( "[E] %s failed with err %d\n", x, z );
-
 FUNC VOID volatile ___chkstk_ms(
         VOID
 ) { __asm__( "nop" ); }

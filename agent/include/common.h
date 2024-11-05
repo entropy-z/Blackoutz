@@ -155,6 +155,7 @@ typedef struct _INSTANCE {
         BOOL     (WINAPI *LookupPrivilegeValueA)(LPCSTR lpSystemName, LPCSTR lpName, PLUID lpLuid);
         BOOL     (WINAPI *AdjustTokenPrivileges)(HANDLE TokenHandle, BOOL DisableAllPrivileges, PTOKEN_PRIVILEGES NewState, DWORD BufferLength, PTOKEN_PRIVILEGES PreviousState, PDWORD ReturnLength);
         BOOL     (WINAPI *DuplicateToken)(HANDLE ExistingTokenHandle, SECURITY_IMPERSONATION_LEVEL ImpersonationLevel, PHANDLE DuplicateTokenHandle);
+        WINBOOL  (WINAPI *ImpersonateLoggedOnUser)(HANDLE hToken);
 
         NTSTATUS (NTAPI *SystemFunction040)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
         NTSTATUS (NTAPI *SystemFunction041)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );

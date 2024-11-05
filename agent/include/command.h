@@ -18,6 +18,8 @@
 #define COMMAND_DOWNLOAD         0x140
 #define COMMAND_CLASSIC          0x151
 
+#define COMMAND_TOKEN            0x190
+
 #define COMMAND_EXITP            0x160
 #define COMMAND_EXITT            0x161
 #define COMMAND_PROCLIST         0x170
@@ -32,14 +34,20 @@ typedef enum _EXPLR {
     CD  = 0x182,
     PWD = 0x183,
     CAT = 0x184
-} EXPLR;
+} M_EXPLR;
 
 typedef enum _MEM {
     ALLOC   = 0x301,
     WRITE   = 0x302,
     PROTECT = 0x303,
     QUERY   = 0x304
-} MEM;
+} M_MEM;
+
+typedef enum _TOKEN {
+    STEAL = 0x191,
+    MAKE  = 0x192,
+    UID   = 0x193
+} M_TOKEN;
 
 typedef struct
 {

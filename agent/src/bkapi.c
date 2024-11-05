@@ -254,6 +254,12 @@ FUNC DWORD bkMemQuery(
     return Err;
 }
 
+FUNC DWORD bkMemFree(
+
+) {
+    
+}
+
 /*=================================[ Thread bkAPIs ]=================================*/
 
 FUNC DWORD bkThreadCreate( 

