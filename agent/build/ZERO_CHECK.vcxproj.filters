@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\obliv\Proton Drive\oblivionccyber\Other computers\DESKTOP-L1LOGA9\malw\Projects\Blackout-master\unknown\build\CMakeFiles\219b48c7eaa7344bbd985c3d9f7e5615\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{DB6D2149-8081-3D34-80E1-F3F64B3F5F31}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
