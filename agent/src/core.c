@@ -85,6 +85,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.RtlReAllocateHeap         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlReAllocateHeap" ) );
     Instance()->Win32.RtlFreeHeap               = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlFreeHeap" ) );
 
+    Instance()->Win32.NtFreeVirtualMemory       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtFreeVirtualMemory" )  );
     Instance()->Win32.RtlCreateTimer            = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCreateTimer" ) );
     Instance()->Win32.RtlRandomEx               = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlRandomEx" ) );
     Instance()->Win32.RtlGetVersion             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlGetVersion" ));

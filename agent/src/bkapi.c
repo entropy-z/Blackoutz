@@ -255,9 +255,26 @@ FUNC DWORD bkMemQuery(
 }
 
 FUNC DWORD bkMemFree(
-
+    _In_opt_ HANDLE ProcessHandle,
+    _In_     PVOID  MemAddress,
+    _In_     UINT64 SizeToFree
 ) {
-    
+    BLACKOUT_INSTANCE
+
+    DWORD Err = 0;
+#ifdef BK_WINAPI
+    if ( ProcessHandle ) {
+        Instance()->Win32.VirtualFreeEx( ProcessHandle, MemAddress, SizeToFree, MEM_RELEASE );
+    } else {
+        Instance()->Win32.VirtualFree( MemAddress, SizeToFree, MEM_RELEASE );
+    }
+
+    Err = NtLastError(); 
+#elif  BK_NTAPI
+    Err = Instance()->Win32.NtFreeVirtualMemory( ProcessHandle, &MemAddress, SizeToFree, MEM_RELEASE );
+#endif
+
+    return Err;
 }
 
 /*=================================[ Thread bkAPIs ]=================================*/
