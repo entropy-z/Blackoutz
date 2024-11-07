@@ -68,6 +68,7 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *ContinueDebugEvent)(DWORD dwProcessId, DWORD dwThreadId, DWORD dwContinueStatus);
         BOOL    (WINAPI *CloseHandle)(HANDLE hObject);
         DWORD   (WINAPI *GetLastError)();
+        WINBOOL (WINAPI *FreeLibrary)(HMODULE hLibModule);
         HMODULE (WINAPI *LoadLibraryA)(LPCSTR lpLibFileName);
         HLOCAL  (WINAPI *LocalAlloc)(UINT uFlags, SIZE_T uBytes);
         HLOCAL  (WINAPI *LocalFree)(HLOCAL hMem);
@@ -175,6 +176,11 @@ typedef struct _INSTANCE {
 
         ULONG (*GetAdaptersInfo)( PIP_ADAPTER_INFO AdapterInfo, PULONG SizePointer );
     } Win32;
+
+    struct {
+    PVOID  Backup;
+    UINT64 Length;
+    } *StompArgs;
 
     struct {
         PVOID Ntdll;

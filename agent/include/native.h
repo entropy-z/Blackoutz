@@ -30,46 +30,6 @@
 #pragma warning ( disable : 344 )
 #endif
 
-typedef struct _FILE_RENAME_INFO {
-  union {
-    BOOLEAN ReplaceIfExiss;
-    DWORD   Flags;
-  } DUMMYUNIONNAME;
-  BOOLEAN ReplaceIfExists;
-  HANDLE  RootDirectory;
-  DWORD   FileNameLength;   // The size of 'FileName' in bytes
-  WCHAR   FileName[1];      // The new name
-} FILE_RENAME_INFO, *PFILE_RENAME_INFO;
-
-typedef enum _FILE_INFO_BY_HANDLE_CLASS {
-  FileBasicInfo,
-  FileStandardInfo,
-  FileNameInfo,
-  FileRenameInfo,
-  FileDispositionInfo,
-  FileAllocationInfo,
-  FileEndOfFileInfo,
-  FileStreamInfo,
-  FileCompressionInfo,
-  FileAttributeTagInfo,
-  FileIdBothDirectoryInfo,
-  FileIdBothDirectoryRestartInfo,
-  FileIoPriorityHintInfo,
-  FileRemoteProtocolInfo,
-  FileFullDirectoryInfo,
-  FileFullDirectoryRestartInfo,
-  FileStorageInfo,
-  FileAlignmentInfo,
-  FileIdInfo,
-  FileIdExtdDirectoryInfo,
-  FileIdExtdDirectoryRestartInfo,
-  FileDispositionInfoEx,
-  FileRenameInfoEx,
-  FileCaseSensitiveInfo,
-  FileNormalizedNameInfo,
-  MaximumFileInfoByHandleClass
-} FILE_INFO_BY_HANDLE_CLASS, *PFILE_INFO_BY_HANDLE_CLASS;
-
 #pragma pack( push, 8 )
 
 #if defined(__cplusplus)

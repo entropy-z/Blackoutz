@@ -28,7 +28,7 @@ BOOL QueryDbgPortObj(
 ) {
     ULONG  Status = 0;
     UINT64 IsDbg  = 0;
-    UINT64 DbgObj = 0;
+    UINT64 DbgObj = 0;    
 
     NtQueryInformationProcess( 
         NtCurrentProcess(), 

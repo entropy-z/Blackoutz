@@ -84,7 +84,7 @@ BOOL StagerShellcode(
 
         if ( pBuffer == NULL ) {
             bResult = FALSE; 
-            LocalFree(pTemp);
+            LocalFree( pTemp );
             goto _Cleanup;
         }
 

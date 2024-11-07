@@ -7,6 +7,8 @@ typedef struct _BUFFER {
     DWORD FullLen;
     PVOID RxBase;
     ULONG RxSize;
+    PVOID RwBase;
+    ULONG RwSize;
 } BUFFER, *PBUFFER;
 
 //

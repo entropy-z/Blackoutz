@@ -398,7 +398,7 @@ FUNC BOOL bkHandleClose(
     BOOL bCheck = FALSE;
 #ifdef BK_WINAPI
     Instance()->Win32.CloseHandle( hObject );
-#elif BK_NTAPI
+#elif  BK_NTAPI
     Instance()->Win32.NtClose( hObject );
 #endif
 

@@ -9,6 +9,10 @@
 #define NtCurrentThreadToken()          ( (HANDLE)(-5) )
 #define NtCurrentThreadEffectiveToken() ( (HANDLE)(-6) )
 
+SIZE_T StringLengthA(
+	_In_ LPCSTR String
+) ;
+
 //
 // type castinng lenght 
 //

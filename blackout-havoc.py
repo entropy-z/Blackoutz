@@ -114,7 +114,6 @@ class CommandMemoryAlloc( Command ):
 
         return Task.buffer
 
-
 class CommandClassic( Command ):
     CommandId   = COMMAND_CLASSIC
     Name        = "injection_classic"

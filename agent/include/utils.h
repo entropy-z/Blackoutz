@@ -47,6 +47,11 @@ BOOL TokenSteal(
     _In_ HANDLE *TokenHandle
 );
 
+BOOL SetPrivilege(
+    _In_ HANDLE hToken,
+    _In_ LPCSTR PrivilegeName
+);
+
 /*!
  * @brief
  * Get value of the specified environment variable
@@ -151,7 +156,7 @@ PVOID LdrFuncAddr(
  * initialize implant configs
  */
 VOID BlackoutInit(
-    VOID
+    PVOID Param
 );
 
 /*!

