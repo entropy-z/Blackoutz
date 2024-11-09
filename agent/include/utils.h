@@ -185,12 +185,12 @@ VOID FoliageObf(
     _In_ DWORD SleepTime
 );
 
-BOOL HeapObf( 
-    void
+VOID HeapObf( 
+    PVOID Heap
 );
 
-BOOL HeapDeobf( 
-    void
+VOID StackObf(
+    VOID
 );
 
 /*!

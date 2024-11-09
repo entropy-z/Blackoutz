@@ -1,8 +1,6 @@
 #include <common.h>
 #include <constexpr.h>
 
-ST_GLOBAL PVOID __Instance = C_PTR( 'rdp5' );
-
 EXTERN_C FUNC VOID Entry(
     PVOID Param
 ) {

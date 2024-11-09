@@ -70,6 +70,7 @@ typedef struct _INSTANCE {
         DWORD   (WINAPI *GetLastError)();
         WINBOOL (WINAPI *FreeLibrary)(HMODULE hLibModule);
         HMODULE (WINAPI *LoadLibraryA)(LPCSTR lpLibFileName);
+        HMODULE (WINAPI *LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
         HLOCAL  (WINAPI *LocalAlloc)(UINT uFlags, SIZE_T uBytes);
         HLOCAL  (WINAPI *LocalFree)(HLOCAL hMem);
         HLOCAL  (WINAPI *LocalReAlloc)(HLOCAL hMem, SIZE_T uBytes, UINT uFlags);
@@ -117,6 +118,7 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtProtectVirtualMemory)(HANDLE ProcessHandle, PVOID* BaseAddress, PSIZE_T NumberOfBytesToProtect, ULONG NewAccessProtection, PULONG OldAccessProtection);
         NTSTATUS (NTAPI *NtCreateThreadEx)(PHANDLE ThreadHandle, ACCESS_MASK DesiredAccess, PVOID ObjectAttributes, HANDLE ProcessHandle, PVOID StartRoutine, PVOID Argument, ULONG CreateFlags, ULONG_PTR ZeroBits, SIZE_T StackSize, SIZE_T MaximumStackSize, PVOID AttributeList);
         NTSTATUS (NTAPI *LdrLoadDll)(PWCHAR PathToFile, ULONG Flags, PUNICODE_STRING ModuleFileName, PHANDLE ModuleHandle);
+        NTSTATUS (NTAPI *LdrUnloadDll)(PVOID DllHandle);
         NTSTATUS (NTAPI *NtGetNextProcess)(HANDLE ProcessHandle, ACCESS_MASK DesiredAccess, ULONG HandleAttributes, ULONG Flags, PHANDLE NewProcessHandle);
 
         NTSTATUS (NTAPI *NtQuerySystemInformation)(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID SystemInformation, ULONG SystemInformationLength, PULONG ReturnLength);
@@ -178,8 +180,9 @@ typedef struct _INSTANCE {
     } Win32;
 
     struct {
-    PVOID  Backup;
-    UINT64 Length;
+        PVOID  Backup2;
+        PVOID  Backup;
+        UINT64 Length;
     } *StompArgs;
 
     struct {

