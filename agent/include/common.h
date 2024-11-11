@@ -103,7 +103,9 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *TerminateThread)(HANDLE hThread, DWORD dwExitCode);
         DWORD   (WINAPI *GetMappedFileNameA)( HANDLE hProcess, LPVOID lpv, LPSTR lpFilename, DWORD nSize);        
         BOOL    (WINAPI *SetFileInformationByHandle)( HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize );
-
+        
+        VOID     (NTAPI *RtlZeroMemory)(PVOID Destination, UINT64 Length);
+        VOID     (NTAPI *RtlCopyMemory)(PVOID Destination, PVOID Source, UINT64 Length);
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
         void     (NTAPI *RtlExitUserThread)(NTSTATUS ExitStatus);
         PVOID    (NTAPI *RtlAllocateHeap)(PVOID HeapHandle, ULONG Flags, SIZE_T Size);
@@ -180,7 +182,6 @@ typedef struct _INSTANCE {
     } Win32;
 
     struct {
-        PVOID  Backup2;
         PVOID  Backup;
         UINT64 Length;
     } *StompArgs;
@@ -218,6 +219,8 @@ typedef struct _INSTANCE {
         DWORD  ProcessArch;
         BOOL   Elevated;
         BOOL   Connected;
+        HANDLE ProcessHandle;
+        HANDLE ThreadHandle;
         PWSTR  ProcessName;
         PWSTR  ProcessFullPath;
         PWSTR  ProcessCmdLine;
@@ -233,13 +236,15 @@ typedef struct _INSTANCE {
         BOOL   EtwBypass;
         UINT64 KillDate;
         UINT32 WorkingHours;
+        PVOID  StackBase;
+        PVOID  StackLimit;
     } Session;
 
     struct {
-        CHAR  UserName[MAX_PATH];
-        CHAR  DomainName[MAX_PATH];
-        CHAR  ComputerName[MAX_PATH];
-        CHAR  NetBios[MAX_PATH];
+        PSTR  UserName;
+        PSTR  DomainName;
+        PSTR  ComputerName;
+        PSTR  NetBios;
         WORD  OsArch;
         DWORD OsMajorV;
         DWORD OsMinorv;

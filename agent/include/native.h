@@ -134,6 +134,35 @@ typedef LONG SECURITY_STATUS;
 // if MIPS Big Endian, order of bytes is reversed.
 //
 
+typedef enum _FILE_INFO_BY_HANDLE_CLASS {
+  FileBasicInfo,
+  FileStandardInfo,
+  FileNameInfo,
+  FileRenameInfo,
+  FileDispositionInfo,
+  FileAllocationInfo,
+  FileEndOfFileInfo,
+  FileStreamInfo,
+  FileCompressionInfo,
+  FileAttributeTagInfo,
+  FileIdBothDirectoryInfo,
+  FileIdBothDirectoryRestartInfo,
+  FileIoPriorityHintInfo,
+  FileRemoteProtocolInfo,
+  FileFullDirectoryInfo,
+  FileFullDirectoryRestartInfo,
+  FileStorageInfo,
+  FileAlignmentInfo,
+  FileIdInfo,
+  FileIdExtdDirectoryInfo,
+  FileIdExtdDirectoryRestartInfo,
+  FileDispositionInfoEx,
+  FileRenameInfoEx,
+  FileCaseSensitiveInfo,
+  FileNormalizedNameInfo,
+  MaximumFileInfoByHandleClass
+} FILE_INFO_BY_HANDLE_CLASS, *PFILE_INFO_BY_HANDLE_CLASS;
+
 #define SHORT_LEAST_SIGNIFICANT_BIT			0
 #define SHORT_MOST_SIGNIFICANT_BIT			1
 
