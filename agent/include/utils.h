@@ -10,6 +10,16 @@ ULONG HashString(
     _In_ SIZE_T Length
 );
 
+PVOID FindGadget( 
+    PVOID ModuleBase
+);
+
+INT MemCmp( 
+	PVOID s1, 
+	PVOID s2, 
+	INT len
+);
+
 /*!
  * @brief
  * Retrieves the username associated with a specified access token.

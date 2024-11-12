@@ -3,6 +3,26 @@
 
 typedef HMODULE (*fnLoadLibraryA)( LPCSTR );
 
+FUNC PVOID FindGadget( 
+    PVOID ModuleBase
+) {
+    UINT64 Gadget      = 0;
+    PBYTE  SearchBase  = NULL;
+    UINT64 SearchSize  = 0;
+
+    SearchBase = ModuleBase + 0x1000;
+    SearchSize = 0x1000 * 0x1000;    
+
+    for ( INT i = 0; i < SearchSize - 1; i++ ) {
+        if ( SearchBase[i] == 0xff && SearchBase[i+1] == 0x23 ) {
+            Gadget = SearchBase + i;
+            break;
+        }
+    }
+
+    return Gadget;
+}
+
 FUNC VOID GetTokenUserA( 
     _In_  HANDLE  TokenHandle,
     _Out_ PSTR   *UserName,

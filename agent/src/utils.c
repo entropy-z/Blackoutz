@@ -79,6 +79,33 @@ FUNC void MemZero( _Inout_ PVOID Destination, _In_ SIZE_T Size)
 	return;
 }
 
+FUNC INT MemCmp( 
+	PVOID s1, 
+	PVOID s2, 
+	INT len
+) {
+    PUCHAR p = s1;
+    PUCHAR q = s2;
+    INT charCompareStatus = 0;
+
+    if ( s1 == s2 ) {
+        return charCompareStatus;
+    }
+
+    while (len > 0)
+    {
+        if (*p != *q)
+        {
+            charCompareStatus = (*p >*q)?1:-1;
+            break;
+        }
+        len--;
+        p++;
+        q++;
+    }
+    return charCompareStatus;
+}
+
 FUNC PVOID MemSet( void* Destination, int Value, size_t Size )
 {
 	unsigned char* p = (unsigned char*)Destination;

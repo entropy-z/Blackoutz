@@ -275,7 +275,7 @@ class Blackout(AgentType):
     Author = "__oblivion"
     Version = "0.1"
     Description = f"""Blackout in security defense solutions"""
-    MagicValue = 0x74616c6e # 'blc'
+    MagicValue = 0x6F626C76 
 
     Arch = [
         "x64",
