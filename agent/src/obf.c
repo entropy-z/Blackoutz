@@ -2,7 +2,7 @@
 #include <common.h>
 #include <constexpr.h>
 
-#define MODULE_SIZE(x)      ((PIMAGE_NT_HEADERS)((UINT_PTR)x + ((PIMAGE_DOS_HEADER)x)->e_lfanew))->OptionalHeader.SizeOfImage
+#define MODULE_SIZE( x )      ( (PIMAGE_NT_HEADERS)( (UINT_PTR)x + ( (PIMAGE_DOS_HEADER)x )->e_lfanew ) )->OptionalHeader.SizeOfImage
 
 FUNC VOID volatile ___chkstk_ms(
         VOID
