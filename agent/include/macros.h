@@ -2,14 +2,22 @@
 #define BLACKOUT_MACROS_H
 
 typedef struct _BUFFER {
-    PVOID Buffer;
-    ULONG Length;
-    DWORD FullLen;
-    PVOID RxBase;
-    ULONG RxSize;
-    PVOID RwBase;
-    ULONG RwSize;
+    PVOID  Base;
+    UINT64 Length;
 } BUFFER, *PBUFFER;
+
+typedef struct _GADGET {
+    PVOID JmpGadget;
+    PVOID RetGadget;
+    PVOID NtContinueGadget;
+} GADGET, *PGADGET;
+
+typedef struct _FORK {
+    PSTR  Spawnto;
+    DWORD Ppid;
+    BOOL  Blockdlls;
+    PWSTR Argue;            
+} FORK, *PFORK;
 
 //
 // Hashing defines
@@ -36,6 +44,8 @@ typedef struct _BUFFER {
 #define InstanceOffset()  ( U_PTR( & __Instance_offset ) )
 #define InstancePtr()     ( ( PINSTANCE ) C_DEF( C_PTR( U_PTR( StRipStart() ) + InstanceOffset() ) ) )
 #define Instance()        ( ( PINSTANCE ) __LocalInstance )
+#define Blackout()        ( ( ( PINSTANCE ) __LocalInstance )->Blackout )
+#define Transport()       ( ( ( PINSTANCE ) __LocalInstance )->Transport )
 #define BLACKOUT_INSTANCE PINSTANCE __LocalInstance = InstancePtr();
 
 //
@@ -48,7 +58,7 @@ typedef struct _BUFFER {
 #define ST_READONLY __attribute__( ( section( ".rdata" ) ) )
 
 #define PAGE_SIZE 0x1000 
-#define BK_PACKAGE          InstancePtr()->Transport.Package
+#define BK_PACKAGE          InstancePtr()->Transport.Http.Package
 #define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)
 
 //

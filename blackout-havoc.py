@@ -439,10 +439,9 @@ class Blackout(AgentType):
 
             elif Command == BLACKOUT_CHECKIN:
                 bk_base   = response_parser.parse_int64()
-                bk_len    = response_parser.parse_int()
-                bk_fullen = response_parser.parse_int()
+                bk_len    = response_parser.parse_int64()
                 bk_rxbase = response_parser.parse_int64()
-                bk_rxsize = response_parser.parse_int()
+                bk_rxsize = response_parser.parse_int64()
                 
                 proc_name     = response_parser.parse_wstr()
                 proc_fullpath = response_parser.parse_wstr()

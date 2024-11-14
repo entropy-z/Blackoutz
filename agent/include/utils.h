@@ -10,14 +10,23 @@ ULONG HashString(
     _In_ SIZE_T Length
 );
 
-PVOID FindGadget( 
-    PVOID ModuleBase
+PVOID FindJmpGadget( 
+    PVOID ModuleBase,
+    BYTE  Register
+);
+
+PVOID FindNtTestAlertGadget(
+    _In_ LPVOID ModuleBase
 );
 
 INT MemCmp( 
 	PVOID s1, 
 	PVOID s2, 
 	INT len
+);
+
+BOOL CreateImplantBackup(
+    VOID
 );
 
 /*!

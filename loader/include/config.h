@@ -15,10 +15,6 @@
 #define CONFIG_ADD_HEADERS
 #endif
 
-#define INJECTION_CLASSIC   0x100
-#define INJECTION_STOMPER   0x200
-#define INJECTION_TECHNIQUE 0x00
-
 #define OBFUSCATION
 #define ANTI_ANALYSIS 
 
@@ -95,21 +91,13 @@ VOID LocalInjection(
     UINT64 ShellcodeSize
 );
 
-BOOL IsDbgrPresent(
-    void
-);
+BOOL IsDbgrPresent( void );
 
-BOOL GlobalFlagCheck(
-    void
-);
+BOOL GlobalFlagCheck( void );
 
-BOOL QueryDbgPortObj(
-    void
-);
+BOOL QueryDbgPortObj( void );
 
-BOOL HwbpCheck(
-    void
-);
+BOOL HwbpCheck( void );
 
 BOOL InitInstance(
     void
