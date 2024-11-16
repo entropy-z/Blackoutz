@@ -179,7 +179,6 @@ FUNC VOID BlackoutInit(
 
 #ifdef BK_STOMP
     CreateImplantBackup();
-    GetStompedModule();
 #endif
 
     Blackout().Gadgets.RetGadget        = FindNtTestAlertGadget( Instance()->Modules.Ntdll );
