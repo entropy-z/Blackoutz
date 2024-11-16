@@ -69,7 +69,7 @@ def compile_loader( ldr_output, stomp=False):
     loader_defines = ""
 
     cx64 = "x86_64-w64-mingw32-g++"
-    cflags = "-nostdlib -mrdrnd -Os -w -s -I loader/include -Os -fno-asynchronous-unwind-tables -Wl,-s,--no-seh,--enable-stdcall-fixup"
+    cflags = "-mrdrnd -nostdlib -Os -w -s -I loader/include -Os -fno-asynchronous-unwind-tables -Wl,-s,--no-seh,--enable-stdcall-fixup"
     clinks = "-lntdll -lkernel32 -lmsvcrt -lwinhttp -e WinMain -fpermissive"
 
     if stomp:

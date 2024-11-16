@@ -33,7 +33,7 @@ EXTERN_C FUNC VOID Entry(
     // resolve ntdll!RtlAllocateHeap and ntdll!NtProtectVirtualMemory for
     // updating/patching the Instance in the current memory
     // 
-    if ( ( Instance.Modules.Ntdll = LdrModuleAddr( H_MODULE_NTDLL ) ) ) {
+    if ( ( Instance.Modules.Ntdll = LdrModuleAddr( HASH_STR( "ntdll.dll" ) ) ) ) {
         if ( !( Instance.Win32.RtlAllocateHeap        = LdrFuncAddr( Instance.Modules.Ntdll, HASH_STR( "RtlAllocateHeap"        ) ) ) ||
              !( Instance.Win32.NtProtectVirtualMemory = LdrFuncAddr( Instance.Modules.Ntdll, HASH_STR( "NtProtectVirtualMemory" ) ) ) ||
              !( Instance.Win32.RtlCreateHeap          = LdrFuncAddr( Instance.Modules.Ntdll, HASH_STR( "RtlCreateHeap" ) ) )

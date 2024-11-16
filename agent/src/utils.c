@@ -198,6 +198,17 @@ FUNC void toLowerCaseChar(char* str)
 	}
 }
 
+FUNC void toUpperCaseChar(char* str) 
+{
+    while (*str) {
+        if (*str >= 'a' && *str <= 'z') {
+            *str = *str - ('a' - 'A');
+        }
+        str++;
+    }
+}
+
+
 FUNC WCHAR toLowerCaseWchar(WCHAR ch)
 {
 	if (ch >= L'A' && ch <= L'Z') {

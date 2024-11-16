@@ -139,10 +139,7 @@ VOID GetComputerInfo(
  * @brief
  *  resolve module from peb
  *
- * @param Buffer
- *  either string or hash
- *
- * @param Hashed
+ * @param Hash
  *  is the Buffer a hash value
  *
  * @return
@@ -168,6 +165,10 @@ PVOID LdrModuleAddr(
 PVOID LdrFuncAddr(
     _In_ PVOID Module,
     _In_ ULONG Function
+);
+
+PVOID LdrLoadLib( 
+    PWSTR Module
 );
 
 /*!
@@ -270,6 +271,7 @@ void   InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer
 SIZE_T StringLengthW(_In_ LPCWSTR String);
 INT    StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2);
 INT    StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2);
+void   toUpperCaseChar(char* str);
 void   toLowerCaseChar(char* str);
 WCHAR  toLowerCaseWchar(WCHAR ch);
 PCHAR  StringCopyA(_Inout_ PCHAR String1, _In_ LPCSTR String2);

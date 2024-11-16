@@ -59,3 +59,9 @@ PVOID LdrFuncAddr(
     _In_ PVOID BaseModule, 
     _In_ ULONG FuncName 
 ); 
+
+SIZE_T WCharStringToCharString(
+    _Inout_ PCHAR Destination, 
+    _In_    PWCHAR Source, 
+    _In_    SIZE_T MaximumAllowed
+);

@@ -40,6 +40,7 @@ BOOL InitInstance(
 
     Instance.Win32.LoadLibraryA        = LdrFuncAddr( Kernel32, HASH_STR( "LoadLibraryA" ) );
 
+    //Cryptsp = Instance.Win32.LoadLibraryA( "cryptsp.dll" );
     Winhttp = Instance.Win32.LoadLibraryA( "winhttp.dll" );
 
     Instance.Win32.LoadLibraryExA      = LdrFuncAddr( Kernel32, HASH_STR( "LoadLibraryExA" ) );

