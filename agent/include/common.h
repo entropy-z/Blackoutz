@@ -96,6 +96,7 @@ typedef struct _INSTANCE {
         BOOL    (WINAPI *TerminateThread)(HANDLE hThread, DWORD dwExitCode);
         DWORD   (WINAPI *GetMappedFileNameA)( HANDLE hProcess, LPVOID lpv, LPSTR lpFilename, DWORD nSize);        
         BOOL    (WINAPI *SetFileInformationByHandle)( HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize );
+        HMODULE (WINAPI *LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
         SIZE_T   (NTAPI *RtlCompareMemory)(const void *Source1, const void *Source2, SIZE_T Length);
         VOID     (NTAPI *RtlZeroMemory)(PVOID Destination, UINT64 Length);
         VOID     (NTAPI *RtlCopyMemory)(PVOID Destination, PVOID Source, UINT64 Length);
@@ -183,7 +184,7 @@ typedef struct _INSTANCE {
         BUFFER Region;
         BUFFER RxRegion;
         BUFFER RwRegion;
-        PVOID  Backup;
+        STOMP  Stomp;
         PVOID  StackBase;
         PVOID  StackLimit;
         BOOL   AmsiBypass;

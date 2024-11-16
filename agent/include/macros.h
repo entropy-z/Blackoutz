@@ -6,6 +6,12 @@ typedef struct _BUFFER {
     UINT64 Length;
 } BUFFER, *PBUFFER;
 
+typedef struct _STOMP {
+    PVOID Backup;
+    USTR  UsMod;
+    PVOID ModBase;
+} STOMP, *PSTOMP;
+
 typedef struct _GADGET {
     PVOID JmpGadget;
     PVOID RetGadget;

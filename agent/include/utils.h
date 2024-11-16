@@ -194,6 +194,10 @@ VOID SleepMain(
     DWORD SleepTime
 );
 
+VOID GetStompedModule(
+    VOID
+);
+
 /*!
  * @brief
  * foliage sleep obfuscation technique APC based

