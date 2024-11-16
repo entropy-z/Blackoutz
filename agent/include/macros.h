@@ -8,7 +8,7 @@ typedef struct _BUFFER {
 
 typedef struct _STOMP {
     PVOID Backup;
-    USTR  UsMod;
+    USTR  ModName;
     PVOID ModBase;
 } STOMP, *PSTOMP;
 

