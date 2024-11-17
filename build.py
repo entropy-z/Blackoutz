@@ -64,7 +64,7 @@ def generate_shellcode_header(bin_path, output_path, section):
 
 def compile_loader( ldr_output, stomp=False):
     """Compiles the loader from the specified source files."""
-    ldr_src = ["./loader/src/*.c", "./loader/src/obfuscation/*.c"]
+    ldr_src = ["./loader/src/*.cc", "./loader/src/obfuscation/*.cc"]
     src_files = [file for pattern in ldr_src for file in glob.glob(pattern)]
     loader_defines = ""
 

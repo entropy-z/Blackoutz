@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <package.h>
+#include <communication.h>
 
 #define BLACKOUT_ERROR           0x099
 #define BLACKOUT_CHECKIN         0x055

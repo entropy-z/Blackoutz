@@ -12,11 +12,10 @@
 //
 #include <native.h>
 #include <macros.h>
-#include <bkapi.h>
+#include <misc.h>
 #include <utils.h>
-#include <package.h>
 #include <command.h>
-#include <transport.h>
+#include <communication.h>
 
 #define BLACKOUT_COMMAND_LENGTH 10
 #define BLACKOUT_MAGIC_VALUE    0x6F626C76

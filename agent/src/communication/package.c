@@ -1,6 +1,5 @@
 #include <common.h>
-#include <package.h>
-#include <transport.h>
+#include <communication.h>
 
 FUNC VOID Int64ToBuffer( PUCHAR Buffer, UINT64 Value )
 {

