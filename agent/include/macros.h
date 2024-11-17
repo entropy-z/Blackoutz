@@ -25,14 +25,16 @@ typedef struct _FORK {
     PWSTR Argue;            
 } FORK, *PFORK;
 
+typedef struct _HWBP {
+    PVOID            VectorHandle;
+    PVOID            DetourFunc[4];
+    CRITICAL_SECTION CriticalSection;
+} HWBP, *PHWBP;
+
 //
 // Hashing defines
 //
-#define H_MAGIC_KEY          5381
-#define H_MAGIC_SEED         5
-#define H_MODULE_NTDLL       0x70e61753
-#define H_MODULE_KERNELBASE  0x6F1259F0
-#define H_MODULE_KERNEL32    0xadd31df0
+
 
 #define NtGetLastError() Instance()->Teb->LastErrorValue
 #define RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a) { sizeof(OBJECT_ATTRIBUTES), n, NULL, a, NULL, NULL }
@@ -52,8 +54,10 @@ typedef struct _FORK {
 #define Instance()        ( ( PINSTANCE ) __LocalInstance )
 #define Blackout()        ( ( ( PINSTANCE ) __LocalInstance )->Blackout )
 #define Transport()       ( ( ( PINSTANCE ) __LocalInstance )->Transport )
+#define BK_PACKAGE          InstancePtr()->Transport.Http.Package
+#define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)
 #define BLACKOUT_INSTANCE PINSTANCE __LocalInstance = InstancePtr();
-
+#define PAGE_SIZE 0x1000 
 //
 // utils macros
 //
@@ -63,9 +67,6 @@ typedef struct _FORK {
 #define ST_GLOBAL   __attribute__( ( section( ".global" ) ) )
 #define ST_READONLY __attribute__( ( section( ".rdata" ) ) )
 
-#define PAGE_SIZE 0x1000 
-#define BK_PACKAGE          InstancePtr()->Transport.Http.Package
-#define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)
 
 //
 // type castinng lenght 

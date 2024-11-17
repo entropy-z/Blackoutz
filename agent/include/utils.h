@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <native.h>
 #include <winhttp.h>
+#include <constexpr.h>
 
 ULONG HashString(
     _In_ PVOID  String,
@@ -109,7 +110,7 @@ BOOL KillProcess(
  * @param CmdLine
  * command line from the process
  */
-VOID GetProcessInfo(
+VOID GetProcessInfo( 
 	_Out_     PWSTR *FullPath,
 	_Out_     PWSTR *BaseName,
 	_Out_     PWSTR *CmdLine

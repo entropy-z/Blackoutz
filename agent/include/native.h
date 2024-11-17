@@ -247,6 +247,35 @@ typedef LONG SECURITY_STATUS;
              *((PUSHORT) DEST_ADDRESS) = *((PUSHORT) SRC_ADDRESS);    \
          }                                                            \
 
+typedef enum _FILE_INFO_BY_HANDLE_CLASS {
+  FileBasicInfo,
+  FileStandardInfo,
+  FileNameInfo,
+  FileRenameInfo,
+  FileDispositionInfo,
+  FileAllocationInfo,
+  FileEndOfFileInfo,
+  FileStreamInfo,
+  FileCompressionInfo,
+  FileAttributeTagInfo,
+  FileIdBothDirectoryInfo,
+  FileIdBothDirectoryRestartInfo,
+  FileIoPriorityHintInfo,
+  FileRemoteProtocolInfo,
+  FileFullDirectoryInfo,
+  FileFullDirectoryRestartInfo,
+  FileStorageInfo,
+  FileAlignmentInfo,
+  FileIdInfo,
+  FileIdExtdDirectoryInfo,
+  FileIdExtdDirectoryRestartInfo,
+  FileDispositionInfoEx,
+  FileRenameInfoEx,
+  FileCaseSensitiveInfo,
+  FileNormalizedNameInfo,
+  MaximumFileInfoByHandleClass
+} FILE_INFO_BY_HANDLE_CLASS, *PFILE_INFO_BY_HANDLE_CLASS;
+
 //++
 //
 // VOID
@@ -3705,6 +3734,80 @@ typedef struct _RTL_RXACT_LOG {
 	ULONG Alignment;
 #endif
 } RTL_RXACT_LOG, *PRTL_RXACT_LOG;
+
+NTSYSAPI
+VOID
+NTAPI
+TpReleaseCleanupGroupMembers(
+    _Inout_ PTP_CLEANUP_GROUP CleanupGroup,
+    _In_ LOGICAL CancelPendingCallbacks,
+    _Inout_opt_ PVOID CleanupParameter
+    );
+
+NTSTATUS NTAPI SystemFunction040(
+  		PVOID Memory,
+        ULONG MemorySize,
+        ULONG OptionFlags
+);
+
+NTSTATUS NTAPI SystemFunction041(
+  		PVOID Memory,
+        ULONG MemorySize,
+        ULONG OptionFlags
+);
+
+BOOL SetFileInformationByHandle(
+   HANDLE                    hFile,
+   FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
+   LPVOID                    lpFileInformation,
+   DWORD                     dwBufferSize
+);
+
+DWORD GetMappedFileNameA(
+    HANDLE hProcess,
+    LPVOID lpv,
+   LPSTR  lpFilename,
+    DWORD  nSize
+);
+
+BOOL GetProductInfo(
+    DWORD  dwOSMajorVersion,
+    DWORD  dwOSMinorVersion,
+    DWORD  dwSpMajorVersion,
+    DWORD  dwSpMinorVersion,
+   PDWORD pdwReturnedProductType
+);
+
+NTSTATUS SystemFunction033(
+	 UNICODE_STRING *memoryRegion,
+	 UNICODE_STRING *keyPointer);
+
+NTSTATUS SystemFunction032(
+	 UNICODE_STRING *memoryRegion,
+	 UNICODE_STRING *keyPointer);
+
+void _RtlCopyMemory(
+   void*       Destination,
+   const void* Source,
+   size_t      Length
+);
+
+BOOL UpdateProcThreadAttribute(
+        LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+         DWORD                        dwFlags,
+         DWORD_PTR                    Attribute,
+         PVOID                        lpValue,
+         SIZE_T                       cbSize,
+   PVOID                        lpPreviousValue,
+    PSIZE_T                      lpReturnSize
+);
+
+BOOL InitializeProcThreadAttributeList(
+   LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+              DWORD                        dwAttributeCount,
+                  DWORD                        dwFlags,
+         PSIZE_T                      lpSize
+);
 
 typedef struct _RTL_RXACT_CONTEXT {
 	HANDLE RootRegistryKey;

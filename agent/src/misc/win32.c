@@ -530,7 +530,7 @@ FUNC PVOID LdrFuncAddr(
                 FuncMod    = ForwarderName;
                 nwFuncName = ForwarderName + dwOffset + 1;
 
-                fnLoadLibraryA pLoadLibraryA = LdrFuncAddr(LdrModuleAddr(H_MODULE_KERNEL32), HASH_STR( "LoadLibraryA" ) );
+                fnLoadLibraryA pLoadLibraryA = LdrFuncAddr(LdrModuleAddr( HASH_STR( "KERNEL32.DLL" ) ), HASH_STR( "LoadLibraryA" ) );
 
                 HMODULE hForwardedModule = pLoadLibraryA(FuncMod);
                 if ( hForwardedModule ) {

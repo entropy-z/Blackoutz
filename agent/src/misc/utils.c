@@ -18,7 +18,7 @@ FUNC ULONG HashString(
     _In_ PVOID  String,
     _In_ SIZE_T Length
 ) {
-    ULONG  Hash = { 0 };
+    ULONG  Hash  = 5576;
     PUCHAR Ptr  = { 0 };
     UCHAR  Char = { 0 };
 
@@ -26,7 +26,6 @@ FUNC ULONG HashString(
         return 0;
     }
 
-    Hash = H_MAGIC_KEY;
     Ptr  = ( ( PUCHAR ) String );
 
     do {

