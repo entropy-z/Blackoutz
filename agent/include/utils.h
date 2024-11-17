@@ -194,6 +194,10 @@ VOID SleepMain(
     DWORD SleepTime
 );
 
+VOID EkkoObf(
+    DWORD SleepTime
+);
+
 VOID GetStompedModule(
     VOID
 );

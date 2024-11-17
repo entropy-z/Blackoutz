@@ -125,6 +125,7 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtQueryInformationFile)(HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation, ULONG Length, FILE_INFORMATION_CLASS FileInformationClass);
         NTSTATUS (NTAPI *NtSetInformationVirtualMemory)(HANDLE ProcessHandle, VIRTUAL_MEMORY_INFORMATION_CLASS VmInformationClass, ULONG_PTR NumberOfEntries, PMEMORY_RANGE_ENTRY VirtualAddresses, PVOID VmInformation, ULONG VmInformationLength);
 
+        NTSTATUS (NTAPI *RtlCreateTimerQueue)(PHANDLE TimerQueueHandle);
         NTSTATUS (NTAPI *NtUnmapViewOfSection)(HANDLE ProcessHandle, PVOID BaseAddress);
         NTSTATUS (NTAPI *NtMapViewOfSection)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect);
         NTSTATUS (NTAPI *NtCreateSection)(PHANDLE SectionHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PLARGE_INTEGER MaximumSize, ULONG SectionPageProtection, ULONG AllocationAttributes, HANDLE FileHandle);
@@ -152,6 +153,7 @@ typedef struct _INSTANCE {
         NTSTATUS (NTAPI *NtOpenThreadToken)(HANDLE ThreadHandle, ACCESS_MASK DesiredAccess, BOOLEAN OpenAsSelf, PHANDLE TokenHandle);
         NTSTATUS (NTAPI *NtOpenThreadTokenEx)(HANDLE ThreadHandle, ACCESS_MASK DesiredAccess, BOOLEAN OpenAsSelf, ULONG HandleAttributes, PHANDLE TokenHandle);
         NTSTATUS (NTAPI *NtFreeVirtualMemory)(HANDLE ProcessHandle, PVOID *BaseAddress, PSIZE_T RegionSize, ULONG FreeType);
+        void     (NTAPI *RtlCaptureContext)(PCONTEXT ContextRecord);
 
         BOOL     (WINAPI *GetUserNameA)(LPSTR lpBuffer, LPDWORD pcbBuffer);
         NTSTATUS (NTAPI  *SystemFunction032)(struct USTRING* Img, struct USTRING* Key);
@@ -160,6 +162,7 @@ typedef struct _INSTANCE {
         BOOL     (WINAPI *AdjustTokenPrivileges)(HANDLE TokenHandle, BOOL DisableAllPrivileges, PTOKEN_PRIVILEGES NewState, DWORD BufferLength, PTOKEN_PRIVILEGES PreviousState, PDWORD ReturnLength);
         BOOL     (WINAPI *DuplicateToken)(HANDLE ExistingTokenHandle, SECURITY_IMPERSONATION_LEVEL ImpersonationLevel, PHANDLE DuplicateTokenHandle);
         WINBOOL  (WINAPI *ImpersonateLoggedOnUser)(HANDLE hToken);
+        WINBOOL  (WINAPI *SetEvent)(HANDLE hEvent);
 
         NTSTATUS (NTAPI *SystemFunction040)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
         NTSTATUS (NTAPI *SystemFunction041)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
