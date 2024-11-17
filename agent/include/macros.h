@@ -29,6 +29,7 @@ typedef struct _HWBP {
     PVOID            VectorHandle;
     PVOID            DetourFunc[4];
     CRITICAL_SECTION CriticalSection;
+    BYTE             Ret[1];
 } HWBP, *PHWBP;
 
 //

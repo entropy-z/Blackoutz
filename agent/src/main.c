@@ -1,5 +1,6 @@
 #include <common.h>
 #include <constexpr.h>
+#include <evasion.h>
 
 FUNC VOID BlackoutMain(
     _In_ PVOID Param

@@ -74,8 +74,6 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.TerminateProcess          = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "TerminateProcess" ) );
     Instance()->Win32.GetProductInfo            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetProductInfo" ) );
     Instance()->Win32.GetNativeSystemInfo       = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetNativeSystemInfo" )  );
-    // Instance()->Win32.DeleteCriticalSection     = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "DeleteCriticalSection" )  );
-    // Instance()->Win32.InitializeCriticalSection = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "InitializeCriticalSection" )  );
     Instance()->Win32.DuplicateHandle           = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "DuplicateHandle" )  );
     Instance()->Win32.GetThreadId               = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "GetThreadId" )  );
     Instance()->Win32.ResumeThread              = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ResumeThread" )  );
@@ -88,6 +86,8 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.SetEvent                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetEvent" )  );
     Instance()->Win32.RtlCaptureContext         = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "RtlCaptureContext" )  );
 
+    Instance()->Win32.RtlDeleteCriticalSection     = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlDeleteCriticalSection" )  );
+    Instance()->Win32.RtlInitializeCriticalSection = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlInitializeCriticalSection" )  );
     Instance()->Win32.RtlCompareMemory          = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCompareMemory" )  );
     Instance()->Win32._RtlCopyMemory             = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlCopyMemory" )  );
     Instance()->Win32.RtlExitUserProcess        = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlExitUserProcess" ) );

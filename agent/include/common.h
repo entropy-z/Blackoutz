@@ -30,12 +30,8 @@ typedef struct _INSTANCE {
 
     PTEB Teb;
     struct {
-        D_API( RemoveVectoredContinueHandler );
-        D_API( AddVectoredContinueHandler );
-        D_API( AddVectoredExceptionHandler );
-        D_API( RemoveVectoredExceptionHandler );
-        D_API( DeleteCriticalSection );
-        D_API( InitializeCriticalSection );
+        D_API( RtlDeleteCriticalSection );
+        D_API( RtlInitializeCriticalSection );
         D_API( VirtualFreeEx );
         D_API( CreatePipe );
         D_API( CreateNamedPipeA );
