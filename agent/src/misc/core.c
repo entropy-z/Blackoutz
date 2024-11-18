@@ -183,7 +183,9 @@ FUNC VOID BlackoutInit(
 
     Instance()->Win32.GetAdaptersInfo = LdrFuncAddr( Instance()->Modules.Iphlpapi, HASH_STR( "GetAdaptersInfo" ) );
 
-    Instance()->Win32.printf = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "printf" ) );
+    Instance()->Win32.printf  = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "printf" ) );
+    Instance()->Win32.strncmp = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "strncmp" ) );
+    Instance()->Win32.vprintf = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "vprintf" ) );
 
     /*=============================[ init syscall config ]=============================*/
 

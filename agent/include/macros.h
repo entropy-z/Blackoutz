@@ -27,7 +27,7 @@
 #define BK_PACKAGE          InstancePtr()->Transport.Http.Package
 #define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)
 #define BLACKOUT_INSTANCE PINSTANCE __LocalInstance = InstancePtr();
-#define PAGE_SIZE 0x1000 
+
 //
 // utils macros
 //
@@ -36,7 +36,8 @@
 #define FUNC        D_SEC( B )
 #define ST_GLOBAL   __attribute__( ( section( ".global" ) ) )
 #define ST_READONLY __attribute__( ( section( ".rdata" ) ) )
-
+#define PAGE_SIZE 0x1000 
+#define PAGE_ALIGN( x ) (((ULONG_PTR)x) + ((PAGE_SIZE - (((ULONG_PTR)x) & (PAGE_SIZE - 1))) % PAGE_SIZE))
 
 //
 // type castinng lenght 

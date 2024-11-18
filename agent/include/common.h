@@ -105,10 +105,29 @@ typedef struct _SYSC {
     NTDLL_CONF  NtdllConf;
 } SYSC, *PSYSC;
 
+typedef struct _SECTION_MAP {
+    PVOID Base;
+    ULONG Size;
+} SECTION_MAP, *PSECTION_MAP; 
+
+typedef struct _OBJECT_CTX {
+    union {
+        ULONG_PTR          Base;
+        PIMAGE_FILE_HEADER Header;
+    };
+
+    PIMAGE_SYMBOL         SymTbl;
+    PVOID*                SymMap;
+    PSECTION_MAP          SecMap;
+    PIMAGE_SECTION_HEADER Sections;
+} OBJECT_CTX, *POBJECT_CTX;
+
 typedef struct _INSTANCE {
 
     PTEB Teb;
     struct {
+        D_API( vprintf );
+        D_API( strncmp );
         D_API( RtlDeleteCriticalSection );
         D_API( RtlInitializeCriticalSection );
         D_API( VirtualFreeEx );

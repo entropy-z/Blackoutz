@@ -278,6 +278,7 @@ SIZE_T CharStringToWCharString( _Inout_ PWCHAR Destination, _In_ PCHAR Source, S
 SIZE_T StringLengthA(_In_ LPCSTR String);
 void   InitUnicodeString( _Out_ PUNICODE_STRING UsStruct, _In_opt_ PCWSTR Buffer);
 SIZE_T StringLengthW(_In_ LPCWSTR String);
+INT    StringNbrCmp(_In_ LPCSTR String1, _In_ LPCSTR String2, UINT32 Count);
 INT    StringCompareA(_In_ LPCSTR String1, _In_ LPCSTR String2);
 INT    StringCompareW(_In_ LPCWSTR String1, _In_ LPCWSTR String2);
 void   toUpperCaseChar(char* str);
