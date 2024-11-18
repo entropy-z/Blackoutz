@@ -19,6 +19,7 @@
 #define COMMAND_CLASSIC          0x151
 
 #define COMMAND_TOKEN            0x190
+#define CMD_COFFLOADER           0x500
 
 #define COMMAND_EXITP            0x160
 #define COMMAND_EXITT            0x161
@@ -92,4 +93,8 @@ VOID CommandClassicInjection(
 
 VOID CommandProcEnum(
     _In_ PPARSER Parser
+);
+
+VOID CmdCoffLoader(
+    PPARSER Parser
 );

