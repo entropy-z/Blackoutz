@@ -1,6 +1,6 @@
 #include <common.h>
 
-/*====================================[ Hardware Breakpoint Macros ]====================================*/
+/*====================================[ Hardware Breakpoint ]====================================*/
 
 typedef enum _DRX{
 	Dr0,
@@ -47,3 +47,23 @@ PBYTE GetFuncArg( PCONTEXT pThreadCtx, DWORD dwParmIndex );
 #elif _WIN32
 #define RET_VALUE( CTX, VALUE )( (ULONG_PTR)CTX->Eax = (ULONG_PTR)VALUE )
 #endif // _WIN64
+
+/*====================================[ Syscall ]====================================*/
+
+#define SEED        0xEDB88320
+#define UP          -32
+#define DOWN        32
+#define RANGE       0xFF
+
+VOID SetSsn( DWORD dwSSn, PVOID pSyscallInstAddress );
+VOID RunSyscall( ... );
+BOOL FetchNtSyscall( ULONG SysHash, PSYS_TBL SysTable );
+BOOL InitNtdllConf( VOID );
+
+#define SET_SYSCALL(Sys) \
+    do { \
+        SetSsn((DWORD)Sys.Ssn, (PVOID)Sys.SysInsAddr); \
+        Syscall().qSyscallInsAdress = Sys.SysInsAddr; \
+        Syscall().wSystemCall = Sys.Ssn; \
+    } while(0)
+// #define RUN_SYSCALL(Sys, ...)(RunSyscall((DWORD)Sys.Ssn,(PVOID)Sys.SysInsAddr, ##__VA_ARGS__))

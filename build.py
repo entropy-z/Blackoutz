@@ -119,10 +119,11 @@ def compile_agent(agent_bkapi, stomp=False):
     BLACK_EVAS = "agent/src/evasion/*.c"
     ASM_SRC    = "agent/src/asm/blackout.x64.asm"
     ASM_OUTPUT = "bin/agent_obj/asm_blackout.x64.o"
+    IND_OUTPUT = "bin/agent_obj/asm_indirect.o"
 
-    nasm_command = f"nasm -f win64 {ASM_SRC} -o {ASM_OUTPUT}"
+    nasm_command  = f"nasm -f win64 {ASM_SRC} -o {ASM_OUTPUT}"
     print(f"Compiling assembly: {nasm_command}")
-    nasm_result = subprocess.run(nasm_command, shell=True)
+    nasm_result  = subprocess.run(nasm_command,  shell=True)
 
     if nasm_result.returncode != 0:
         print("Assembly compilation failed.")

