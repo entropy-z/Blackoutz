@@ -99,7 +99,7 @@ FUNC void BeaconPrintf(int type, char* fmt, ...) {
     va_end(VaList);
 }
 
-FUNC VOID ObjectRelocation(
+FUNC VOID CoffRelocation(
     ULONG Type, 
     PVOID Reloc, 
     PVOID SecBase
@@ -139,8 +139,7 @@ FUNC VOID ObjectRelocation(
 	}
 }
 
-
-FUNC PVOID ObjectResolveSymbol(
+FUNC PVOID CoffResolveSymbol(
     PSTR Symbol
 ) {
     BLACKOUT_INSTANCE
@@ -165,19 +164,19 @@ FUNC PVOID ObjectResolveSymbol(
 	// check if it is an imported Beacon api 
 	//
 	if (Instance()->Win32.strncmp("Beacon", Symbol, 6) == 0) {
-		if (StringCompareA("BeaconDataParse", Symbol) == 0) {
+		if ( HASH_STR( "BeaconDataParse" ) == HASH_STR(Symbol) ) {
 		    Resolved = BeaconDataParse;
-		} else if (StringCompareA("BeaconDataInt", Symbol) == 0) {
+		} else if ( HASH_STR( "BeaconDataInt" ) == HASH_STR(Symbol) ) {
 			Resolved = BeaconDataInt;
-		} else if (StringCompareA("BeaconDataShort", Symbol) == 0) {
+		} else if ( HASH_STR( "BeaconDataShort" ) ==  HASH_STR(Symbol) ) {
 			Resolved = BeaconDataShort;
-		} else if (StringCompareA("BeaconDataLength", Symbol) == 0) {
+		} else if ( HASH_STR( "BeaconDataLength" ) == HASH_STR(Symbol) ) {
 			Resolved = BeaconDataLength;
-		} else if (StringCompareA("BeaconDataExtract", Symbol) == 0) {
+		} else if ( HASH_STR( "BeaconDataExtract" ) == HASH_STR(Symbol) ) {
 			Resolved = BeaconDataExtract;
-		} else if (StringCompareA("BeaconOutput", Symbol) == 0) {
+		} else if ( HASH_STR( "BeaconOutput" ) == HASH_STR(Symbol) ) {
 			Resolved = BeaconOutput;
-		} else if (StringCompareA("BeaconPrintf", Symbol) == 0) {
+		} else if ( HASH_STR( "BeaconPrintf" ) == HASH_STR(Symbol) ) {
 			Resolved = BeaconPrintf;
 		}
 	} else {
@@ -228,7 +227,9 @@ FUNC PVOID ObjectResolveSymbol(
 	return Resolved; 
 }
 
-FUNC BOOL ObjectProcessSection(IN POBJECT_CTX ObjCtx) {
+FUNC BOOL CoffProcessSection(
+	_In_ POBJECT_CTX ObjCtx
+) {
 	BLACKOUT_INSTANCE
 
 	PVOID		      SecBase  = { 0 };
@@ -282,8 +283,8 @@ FUNC BOOL ObjectProcessSection(IN POBJECT_CTX ObjCtx) {
 				// if the symbol starts with __imp_ then
 				// resolve the imported function 
 				//
-				if (!(Resolved = ObjectResolveSymbol(Symbol))) {
-					BK_PRINT("[!] ObjectResolveSymbol failed to resolve symbol: %s\n", Symbol);
+				if (!(Resolved = CoffResolveSymbol(Symbol))) {
+					BK_PRINT("[!] CoffResolveSymbol failed to resolve symbol: %s\n", Symbol);
 					return FALSE;
 				}
 			}
@@ -304,7 +305,7 @@ FUNC BOOL ObjectProcessSection(IN POBJECT_CTX ObjCtx) {
 				//
 				// perform relocation on the section 
 				//
-				ObjectRelocation(ObjRel->Type, Reloc, SecBase);
+				CoffRelocation(ObjRel->Type, Reloc, SecBase);
 			}
 
 			//
@@ -381,7 +382,7 @@ FUNC UINT32 CoffVmSize(
 	return PAGE_ALIGN(Length);
 }
 
-FUNC BOOL ObjectExecute(
+FUNC BOOL CoffExecute(
     POBJECT_CTX ObjCtx, 
     PSTR        Entry, 
     PBYTE       Args, 
@@ -538,13 +539,13 @@ FUNC BOOL CoffLdr(
 	ObjCtx.SymMap = SecBase;
 
 	BK_PRINT("\n=== Process Sections ===\n");
-	if (!(bCheck = ObjectProcessSection(&ObjCtx))) {
+	if (!(bCheck = CoffProcessSection(&ObjCtx))) {
 	    BK_PRINT("[!] Failed to process sections\n");
 		goto _END_OF_CODE;
 	}
 
 	BK_PRINT("\n=== Symbol Execution ===\n");
-	if (!(bCheck = ObjectExecute(&ObjCtx, Function, Args, Argc))) {
+	if (!(bCheck = CoffExecute(&ObjCtx, Function, Args, Argc))) {
 		BK_PRINT("[!] Failed to execute function: %s\n", Function);
 	    goto _END_OF_CODE;
 	}

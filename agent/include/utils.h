@@ -195,7 +195,7 @@ VOID SleepMain(
     DWORD SleepTime
 );
 
-VOID EkkoObf(
+VOID TimerObf(
     DWORD SleepTime
 );
 
@@ -210,7 +210,7 @@ VOID GetStompedModule(
  * @param SleepTime
  * time to sleeping
  */
-VOID FoliageObf( 
+VOID ApcObf( 
     _In_ DWORD SleepTime
 );
 

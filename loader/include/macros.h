@@ -20,10 +20,10 @@ SIZE_T StringLengthA(
 #define C_16( x )  ( ( INT16 )  ( x ) )
 #define C_32( x )  ( ( INT32 )  ( x ) )
 #define C_64( x )  ( ( INT64 )  ( x ) )
-#define C_U8( x )  ( ( UINT8 )  ( x ) )
-#define C_U16( x ) ( ( UINT16 ) ( x ) )
-#define C_U32( x ) ( ( UINT32 ) ( x ) )
-#define C_U64( x ) ( ( UINT64 ) ( x ) )
+#define U_8( x )  ( ( UINT8 )  ( x ) )
+#define U_16( x ) ( ( UINT16 ) ( x ) )
+#define U_32( x ) ( ( UINT32 ) ( x ) )
+#define U_64( x ) ( ( UINT64 ) ( x ) )
 
 //
 // casting macros

