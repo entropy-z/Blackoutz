@@ -345,14 +345,14 @@ FUNC VOID GetComputerInfo(
 
     if ( Instance()->Win32.GetAdaptersInfo( NULL, &AdapterInfoSize ) == ERROR_BUFFER_OVERFLOW ) {
         Adapters = bkHeapAlloc( AdapterInfoSize );
-        if (Adapters) {
+        if ( Adapters ) {
             Instance()->Win32.GetAdaptersInfo( Adapters, &AdapterInfoSize );
         }
     }
 
     Instance()->System.UserName = bkHeapAlloc( UserTmpLen );
     Instance()->Win32.GetUserNameA( Instance()->System.UserName, &UserTmpLen );
-    
+
     *ProcessArch  = SysInf.wProcessorArchitecture;
     *ProcessType  = SysInf.dwProcessorType;
     *ProductType  = ReturnProductTp;

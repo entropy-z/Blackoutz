@@ -94,3 +94,8 @@ char*   BeaconDataExtract(datap* parser, int* size);
 
 void BeaconOutput(int type, char* data, int len);
 void BeaconPrintf(int type, char* fmt, ...);
+
+/*====================================[ Injection ]====================================*/
+
+UINT32 InjectionDll( UINT32 ProcessId, PSTR DllPath );
+UINT32 InjectionClassic( UINT32 ProcessId, PBYTE ShellcodeBuffer, UINT64 ShellcodeSize, PVOID ShellcodeMemory, UINT32 ThreadId );

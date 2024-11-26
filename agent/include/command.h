@@ -20,6 +20,7 @@
 
 #define COMMAND_TOKEN            0x190
 #define CMD_COFFLOADER           0x500
+#define CMD_DLLINJECTION         0x501
 
 #define COMMAND_EXITP            0x160
 #define COMMAND_EXITT            0x161
@@ -59,15 +60,19 @@ typedef struct
 // Functions
 VOID CommandDispatcher();
 
+VOID CmdDllInjection(
+    PPARSER Parser
+);
+
 VOID CommandCheckin(
     _In_ PPARSER Parser
 );
 
-VOID CommandRun(
+VOID CmdRun(
     _In_ PPARSER Parser
 );
 
-VOID CommandExplorer(
+VOID CmdExplorer(
     _In_ PPARSER Parser
 );
 
@@ -87,7 +92,7 @@ VOID CommandMemory(
     _In_ PPARSER Parser    
 );
 
-VOID CommandClassicInjection(
+VOID CommandInjectionClassic(
     PPARSER Parser
 );
 

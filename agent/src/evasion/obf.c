@@ -190,12 +190,12 @@ FUNC VOID TimerObf(
     if ( Status != 0 ) goto _Leave;
 
 _Leave:
+    if ( Blackout().Stomp.ModName.Buffer ) bkHeapFree( Blackout().Stomp.ModName.Buffer, Blackout().Stomp.ModName.MaximumLength );
     if ( Timer   ) Instance()->Win32.RtlDeleteTimer( Queue, Timer, EvtTmr );
     if ( Queue   ) Instance()->Win32.RtlDeleteTimerQueue( Queue );
     if ( EvtEnd  ) bkHandleClose( EvtEnd  );
     if ( EvtStrt ) bkHandleClose( EvtStrt );
     if ( EvtTmr  ) bkHandleClose( EvtTmr  );
-    if ( EvtEnd  ) bkHandleClose( Queue   );
 }
 
 FUNC VOID ApcObf( 
@@ -378,15 +378,15 @@ FUNC VOID ApcObf(
 
     Status = Instance()->Win32.NtSignalAndWaitForSingleObject( EvtSync, hSlpThread, FALSE, NULL );
     if ( Status != 0x00 ) goto _Leave;
-
+    
 _Leave:
     if ( EvtSync ) {
-        Instance()->Win32.CloseHandle( EvtSync );
+        bkHandleClose( EvtSync );
         EvtSync = NULL;
     }
 
     if ( hSlpThread ) {
-        Instance()->Win32.CloseHandle( hSlpThread );
+        bkHandleClose( hSlpThread );
         hSlpThread = NULL;
     }
 

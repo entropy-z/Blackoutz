@@ -412,10 +412,10 @@ DWORD bkMemWrite(
  * Changing memory protection of shared memory regions may affect other threads or processes.
  */
 DWORD bkMemProtect(
-    _In_ HANDLE ProcessHandle,
-    _In_ PVOID  BaseAddr,
-    _In_ UINT64 RegionSize,
-    _In_ DWORD  NewProtection
+    _In_  HANDLE ProcessHandle,
+    _In_  PVOID  BaseAddr,
+    _In_  UINT64 RegionSize,
+    _In_  DWORD  NewProtection
 );
 
 /*!

