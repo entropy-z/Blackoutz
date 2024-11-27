@@ -474,6 +474,12 @@ DWORD bkMemQuery(
     _Out_    DWORD  *Type
 );
 
+DWORD bkMemFree(
+    _In_opt_ HANDLE ProcessHandle,
+    _In_     PVOID  MemAddress,
+    _In_     UINT64 SizeToFree
+);
+
 /*=================================[ Token bkAPIs ]=================================*/
 
 /*!

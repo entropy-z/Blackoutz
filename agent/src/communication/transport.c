@@ -96,7 +96,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     DWORD   HttpAccessType  = 0;
     LPCWSTR HttpProxy       = NULL;
     DWORD   BufRead         = 0;
-    UCHAR   Buffer[ 1024 ]  = { 0 };
+    UCHAR   Buffer[ 1025 ]  = { 0 };
     PVOID   RespBuffer      = NULL;
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = FALSE;
@@ -176,6 +176,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
                 MmSet( Buffer, 0, 1024 );
 
             } while ( Successful == TRUE );
+
 
             if ( RecvSize )
                 *RecvSize = RespSize;

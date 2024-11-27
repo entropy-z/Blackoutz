@@ -21,6 +21,7 @@
 #define COMMAND_TOKEN            0x190
 #define CMD_COFFLOADER           0x500
 #define CMD_DLLINJECTION         0x501
+#define CMD_REFLECTION           0x502
 
 #define COMMAND_EXITP            0x160
 #define COMMAND_EXITT            0x161
@@ -60,46 +61,15 @@ typedef struct
 // Functions
 VOID CommandDispatcher();
 
-VOID CmdDllInjection(
-    PPARSER Parser
-);
-
-VOID CommandCheckin(
-    _In_ PPARSER Parser
-);
-
-VOID CmdRun(
-    _In_ PPARSER Parser
-);
-
-VOID CmdExplorer(
-    _In_ PPARSER Parser
-);
-
-VOID CommandSleep(
-    PPARSER Parser
-);
-
-VOID CommandExitProcess(
-    PPARSER Parser
-);
-
-VOID CommandExitThread(
-    PPARSER Parser
-);
-
-VOID CommandMemory( 
-    _In_ PPARSER Parser    
-);
-
-VOID CommandInjectionClassic(
-    PPARSER Parser
-);
-
-VOID CommandProcEnum(
-    _In_ PPARSER Parser
-);
-
-VOID CmdCoffLoader(
-    PPARSER Parser
-);
+VOID CmdDllInjection( PPARSER Parser );
+VOID CmdReflectiveInjection( PPARSER Parser );
+VOID CmdCheckin( PPARSER Parser );
+VOID CmdRun( PPARSER Parser );
+VOID CmdExplorer( PPARSER Parser );
+VOID CmdSleep( PPARSER Parser );
+VOID CmdExitProcess( PPARSER Parser );
+VOID CmdExitThread( PPARSER Parser );
+VOID CmdMemory( PPARSER Parser );
+VOID CmdInjectionClassic( PPARSER Parser );
+VOID CmdProcEnum( PPARSER Parser );
+VOID CmdCoffLoader( PPARSER Parser );

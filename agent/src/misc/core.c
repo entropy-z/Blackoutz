@@ -77,7 +77,11 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.LoadLibraryExA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExA" )  );
     Instance()->Win32.LoadLibraryExW            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExW" )  );
     Instance()->Win32.SetEvent                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetEvent" )  );
-    Instance()->Win32.RtlCaptureContext         = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "RtlCaptureContext" )  );
+    Instance()->Win32.InitializeProcThreadAttributeList = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernelbase, "InitializeProcThreadAttributeList"   );
+    Instance()->Win32.UpdateProcThreadAttribute         = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernelbase, "UpdateProcThreadAttribute"   );
+    Instance()->Win32.DeleteProcThreadAttributeList     = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernelbase, "DeleteProcThreadAttributeList"  );
+    Instance()->Win32.RtlCaptureContext                 = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernel32, "RtlCaptureContext" );
+
 
     Instance()->Win32.RtlDeleteTimer            = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlDeleteTimer" ) );
     Instance()->Win32.RtlDeleteTimerQueue       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlDeleteTimerQueue" ) );
@@ -142,6 +146,8 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.NtOpenProcessTokenEx      = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenProcessTokenEx" ) ); 
     Instance()->Win32.NtOpenThreadToken         = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenThreadToken" ) ); 
     Instance()->Win32.NtOpenThreadTokenEx       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtOpenThreadTokenEx" ) ); 
+    Instance()->Win32.NtFlushInstructionCache   = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "NtFlushInstructionCache" ) ); 
+    Instance()->Win32.RtlAddFunctionTable       = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "RtlAddFunctionTable" ) );
 
     Instance()->Modules.Winhttp   = LdrModuleAddr( HASH_STR( "Winhttp.dll" ) );
     Instance()->Modules.Advapi32  = LdrModuleAddr( HASH_STR( "Advapi32.dll" ) );

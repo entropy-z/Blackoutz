@@ -17,12 +17,10 @@ CONSTEXPR ULONG ExprHashStringA(_In_ PCHAR String)
     }
 
     while ((Char = *String++)) {
-        // Converter o caractere atual para maiúscula, se for minúsculo
         if (Char >= 'a' && Char <= 'z') {
             Char -= 0x20;
         }
 
-        // Atualizar o valor do hash
         Hash = ((Hash << 5) + Hash) + Char;
     }
 

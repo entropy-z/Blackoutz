@@ -7,7 +7,7 @@ typedef enum _DRX{
 	Dr1,
 	Dr2,
 	Dr3
-} DRX, *PDRX;
+} DRX;
 
 BOOL  InitHwbp( VOID );
 VOID  UninitHwbp( VOID );

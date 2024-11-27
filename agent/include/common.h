@@ -128,6 +128,9 @@ typedef struct _INSTANCE {
 
     PTEB Teb;
     struct {
+        D_API( DeleteProcThreadAttributeList );
+        D_API( RtlAddFunctionTable );
+        D_API( NtFlushInstructionCache );
         D_API( UnmapViewOfFile );
         D_API( MapViewOfFile );
         D_API( CreateFileMappingA );

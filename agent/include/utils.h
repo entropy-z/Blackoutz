@@ -210,17 +210,10 @@ VOID GetStompedModule(
  * @param SleepTime
  * time to sleeping
  */
-VOID ApcObf( 
-    _In_ DWORD SleepTime
-);
+VOID ApcObf( _In_ DWORD SleepTime );
 
-VOID HeapObf( 
-    PVOID Heap
-);
-
-VOID StackObf(
-    VOID
-);
+VOID HeapObf( PVOID Heap );
+VOID StackObf( VOID );
 
 /*!
  * @brief
@@ -229,14 +222,9 @@ VOID StackObf(
  * @return
  * return boolean value, TRUE if cfg enabled and FALSE if CFG disabled
  */
-BOOL CfgCheckEnabled(
-    VOID
-);
+BOOL CfgCheckEnabled( VOID );
 
-VOID CfgAddressAdd( 
-    _In_ PVOID ImageBase,
-    _In_ PVOID Function
-);
+VOID CfgAddressAdd( _In_ PVOID ImageBase, _In_ PVOID Function );
 
 /*!
  * @brief
@@ -251,19 +239,16 @@ VOID CfgAddressAdd(
  * @param Size
  *  private memory address size to add to the cfg list
  */
-VOID CfgPrivateAddressAdd(
-    _In_ HANDLE hProcess,
-    _In_ PVOID  Address,
-    _In_ DWORD  Size
-);
+VOID CfgPrivateAddressAdd( _In_ HANDLE hProcess, _In_ PVOID Address, _In_ DWORD Size );
 
 EXTERN_C VOID volatile ___chkstk_ms(
         VOID
 );
 
-BOOL SelfDeletion(
-    void
-);
+BOOL  SelfDeletion( void );
+BOOL  FixRelocTable( _In_ PIMAGE_DATA_DIRECTORY EntryReloc, _In_ UINT64 BaseAddress, _In_ UINT64 RelocOffset );
+BOOL  ResolveIat( _In_ PIMAGE_DATA_DIRECTORY EntryImport, _In_ UINT64 BaseAddress );
+PVOID InjectionReflective( _In_ HANDLE ProcessHandle, _In_ PBYTE PeBytes, _In_ UINT64 PeSize, _In_ PSTR Args, _In_ BOOL IsDll );
 
 /*============================[ Memory ]============================*/
 
