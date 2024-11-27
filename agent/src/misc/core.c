@@ -77,6 +77,7 @@ FUNC VOID BlackoutInit(
     Instance()->Win32.LoadLibraryExA            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExA" )  );
     Instance()->Win32.LoadLibraryExW            = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "LoadLibraryExW" )  );
     Instance()->Win32.SetEvent                  = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "SetEvent" )  );
+    Instance()->Win32.ReadProcessMemory         = LdrFuncAddr( Instance()->Modules.Kernel32, HASH_STR( "ReadProcessMemory" )  );
     Instance()->Win32.InitializeProcThreadAttributeList = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernelbase, "InitializeProcThreadAttributeList"   );
     Instance()->Win32.UpdateProcThreadAttribute         = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernelbase, "UpdateProcThreadAttribute"   );
     Instance()->Win32.DeleteProcThreadAttributeList     = Instance()->Win32.GetProcAddress( Instance()->Modules.Kernelbase, "DeleteProcThreadAttributeList"  );

