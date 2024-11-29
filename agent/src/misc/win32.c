@@ -86,7 +86,7 @@ FUNC PVOID FindJmpGadget(
     SearchSize = 0x1000 * 0x1000;    
 
     for ( INT i = 0; i < SearchSize - 1; i++ ) {
-        if ( SearchBase[i] == 0xff && SearchBase[i+1] == 0x23 ) {
+        if ( SearchBase[i] == 0xff && SearchBase[i+1] == Register ) {
             Gadget = SearchBase + i;
             break;
         }

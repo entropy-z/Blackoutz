@@ -8,7 +8,7 @@ FUNC UINT32 InjectionDll(
 
     HANDLE ProcessHandle = NULL;
     HANDLE ThreadHandle  = NULL;
-    UINT32 bkErrorCode        = 0;
+    UINT32 bkErrorCode   = 0;
     PVOID  MemoryAlloc   = NULL;
 
     if ( ProcessId != 0 ) {

