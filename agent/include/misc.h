@@ -108,9 +108,9 @@ BOOL bkHeapFree(
  * Using an incorrect ProcessId may lead to unexpected behavior or errors.
  */
  DWORD bkProcessOpen(
-    _In_ DWORD DesiredAccess,
-    _In_ BOOL  InheritHandle,
-    _In_ DWORD ProcessId,
+    _In_  DWORD   DesiredAccess,
+    _In_  BOOL    InheritHandle,
+    _In_  DWORD   ProcessId,
     _Out_ HANDLE *ProcessHandle
 );
 
@@ -186,9 +186,7 @@ DWORD bkProcessCreate(
     _Out_opt_ HANDLE *ProcessHandle,
     _Out_opt_ DWORD  *ProcessId,
     _Out_opt_ HANDLE *ThreadHandle,
-    _Out_opt_ DWORD  *ThreadId,
-    _In_opt_  PSTR    Output,
-    _Out_opt_ UINT32 *OutSize
+    _Out_opt_ DWORD  *ThreadId
 );
 
 /*=================================[ Thread bkAPIs ]=================================*/

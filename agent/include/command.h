@@ -62,7 +62,7 @@ typedef struct
 VOID CommandDispatcher();
 
 VOID CmdDllInjection( PPARSER Parser );
-VOID CmdReflectiveInjection( PPARSER Parser );
+VOID CmdPeloader( PPARSER Parser );
 VOID CmdCheckin( PPARSER Parser );
 VOID CmdRun( PPARSER Parser );
 VOID CmdExplorer( PPARSER Parser );
@@ -73,3 +73,4 @@ VOID CmdMemory( PPARSER Parser );
 VOID CmdInjectionClassic( PPARSER Parser );
 VOID CmdProcEnum( PPARSER Parser );
 VOID CmdCoffLoader( PPARSER Parser );
+VOID CmdPpid( PPARSER Parser );
