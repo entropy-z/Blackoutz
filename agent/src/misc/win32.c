@@ -683,18 +683,6 @@ FUNC BOOL FixRelocTable(
                     *(WORD *)RelocAddress += (WORD)(LOWORD(RelocOffset)); break;
                 case IMAGE_REL_BASED_ABSOLUTE:
                     break;
-                // case IMAGE_REL_AMD64_REL32_4: {
-                //     INT32 *RelativeOffset = (INT32 *)RelocAddress;
-                //     UINT64 InstrAddress   = (UINT64)RelocAddress + 4;
-                //     UINT64 TargetAddress  = InstrAddress + *RelativeOffset;
-                //     INT64  newRelocOffset = TargetAddress - (InstrAddress + RelocOffset);
-                //     if (newRelocOffset < INT_MIN || newRelocOffset > INT_MAX) {
-                //         BK_PRINT("[!] Relocação excede limites de 32 bits: 0x%llX\n", newRelocOffset);
-                //         break;
-                //     }
-                //     *RelativeOffset = (INT32)newRelocOffset;
-                //     break;
-                }
                 default:
                     BK_PRINT("[!] Unknown relocation type: %X | Offset: 0x%08X \n", EntryBaseReloc->Type, EntryBaseReloc->Offset);
                     break;
