@@ -51,11 +51,11 @@ CONSTEXPR ULONG ExprHashStringA(
     return Hash;
 }
 
-PVOID LdrModuleAddr(
+PVOID LdrLoadModule(
     _In_ ULONG Hash
 );
 
-PVOID LdrFuncAddr( 
+PVOID LdrLoadFunc( 
     _In_ PVOID BaseModule, 
     _In_ ULONG FuncName 
 ); 

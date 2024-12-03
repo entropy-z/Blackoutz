@@ -452,7 +452,7 @@ FUNC BOOL FixPeb(
     return TRUE;
 }
 
-FUNC PVOID LdrModuleAddr(
+FUNC PVOID LdrLoadModule(
     _In_ ULONG Hash
 ) {
 	BLACKOUT_INSTANCE
@@ -485,9 +485,9 @@ FUNC PVOID LdrModuleAddr(
     return NULL;
 }
 
-FUNC PVOID LdrFuncAddr( 
-    _In_ PVOID BaseModule, 
-    _In_ ULONG FuncName 
+FUNC PVOID LdrLoadFunc( 
+    _In_ PVOID  BaseModule, 
+    _In_ UINT32 FuncHash 
 ) {
     PIMAGE_NT_HEADERS       pImgNt         = { 0 };
     PIMAGE_EXPORT_DIRECTORY pImgExportDir  = { 0 };
@@ -497,7 +497,7 @@ FUNC PVOID LdrFuncAddr(
     PWORD                   AddrOfOrdinals = NULL;
     PVOID                   FuncAddr       = NULL;
 
-    pImgNt          = C_PTR( BaseModule + ((PIMAGE_DOS_HEADER)BaseModule)->e_lfanew );
+    pImgNt          = C_PTR( BaseModule + ((PIMAGE_DOS_HEADER)BaseModule )->e_lfanew );
     pImgExportDir   = C_PTR( BaseModule + pImgNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress );
     ExpDirSz        = U_PTR( BaseModule + pImgNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size );
 
@@ -509,7 +509,7 @@ FUNC PVOID LdrFuncAddr(
         PCHAR pFuncName         = (PCHAR)( BaseModule + AddrOfNames[i] );
         PVOID pFunctionAddress  = C_PTR( BaseModule + AddrOfFuncs[AddrOfOrdinals[i]] );
 
-        if ( HashString( pFuncName, 0 ) == FuncName ) {
+        if ( HashString( pFuncName, 0 ) == FuncHash ) {
             if (( U_PTR( pFunctionAddress ) >= U_PTR( pImgExportDir ) ) &&
                 ( U_PTR( pFunctionAddress )  < U_PTR( pImgExportDir ) + ExpDirSz )) {
 
@@ -518,7 +518,7 @@ FUNC PVOID LdrFuncAddr(
                 PCHAR FuncMod                 = NULL;
                 PCHAR nwFuncName              = NULL;
 
-                MmCopy( ForwarderName, pFunctionAddress, StringLengthA( (PCHAR)pFunctionAddress ) );
+                MemCopy( ForwarderName, pFunctionAddress, StringLengthA( (PCHAR)pFunctionAddress ) );
 
                 for ( int j = 0 ; j < StringLengthA( (PCHAR)ForwarderName ) ; j++ ) {
                     if (((PCHAR)ForwarderName)[j] == '.') {
@@ -531,15 +531,31 @@ FUNC PVOID LdrFuncAddr(
                 FuncMod    = ForwarderName;
                 nwFuncName = ForwarderName + dwOffset + 1;
 
-                fnLoadLibraryA pLoadLibraryA = LdrFuncAddr(LdrModuleAddr( HASH_STR( "KERNEL32.DLL" ) ), HASH_STR( "LoadLibraryA" ) );
+                UNICODE_STRING  UnicodeString           = { 0 };
+                WCHAR           ModuleNameW[ MAX_PATH ] = { 0 };
+                DWORD           dwModuleNameSize        = StringLengthA( FuncMod );
+                HMODULE         Module                  = NULL;
 
-                HMODULE hForwardedModule = pLoadLibraryA(FuncMod);
+                CharStringToWCharString( ModuleNameW, FuncMod, dwModuleNameSize );
+
+                if ( ModuleNameW ){
+                    USHORT DestSize             = StringLengthW( ModuleNameW ) * sizeof( WCHAR );
+                    UnicodeString.Length        = DestSize;
+                    UnicodeString.MaximumLength = DestSize + sizeof( WCHAR );
+                }
+
+                UnicodeString.Buffer = ModuleNameW;
+
+                fLdrLoadDll pLdrLoadDll      = LdrLoadFunc( LdrLoadModule( HASH_STR( "ntdll.dll" ) ), "LdrLoadDll" );
+                HMODULE     hForwardedModule = NULL;
+
+                pLdrLoadDll( NULL, 0, &UnicodeString, &hForwardedModule );
                 if ( hForwardedModule ) {
                     if ( nwFuncName[0] == '#' ) {
                         int ordinal = (INT)( nwFuncName + 1 );
-                        return (PVOID)LdrFuncAddr( hForwardedModule, HASH_STR( (LPCSTR)ordinal ) );
+                        return (PVOID)LdrLoadFunc( hForwardedModule, HashString( (LPCSTR)ordinal, 0 ) );
                     } else {
-                        return (PVOID)LdrFuncAddr( hForwardedModule, HASH_STR( nwFuncName ) );
+                        return (PVOID)LdrLoadFunc( hForwardedModule, HashString( nwFuncName, 0 ) );
                     }
                 }
                 return NULL;

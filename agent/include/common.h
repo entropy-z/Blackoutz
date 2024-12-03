@@ -25,6 +25,8 @@
 EXTERN_C ULONG __Instance_offset;
 EXTERN_C PVOID __Instance;
 
+typedef  NTSTATUS (*fLdrLoadDll)(PWSTR DllPath, PULONG DllCharacteristics, PUNICODE_STRING DllName, PVOID *DllHandle);
+
 typedef struct _SLEEP_OBF {
     UINT32 Technique;
     UINT16 InsGadget;
@@ -93,11 +95,11 @@ typedef struct  _SYS_API {
 } SYS_API, *PSYS_API;
 
 typedef struct _NTDLL_CONFIG {
-    PDWORD      ArrayOfAddr;       // The VA of the array of addresses of ntdll's exported functions   [BaseAddress + IMAGE_EXPORT_DIRECTORY.AddressOfFunctions]
-    PDWORD      ArrayOfNames;      // The VA of the array of names of ntdll's exported functions       [BaseAddress + IMAGE_EXPORT_DIRECTORY.AddressOfNames]
-    PWORD       ArrayOfOrdinals;   // The VA of the array of ordinals of ntdll's exported functions    [BaseAddress + IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals]    
-    ULONG       NumberOfNames;     // The number of exported functions from ntdll.dll                  [IMAGE_EXPORT_DIRECTORY.NumberOfNames]
-    ULONG_PTR   uModule;           // The base address of ntdll - requred to calculated future RVAs    [BaseAddress]
+    PDWORD      ArrayOfAddr;     
+    PDWORD      ArrayOfNames;     
+    PWORD       ArrayOfOrdinals;   
+    ULONG       NumberOfNames;     
+    ULONG_PTR   uModule;          
 }NTDLL_CONF, * PNTDLL_CONF;
 
 typedef struct _SYSC {

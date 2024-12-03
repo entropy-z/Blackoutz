@@ -146,7 +146,7 @@ VOID GetComputerInfo(
  * @return
  *  module base pointer
  */
-PVOID LdrModuleAddr(
+PVOID LdrLoadModule(
     _In_ ULONG Hash
 );
 
@@ -163,7 +163,7 @@ PVOID LdrModuleAddr(
  * @return
  * function base address 
  */
-PVOID LdrFuncAddr(
+PVOID LdrLoadFunc(
     _In_ PVOID Module,
     _In_ ULONG Function
 );
