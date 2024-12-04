@@ -9,6 +9,10 @@ FUNC VOID BlackoutMain(
 
     BlackoutInit( Param );
 
+    while( 1 ) {
+        SleepMain( Instance()->Session.SleepTime * 1000 );
+    }
+
     do {
         if ( !Instance()->Session.Connected ) {
             if ( TransportInit() )

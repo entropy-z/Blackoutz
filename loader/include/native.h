@@ -6139,7 +6139,7 @@ typedef struct _BASE_GET_NEXT_VDM_COMMAND_MSG
 	PVOID WaitObjectForVDM;
 	PVOID StdIn;
 	PVOID StdOut;
-	PVOID StdErr;
+	PVOID StdbkErrorCode;
 	ULONG CodePage;
 	ULONG dwCreationFlags;
 	ULONG ExitCode;
@@ -6191,7 +6191,7 @@ typedef struct _BASE_CHECKVDM_MSG
 	HANDLE WaitObjectForParent;
 	HANDLE StdIn;
 	HANDLE StdOut;
-	HANDLE StdErr;
+	HANDLE StdbkErrorCode;
 	ULONG  CodePage;
 	ULONG  dwCreationFlags;
 	PCHAR  CmdLine;

