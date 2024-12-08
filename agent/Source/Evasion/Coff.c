@@ -103,7 +103,7 @@ FUNC void BeaconPrintf(int type, char* fmt, ...) {
     va_list VaList = { 0 };
 
     va_start(VaList, fmt);
-    Instance()->Win32.vprintf(fmt, VaList);
+    Win32().vprintf(fmt, VaList);
     va_end(VaList);
 }
 
@@ -171,7 +171,7 @@ FUNC PVOID CoffResolveSymbol(
 	//
 	// check if it is an imported Beacon api 
 	//
-	if (Instance()->Win32.strncmp("Beacon", Symbol, 6) == 0) {
+	if (Win32().strncmp("Beacon", Symbol, 6) == 0) {
 		if ( HASH_STR( "BeaconDataParse" ) == HASH_STR( Symbol ) ) {
 		    Resolved = BeaconDataParse;
 		} else if ( HASH_STR( "BeaconDataInt" ) == HASH_STR( Symbol ) ) {
@@ -212,8 +212,8 @@ FUNC PVOID CoffResolveSymbol(
 		// resolve the library instance
 		// from the symbol string
 		//
-		if ( !(Module = Instance()->Win32.GetModuleHandleA( Library ) ) ) {
-		    if ( !(Module = Instance()->Win32.LoadLibraryA( Library ) ) ) {
+		if ( !(Module = Win32().GetModuleHandleA( Library ) ) ) {
+		    if ( !(Module = Win32().LoadLibraryA( Library ) ) ) {
                 BK_PRINT("[!] Module not found: %s\n", Library);
 				return NULL;
 		    }
@@ -222,7 +222,7 @@ FUNC PVOID CoffResolveSymbol(
 		//
 		// resolve function from the loaded library 
 		//
-		if ( !(Resolved = Instance()->Win32.GetProcAddress( Module, Function ) ) ) {
+		if ( !(Resolved = Win32().GetProcAddress( Module, Function ) ) ) {
 			BK_PRINT( "[!] Function not found inside of %s: %s\n", Library, Function );
 			return NULL;
 		}
@@ -286,7 +286,7 @@ FUNC BOOL CoffProcessSection(
 			//
 			// check if the symbol starts with an __imp_
 			//
-			if (Instance()->Win32.strncmp("__imp_", Symbol, 6) == 0) {
+			if (Win32().strncmp("__imp_", Symbol, 6) == 0) {
 				//
 				// if the symbol starts with __imp_ then
 				// resolve the imported function 
@@ -376,7 +376,7 @@ FUNC UINT32 CoffVmSize(
 			//
 			// check if the symbol starts with an __imp_
 			//
-			if (Instance()->Win32.strncmp("__imp_", Symbol, 6) == 0) {
+			if (Win32().strncmp("__imp_", Symbol, 6) == 0) {
 				Length += sizeof(PVOID);
 			}
 			
@@ -440,7 +440,7 @@ FUNC BOOL CoffExecute(
 			//
 			// make the section executable
 			//
-			if (!Instance()->Win32.VirtualProtect(SecBase, SecSize, PAGE_EXECUTE_READ, &Protect)) {
+			if (!Win32().VirtualProtect(SecBase, SecSize, PAGE_EXECUTE_READ, &Protect)) {
 			    BK_PRINT("[!] VirtualProtect Failed with Error: %ld\n", NtLastError());
 				break;
 			}
@@ -455,7 +455,7 @@ FUNC BOOL CoffExecute(
 			//
 			// revert the old section protection 
 			//
-			if ( !Instance()->Win32.VirtualProtect(SecBase, SecSize, Protect, &Protect)) {
+			if ( !Win32().VirtualProtect(SecBase, SecSize, Protect, &Protect)) {
 				BK_PRINT("[!] VirtualProtect Failed with Error: %ld\n", NtLastError());
 				break;
 			}
@@ -500,7 +500,7 @@ FUNC BOOL CoffLdr(
 	//
 	// allocate virtual memory 
 	//
-	if (!(VmAddr = Instance()->Win32.VirtualAlloc(NULL, VmSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE))) {
+	if (!(VmAddr = Win32().VirtualAlloc(NULL, VmSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE))) {
 	    BK_PRINT("[!] VirtualAlloc Failed with Error: %ld\n", NtLastError());
 		goto _END_OF_CODE;
 	}
@@ -564,7 +564,7 @@ FUNC BOOL CoffLdr(
 	
 _END_OF_CODE:
 	if (VmAddr) {
-	    Instance()->Win32.VirtualFree( VmAddr, VmSize, MEM_RELEASE );
+	    Win32().VirtualFree( VmAddr, VmSize, MEM_RELEASE );
 		VmAddr = NULL;
 	}
 

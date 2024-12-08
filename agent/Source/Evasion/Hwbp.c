@@ -26,7 +26,7 @@ FUNC BOOL SetHwbp(
 	CONTEXT ThreadCtx = { .ContextFlags = CONTEXT_DEBUG_REGISTERS };
 
 	// Get local thread context
-	Instance()->Win32.NtGetContextThread( NtCurrentThread(), &ThreadCtx );
+	Win32().NtGetContextThread( NtCurrentThread(), &ThreadCtx );
 
 	// Sets the value of the Dr0-3 registers 
 	switch ( Drx ) {
@@ -58,7 +58,7 @@ FUNC BOOL SetHwbp(
 
 	ThreadCtx.Dr7 = SetDr7Bits( ThreadCtx.Dr7, ( Drx * 2 ), 1, 1);
 	// Set the thread context
-	Instance()->Win32.NtSetContextThread( NtCurrentThread(), &ThreadCtx );
+	Win32().NtSetContextThread( NtCurrentThread(), &ThreadCtx );
 
 	return TRUE;
 }
@@ -70,7 +70,7 @@ FUNC BOOL RmvHwbp(
 
 	CONTEXT ThreadCtx = { .ContextFlags = CONTEXT_DEBUG_REGISTERS };
 
-	Instance()->Win32.NtGetContextThread( NtCurrentThread(), &ThreadCtx );
+	Win32().NtGetContextThread( NtCurrentThread(), &ThreadCtx );
 
 	// Remove the address of the hooked function from the thread context
 	switch ( Drx ) {
@@ -97,7 +97,7 @@ FUNC BOOL RmvHwbp(
 	// Disabling the hardware breakpoint by setting the target G0-3 flag to zero 
 	ThreadCtx.Dr7 = SetDr7Bits( ThreadCtx.Dr7, (Drx * 2), 1, 0 );
 
-    Instance()->Win32.NtSetContextThread( NtCurrentThread(), &ThreadCtx );
+    Win32().NtSetContextThread( NtCurrentThread(), &ThreadCtx );
 
 	return TRUE;
 }
@@ -219,13 +219,13 @@ FUNC BOOL InitHwbp(
 
 	// If 'g_CriticalSection' is not yet initialized
 	if ( Blackout().Hwbp.CriticalSection.DebugInfo == NULL ) {
-		Instance()->Win32.RtlInitializeCriticalSection( &Blackout().Hwbp.CriticalSection );
+		Win32().RtlInitializeCriticalSection( &Blackout().Hwbp.CriticalSection );
 	}
 
 	// If 'g_VectorHandler' is not yet initialized
 	if ( !Blackout().Hwbp.VectorHandle ) {
 		// Add 'VectorHandler' as the VEH function
-		if ( ( Blackout().Hwbp.VectorHandle = Instance()->Win32.RtlAddVectoredExceptionHandler(1, (PVECTORED_EXCEPTION_HANDLER)&HwbpVectorHandler) ) == NULL) 
+		if ( ( Blackout().Hwbp.VectorHandle = Win32().RtlAddVectoredExceptionHandler(1, (PVECTORED_EXCEPTION_HANDLER)&HwbpVectorHandler) ) == NULL) 
 			return;
 	}
 
@@ -241,10 +241,10 @@ FUNC VOID UninitHwbp(
 		RmvHwbp( i );
 	// If the critical section is initialized, delete it
 	if ( Blackout().Hwbp.CriticalSection.DebugInfo )
-		Instance()->Win32.RtlDeleteCriticalSection( &Blackout().Hwbp.CriticalSection );
+		Win32().RtlDeleteCriticalSection( &Blackout().Hwbp.CriticalSection );
 	// If VEH is registered, remove it
 	if ( Blackout().Hwbp.VectorHandle )
-		Instance()->Win32.RtlRemoveVectoredExceptionHandler( Blackout().Hwbp.VectorHandle );
+		Win32().RtlRemoveVectoredExceptionHandler( Blackout().Hwbp.VectorHandle );
 
 	// Cleanup the global variables
 	MmZero( &Blackout().Hwbp.CriticalSection, sizeof( CRITICAL_SECTION ) );

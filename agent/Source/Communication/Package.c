@@ -37,7 +37,7 @@ FUNC VOID Int32ToBuffer( PUCHAR Buffer, UINT32 Size ) {
 FUNC VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt ) {
     BLACKOUT_INSTANCE
 
-    Package->Buffer = Instance()->Win32.LocalReAlloc( Package->Buffer, Package->Length + sizeof( UINT32 ), LMEM_MOVEABLE );
+    Package->Buffer = Win32().LocalReAlloc( Package->Buffer, Package->Length + sizeof( UINT32 ), LMEM_MOVEABLE );
 
     Int32ToBuffer( Package->Buffer + Package->Length, dataInt );
 
@@ -48,7 +48,7 @@ FUNC VOID PackageAddInt32( PPACKAGE Package, UINT32 dataInt ) {
 FUNC VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 {
     BLACKOUT_INSTANCE
-    Package->Buffer = Instance()->Win32.LocalReAlloc(
+    Package->Buffer = Win32().LocalReAlloc(
         Package->Buffer,
         Package->Length + sizeof( UINT64 ),
         LMEM_MOVEABLE
@@ -63,7 +63,7 @@ FUNC VOID PackageAddInt64( PPACKAGE Package, UINT64 dataInt )
 FUNC VOID PackageAddPad( PPACKAGE Package, PUCHAR Data, SIZE_T Size )
 {
     BLACKOUT_INSTANCE
-    Package->Buffer = Instance()->Win32.LocalReAlloc(
+    Package->Buffer = Win32().LocalReAlloc(
         Package->Buffer,
         Package->Length + Size,
         LMEM_MOVEABLE | LMEM_ZEROINIT
@@ -80,7 +80,7 @@ FUNC VOID PackageAddBytes( PPACKAGE Package, PUCHAR Data, SIZE_T Size ) {
     BLACKOUT_INSTANCE
     PackageAddInt32( Package, Size );
 
-    Package->Buffer = Instance()->Win32.LocalReAlloc( Package->Buffer, Package->Length + Size, LMEM_MOVEABLE | LMEM_ZEROINIT );
+    Package->Buffer = Win32().LocalReAlloc( Package->Buffer, Package->Length + Size, LMEM_MOVEABLE | LMEM_ZEROINIT );
 
     Int32ToBuffer( Package->Buffer + ( Package->Length - sizeof( UINT32 ) ), Size );
 
@@ -96,8 +96,8 @@ FUNC PPACKAGE PackageCreate( UINT32 CommandID )
     BLACKOUT_INSTANCE
     PPACKAGE Package = NULL;
 
-    Package            = Instance()->Win32.LocalAlloc( LPTR, sizeof( PACKAGE ) );
-    Package->Buffer    = Instance()->Win32.LocalAlloc( LPTR, sizeof( BYTE ) );
+    Package            = Win32().LocalAlloc( LPTR, sizeof( PACKAGE ) );
+    Package->Buffer    = Win32().LocalAlloc( LPTR, sizeof( BYTE ) );
     Package->Length    = 0;
     Package->CommandID = CommandID;
     Package->Encrypt   = FALSE;
@@ -116,8 +116,8 @@ FUNC PPACKAGE PackageNew(  )
     BLACKOUT_INSTANCE
     PPACKAGE Package = NULL;
 
-    Package          = Instance()->Win32.LocalAlloc( sizeof( PACKAGE ), LPTR );
-    Package->Buffer  = Instance()->Win32.LocalAlloc( 0, LPTR );
+    Package          = Win32().LocalAlloc( sizeof( PACKAGE ), LPTR );
+    Package->Buffer  = Win32().LocalAlloc( 0, LPTR );
     Package->Length  = 0;
     Package->Encrypt = TRUE;
 
@@ -137,9 +137,9 @@ FUNC VOID PackageDestroy( PPACKAGE Package )
         return;
     }
 
-    Instance()->Win32.LocalFree( Package->Buffer );
+    Win32().LocalFree( Package->Buffer );
 
-    Instance()->Win32.LocalFree( Package );
+    Win32().LocalFree( Package );
 }
 
 FUNC BOOL PackageTransmit( PPACKAGE Package, PVOID* Response, PSIZE_T Size )
@@ -177,7 +177,7 @@ FUNC VOID PackageTransmitError(
     CHAR ErrMsg[MAX_PATH] = {'\0'};
     PSTR p = ErrMsg;
 
-    Instance()->Win32.FormatMessageA( 
+    Win32().FormatMessageA( 
         FORMAT_MESSAGE_FROM_SYSTEM | 
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, ErrNmb,
@@ -211,7 +211,7 @@ FUNC VOID PackageAddBool(
         return;
     }
 
-    Package->Buffer = Instance()->Win32.LocalReAlloc( 
+    Package->Buffer = Win32().LocalReAlloc( 
         Package->Buffer, 
         Package->Length + sizeof( UINT32 ),
         LMEM_MOVEABLE
@@ -239,7 +239,7 @@ FUNC void ParserNew( PPARSER parser, PVOID Buffer, UINT32 size ) {
         return;
 
 
-    parser->Original = Instance()->Win32.LocalAlloc( LPTR, size );
+    parser->Original = Win32().LocalAlloc( LPTR, size );
     MmCopy( parser->Original, Buffer, size );
     parser->Buffer   = parser->Original;
     parser->Length   = size;
@@ -294,7 +294,7 @@ FUNC void ParserDestroy( PPARSER Parser ) {
     BLACKOUT_INSTANCE
 
     if ( Parser->Original ) {
-        Instance()->Win32.LocalFree( Parser->Original );
+        Win32().LocalFree( Parser->Original );
     }
 }
 

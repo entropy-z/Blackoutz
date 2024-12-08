@@ -48,6 +48,24 @@ PBYTE GetFuncArg( PCONTEXT pThreadCtx, DWORD dwParmIndex );
 #define RET_VALUE( CTX, VALUE )( (ULONG_PTR)CTX->Eax = (ULONG_PTR)VALUE )
 #endif // _WIN64
 
+/*====================================[ Hooking Patch ]====================================*/
+
+#ifdef _M_X64
+#define TRAMPOLINE_SIZE		3
+#endif // _M_X64
+
+#ifdef _M_IX86
+#define TRAMPOLINE_SIZE		2
+#endif // _M_IX86
+
+
+typedef struct _HOOK_PATCH {
+	PVOID  AddressHook;
+	PVOID  AddressDetour;
+	BYTE   OriginalBytes[TRAMPOLINE_SIZE];
+	UINT32 OldProtection;
+} HOOK_PATCH, *PHOOK_PATCH;
+
 /*====================================[ Syscall ]====================================*/
 
 #define SEED        0xEDB88320

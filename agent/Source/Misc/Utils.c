@@ -324,9 +324,9 @@ FUNC ULONG RandomNumber32( VOID )
 	BLACKOUT_INSTANCE
     ULONG Seed = 0;
 
-    Seed = Instance()->Win32.GetTickCount();
-    Seed = Instance()->Win32.RtlRandomEx( &Seed );
-    Seed = Instance()->Win32.RtlRandomEx( &Seed );
+    Seed = Win32().GetTickCount();
+    Seed = Win32().RtlRandomEx( &Seed );
+    Seed = Win32().RtlRandomEx( &Seed );
     Seed = ( Seed % ( LONG_MAX - 2 + 1 ) ) + 2;
 
     return Seed % 2 == 0 ? Seed : Seed + 1;

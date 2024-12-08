@@ -429,7 +429,8 @@ DWORD bkMemProtect(
     _In_  HANDLE ProcessHandle,
     _In_  PVOID  BaseAddr,
     _In_  UINT64 RegionSize,
-    _In_  DWORD  NewProtection
+    _In_  DWORD  NewProtection,
+    _Out_opt_ UINT32 *OldProtectionRt 
 );
 
 /*!
@@ -479,13 +480,7 @@ DWORD bkMemProtect(
 DWORD bkMemQuery(
     _In_opt_ HANDLE  ProcessHandle,
     _In_     PVOID   BaseAddress,
-    _Out_    PVOID  *AllocationBase,
-    _Out_    DWORD  *AllocationProtect,
-    _Out_    PVOID  *BaseAddressRt,
-    _Out_    DWORD  *Protect,
-    _Out_    DWORD  *RegionSize,
-    _Out_    DWORD  *State,
-    _Out_    DWORD  *Type
+    _Out_    MEMORY_BASIC_INFORMATION *MbiRt
 );
 
 DWORD bkMemFree(

