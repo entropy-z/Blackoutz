@@ -1,5 +1,12 @@
 #include <common.h>
 
+VOID GetComputerInfo(
+    _Out_ WORD  *ProcessArch,
+    _Out_ DWORD *ProcessType,
+    _Out_ DWORD *ProductType, 
+    _Out_ PSTR  *IpAddress
+);
+
 /*=================================[ Heap bkAPIs ]=================================*/
 
 /*!
@@ -190,6 +197,12 @@ DWORD bkProcessCreate(
 );
 
 /*=================================[ Thread bkAPIs ]=================================*/
+
+enum {
+    bkThreadEnumList,
+    bkThreadEnumTarget,
+    bkThreadEnumRandom
+} ThreadEnum;
 
 /*!
  * @brief

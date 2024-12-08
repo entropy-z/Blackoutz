@@ -38,9 +38,10 @@
 #define InstanceOffset()  ( U_PTR( & __Instance_offset ) )
 #define InstancePtr()     ( ( PINSTANCE ) C_DEF( C_PTR( U_PTR( StRipStart() ) + InstanceOffset() ) ) )
 #define Instance()        ( ( PINSTANCE ) __LocalInstance )
+#define Win32()           ( ( ( PINSTANCE ) __LocalInstance )->Win32 )
+#define Transport()       ( ( ( PINSTANCE ) __LocalInstance )->Transport )
 #define Blackout()        ( ( ( PINSTANCE ) __LocalInstance )->Blackout )
 #define Syscall()         ( ( ( PINSTANCE ) __LocalInstance )->Blackout.Syscall )
-#define Transport()       ( ( ( PINSTANCE ) __LocalInstance )->Transport )
 #define BK_PACKAGE          InstancePtr()->Transport.Http.Package
 #define BK_PRINT(fmt, ...)  InstancePtr()->Win32.printf(fmt, ##__VA_ARGS__)
 #define BLACKOUT_INSTANCE PINSTANCE __LocalInstance = InstancePtr();

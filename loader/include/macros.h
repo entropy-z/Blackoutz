@@ -2,16 +2,14 @@
 
 #include <windows.h>
 
+#include <Loader.hh>
+
 // pseudo handles
 #define NtCurrentProcess()              ( (HANDLE)(-1) )
 #define NtCurrentThread()               ( (HANDLE)(-2) )
 #define NtCurrentProcessToken()         ( (HANDLE)(-4) )
 #define NtCurrentThreadToken()          ( (HANDLE)(-5) )
 #define NtCurrentThreadEffectiveToken() ( (HANDLE)(-6) )
-
-SIZE_T StringLengthA(
-	_In_ LPCSTR String
-) ;
 
 //
 // type castinng lenght 
@@ -28,7 +26,10 @@ SIZE_T StringLengthA(
 //
 // casting macros
 //
-#define C_PTR( x )   ( ( PVOID    ) ( x ) )
+
+#define SC_PTR( x ) static_cast<PVOID>( x )
+
+#define C_PTR( x )   ( ( PVOID    ) ( x ) ) 
 #define U_PTR( x )   ( ( UINT_PTR ) ( x ) )
 #define B_PTR( x )   ( ( PBYTE    ) ( x ) )
 #define U_PTR32( x ) ( ( ULONG    ) ( x ) )
@@ -46,8 +47,9 @@ SIZE_T StringLengthA(
 #define C_DEF64( x ) ( * ( UINT64* ) ( x ) )
 
 //
-// memory related macros
+// namespace related macros
 //
-#define MmCopy __builtin_memcpy
-#define MmSet  __stosb
-#define MmZero RtlSecureZeroMemory
+#define bkMemory  Win32::Memory
+#define bkString  Win32::String
+#define bkCall    Win32::Api::Call
+

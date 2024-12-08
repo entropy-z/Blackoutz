@@ -108,43 +108,12 @@ BOOL KillProcess(
 	_In_ DWORD ProcessId
 );
 
-/*!
- * @brief
- * retrieves the infos of the process
- *
- * @param FullPath
- * full path of the process
- * 
- * @param BaseName
- * process name.
- * 
- * @param CmdLine
- * command line from the process
- */
-VOID GetProcessInfo( 
-	_Out_     PWSTR *FullPath,
-	_Out_     PWSTR *BaseName,
-	_Out_     PWSTR *CmdLine
-);
-
-/*!
- * @brief 
- * get informations from the target computer
- *
- * @param ProcessArch
- * number representing the architecture, needs to be manipulated
- * 
- * @param ProcessType
- * number representing the type of process, needs to be manipulated
- * 
- * @param ProductType
- * number representing the product type, needs to be manipulated
- */
-VOID GetComputerInfo(
-	_Out_ WORD  *ProcessArch,
-	_Out_ DWORD *ProcessType,
-	_Out_ DWORD *ProductType,
-    _Out_ PSTR  *IpAddress
+VOID GetProcessInfo(
+	_Out_ PWSTR  *FullPath,
+	_Out_ PWSTR  *BaseName,
+	_Out_ PWSTR  *CmdLine,
+    _Out_ BOOL   *Protected,
+    _Out_ UINT32 *ParentProcId
 );
 
 /*!

